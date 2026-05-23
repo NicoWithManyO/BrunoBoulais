@@ -9,8 +9,9 @@
 /* Menu mobile pure-CSS : la checkbox #menu-toggle pilote l'affichage du drawer */
 .mobile-menu { display: none; }
 .menu-toggle:checked ~ .mobile-menu { display: block; }
-/* Bloque le scroll du body quand le drawer est ouvert (browsers récents : :has supporté partout) */
-html:has(.menu-toggle:checked) { overflow: hidden; }
+/* Pas de overflow:hidden sur html quand le menu s'ouvre : ça retirerait la
+   scrollbar et provoquerait un flash de re-layout. Le drawer est fixed inset-0,
+   donc le scroll de la page derrière n'est pas visible — c'est acceptable. */
 
 /* =========================================================================
    THEME — Bruno Boulais, auteur
@@ -73,9 +74,6 @@ html:has(.menu-toggle:checked) { overflow: hidden; }
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Réserve toujours la place de la barre de scroll : évite le flash
-       quand on ouvre le drawer mobile (overflow:hidden retirait la scrollbar). */
-    scrollbar-gutter: stable;
   }
 
   body {
