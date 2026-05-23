@@ -23,8 +23,7 @@
     <meta name="twitter:description" content="{{ seo_description|default:default_seo_description }}">
     <meta name="twitter:image" content="{{ seo_og_image|default:default_seo_og_image }}">
 
-    {# Fonts auto-hébergées (déclarées en @font-face dans theme/static_src/src/styles.css,
-       servies depuis /static/fonts/). Plus aucun appel à fonts.googleapis.com / fonts.gstatic.com. #}
+    {# Fonts auto-hébergées via @font-face dans theme/static_src/src/styles.css → /static/fonts/. #}
 
     {# Favicons #}
     <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
