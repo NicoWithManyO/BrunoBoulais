@@ -24,6 +24,9 @@
     <meta name="twitter:image" content="{{ seo_og_image|default:default_seo_og_image }}">
 
     {# Fonts auto-hébergées via @font-face dans theme/static_src/src/styles.css → /static/fonts/. #}
+    {# Preload des 2 fontes du chemin critique LCP (H1 Fraunces + body Inter) pour casser la chaîne CSS→fontes. #}
+    <link rel="preload" href="{% static 'fonts/fraunces-300-700-latin.woff2' %}" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="{% static 'fonts/inter-400-latin.woff2' %}" as="font" type="font/woff2" crossorigin>
 
     {# Favicons #}
     <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
