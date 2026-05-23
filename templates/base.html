@@ -23,19 +23,8 @@
     <meta name="twitter:description" content="{{ seo_description|default:default_seo_description }}">
     <meta name="twitter:image" content="{{ seo_og_image|default:default_seo_og_image }}">
 
-    {% comment %}
-    Fonts — Fraunces (display), Spectral (serif body), Inter (sans UI).
-    Chargement non-bloquant : media="print" puis swap onload pour
-    libérer le rendu critique. Fallback <noscript> pour les rares
-    UA sans JS.
-    {% endcomment %}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    {% with google_fonts="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..700,30..100&family=Spectral:ital,wght@0,300;0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap" %}
-    <link rel="preload" as="style" href="{{ google_fonts }}">
-    <link rel="stylesheet" href="{{ google_fonts }}" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="{{ google_fonts }}"></noscript>
-    {% endwith %}
+    {# Fonts auto-hébergées (déclarées en @font-face dans theme/static_src/src/styles.css,
+       servies depuis /static/fonts/). Plus aucun appel à fonts.googleapis.com / fonts.gstatic.com. #}
 
     {# Favicons #}
     <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
