@@ -48,7 +48,7 @@ def _make_image_formset(parent_model, image_model):
 
         class Meta:
             model = image_model
-            fields = ["image", "alt", "position"]
+            fields = ["image", "alt", "legende", "position"]
 
     return inlineformset_factory(
         parent_model, image_model, form=_Form, extra=0, can_delete=True,

@@ -1,5 +1,6 @@
 from django.db import models
 
+from apps.core.fields import RichTextField
 from apps.core.uploads import og_upload_to
 from apps.core.validators import IMAGE_VALIDATORS
 
@@ -67,6 +68,10 @@ class OrderedImage(models.Model):
     alt = models.CharField(
         "Texte alternatif", max_length=180, blank=True,
         help_text="Décrit l'image pour les lecteurs d'écran. Laisser vide reprend le titre du parent."
+    )
+    legende = RichTextField(
+        "Légende", blank=True, mode="inline",
+        help_text="Texte affiché sous l'image dans le carrousel. Gras / italique autorisés."
     )
 
     class Meta:

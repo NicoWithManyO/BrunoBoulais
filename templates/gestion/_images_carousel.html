@@ -39,8 +39,10 @@ Accueil, Personne, Livre). Le formulaire parent fournit :
                 <div class="image-row__fields">
                     <label class="!mt-0">Ordre</label>{{ f.position }}
                     <label>Texte alternatif</label>{{ f.alt }}
+                    <label>Légende</label>{{ f.legende }}
                     {% if f.image.errors %}<div class="errorlist">{{ f.image.errors }}</div>{% endif %}
                     {% if f.position.errors %}<div class="errorlist">{{ f.position.errors }}</div>{% endif %}
+                    {% if f.legende.errors %}<div class="errorlist">{{ f.legende.errors }}</div>{% endif %}
                 </div>
                 <div class="image-row__delete">
                     <button type="button"

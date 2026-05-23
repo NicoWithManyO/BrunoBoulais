@@ -441,13 +441,19 @@
   .nav-link-mobile.is-active { color: var(--color-terracotta); }
 
   /* --- Carrousel d'images (autoplay fade) --- */
-  /* Le conteneur `.carrousel` reçoit le sizing depuis `wrapper_class`
-     (largeur / aspect-ratio / shadow / etc.). Les slides s'empilent en
-     position absolue et fondent via opacité ; `object-fit: contain`
-     évite le crop des images dont le ratio ne colle pas au wrapper. */
+  /* La figure `.carrousel` reçoit `wrapper_class` (width / max-w / alignement).
+     L'aire image `.carrousel__media` reçoit `media_class` (aspect-ratio /
+     shadow / bordure). Les slides s'empilent en position absolue dans
+     `.carrousel__stack` (hauteur 100% du media) et fondent via opacité ;
+     `object-fit: contain` évite le crop des images au ratio non aligné.
+     `.carrousel__caption` ajoute une légende sous l'image, en grid stack
+     pour fader la légende active sans reflow. */
   .carrousel {
-    position: relative;
     margin: 0;
+  }
+  .carrousel__media {
+    position: relative;
+    width: 100%;
   }
   .carrousel__stack {
     position: relative;
@@ -506,9 +512,32 @@
     outline: 2px solid var(--color-terracotta);
     outline-offset: 2px;
   }
+  .carrousel__caption {
+    margin-top: 0.75rem;
+    display: grid;
+    grid-template-areas: "caption";
+    text-align: center;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: var(--text-sm);
+    line-height: 1.5;
+    color: var(--color-slate);
+  }
+  .carrousel__caption-item {
+    grid-area: caption;
+    opacity: 0;
+    transition: opacity 700ms ease;
+  }
+  .carrousel__caption-item.is-active { opacity: 1; }
+  .carrousel__caption-item:empty { visibility: hidden; }
+  /* :has() hides the whole figcaption if every legende is empty. */
+  .carrousel__caption:not(:has(.carrousel__caption-item:not(:empty))) {
+    display: none;
+  }
   @media (prefers-reduced-motion: reduce) {
     .carrousel__slide { transition: none; }
     .carrousel__dot { transition: none; }
+    .carrousel__caption-item { transition: none; }
   }
 
   /* --- Mosaïque galerie (columns CSS) --- */

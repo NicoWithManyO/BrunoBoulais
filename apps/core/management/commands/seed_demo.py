@@ -237,6 +237,10 @@ class Command(BaseCommand):
                     "présentera son travail et répondra aux questions du public, autour "
                     "d’un repas crêpes (sur réservation auprès de la créperie).</p>"
                 ),
+                "legendes": [
+                    "Créperie Ty Breizh — Chalonnes-sur-Loire, salle de lecture.",
+                    "Lecture autour des chansons de <em>Jacques Bertin</em>.",
+                ],
             },
             {
                 "titre": "Dédicace à la créperie Ty Breizh — déjà passée",
@@ -284,11 +288,13 @@ class Command(BaseCommand):
             # (re-running seed_demo should not nuke a curated upload).
             if not actu.images.exists():
                 n = 2 if data["type"] == Actualite.TYPE_DEDICACE else 1
+                captions = data.get("legendes") or []
                 for i in range(n):
                     ActualiteImage.objects.create(
                         actualite=actu,
                         position=i,
                         alt=data["titre"],
+                        legende=captions[i] if i < len(captions) else "",
                         image=_placeholder_jpeg(data["titre"], i, f"seed-{actu.pk}-{i}.jpg"),
                     )
 

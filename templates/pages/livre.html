@@ -13,7 +13,7 @@
             <figure class="book-cover">
                 {% with livre.images.all as couvertures %}
                 {% if couvertures %}
-                    {% include "partials/carrousel.html" with images=couvertures alt_default="Couverture du livre "|add:livre.titre wrapper_class="w-[260px] md:w-[300px] aspect-[2/3] shadow-2xl" delai_s=livre.delai_rotation_s only %}
+                    {% include "partials/carrousel.html" with images=couvertures alt_default="Couverture du livre "|add:livre.titre wrapper_class="w-[260px] md:w-[300px]" media_class="aspect-[2/3] shadow-2xl" delai_s=livre.delai_rotation_s only %}
                 {% else %}
                     <div class="w-[260px] md:w-[300px] aspect-[2/3] bg-gradient-to-br from-sand to-sand-dark grid place-items-center text-brown">
                         <div class="text-center px-8">

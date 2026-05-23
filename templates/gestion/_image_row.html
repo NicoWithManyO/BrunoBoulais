@@ -1,3 +1,4 @@
+{% load richtext %}
 {% comment %}
 A single image row used as the HTMX response for /images/ajouter/.
 Inputs: `image` (a Parent.images instance), `delete_url` (full URL to POST to).
@@ -16,6 +17,8 @@ but Ordre and Texte alternatif are non-editable until the page is reloaded
         <div class="image-row__readonly">{{ image.position }}</div>
         <label>Texte alternatif</label>
         <div class="image-row__readonly">{{ image.alt|default:"(rechargez la page pour modifier)" }}</div>
+        <label>Légende</label>
+        <div class="image-row__readonly">{{ image.legende|richtext_plain|default:"(rechargez la page pour modifier)" }}</div>
     </div>
     <div class="image-row__delete">
         <button type="button"

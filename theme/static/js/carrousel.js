@@ -19,6 +19,7 @@
   function setupCarrousel(carrousel) {
     const slides = Array.from(carrousel.querySelectorAll(".carrousel__slide"));
     const dots = Array.from(carrousel.querySelectorAll(".carrousel__dot"));
+    const captions = Array.from(carrousel.querySelectorAll(".carrousel__caption-item"));
     if (slides.length < 2) return;
 
     const interval = clampInterval(carrousel.dataset.interval);
@@ -40,6 +41,8 @@
         dots[next].classList.add("is-active");
         dots[next].setAttribute("aria-pressed", "true");
       }
+      if (captions[current]) captions[current].classList.remove("is-active");
+      if (captions[next]) captions[next].classList.add("is-active");
       current = next;
     }
 
