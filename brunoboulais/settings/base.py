@@ -16,6 +16,10 @@ DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 
 SITE_ID = 1
+# Domaine canonique utilisé par le framework `django.contrib.sites`
+# (sitemap, allauth…). En prod : bruno.manyo.dev ; en dev : localhost:8000.
+SITE_DOMAIN = env("SITE_DOMAIN", default="localhost:8000")
+SITE_NAME = env("SITE_NAME", default="Bruno Boulais")
 
 # --- Applications ---------------------------------------------------------
 
