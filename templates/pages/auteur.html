@@ -40,8 +40,8 @@
         </div>
     </div>
 
-    <div class="lg:col-span-5 order-1 lg:order-2 flex justify-center lg:justify-end">
-        <figure>
+    <div class="lg:col-span-5 order-1 lg:order-2">
+        <figure class="w-full max-w-md mx-auto lg:ml-auto lg:mr-0">
             {% with personne.images.all as portraits %}
             {% if portraits %}
                 {% include "partials/carrousel.html" with images=portraits alt_default="Portrait de "|add:personne.nom wrapper_class="w-full max-w-md" media_class="aspect-[4/5] shadow-xl border border-mist/40" delai_s=personne.delai_rotation_s eager_first=True only %}
