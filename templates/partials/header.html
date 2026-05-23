@@ -1,6 +1,8 @@
 {% load static %}
-<header class="border-b border-mist/40">
-    <div class="container-wide py-6 lg:py-8 flex items-center justify-between gap-8">
+<header class="border-b border-mist/40 relative z-40"
+        x-data="{ menuOpen: false }"
+        @keydown.escape.window="menuOpen = false">
+    <div class="container-wide py-6 lg:py-8 flex items-center justify-between gap-4 lg:gap-8">
 
         <a href="{% url 'pages:home' %}" class="group flex items-baseline gap-3 no-underline">
             <span class="title-display text-2xl lg:text-3xl text-brown leading-none">
@@ -20,10 +22,75 @@
             <a href="{% url 'galerie:liste' %}" class="nav-link {% if 'galerie' in request.path %}is-active{% endif %}">Galerie</a>
         </nav>
 
-        <a href="{% url 'contact:form' %}" class="btn btn-primary">
-            Commander
-            <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-        </a>
+        <div class="flex items-center gap-3">
+            <a href="{% url 'contact:form' %}" class="btn btn-primary btn-sm lg:btn">
+                Commander
+                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+            </a>
 
+            <button type="button"
+                    class="lg:hidden p-2 -mr-2 text-brown"
+                    @click="menuOpen = true"
+                    :aria-expanded="menuOpen.toString()"
+                    aria-controls="mobile-menu"
+                    aria-label="Ouvrir le menu">
+                <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+            </button>
+        </div>
+
+    </div>
+
+    {# --- Drawer mobile --- #}
+    <div id="mobile-menu"
+         class="lg:hidden fixed inset-0 z-50"
+         x-show="menuOpen"
+         x-cloak
+         role="dialog"
+         aria-modal="true"
+         aria-label="Menu de navigation">
+
+        <div class="absolute inset-0 bg-ink/40"
+             x-show="menuOpen"
+             x-transition.opacity.duration.200ms
+             @click="menuOpen = false"></div>
+
+        <div class="absolute inset-y-0 right-0 w-full max-w-sm bg-cream shadow-2xl flex flex-col"
+             x-show="menuOpen"
+             x-transition:enter="transition transform ease-out duration-300"
+             x-transition:enter-start="translate-x-full"
+             x-transition:enter-end="translate-x-0"
+             x-transition:leave="transition transform ease-in duration-200"
+             x-transition:leave-start="translate-x-0"
+             x-transition:leave-end="translate-x-full">
+
+            <div class="flex items-center justify-between px-6 py-6 border-b border-mist/40">
+                <span class="title-display text-2xl text-brown leading-none">Menu</span>
+                <button type="button"
+                        class="p-2 -mr-2 text-brown"
+                        @click="menuOpen = false"
+                        aria-label="Fermer le menu">
+                    <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+            </div>
+
+            <nav class="flex-1 px-6 py-6 flex flex-col gap-1 font-serif text-2xl"
+                 aria-label="Navigation mobile">
+                <a href="{% url 'pages:livre' %}"      class="nav-link-mobile {% if request.resolver_match.url_name == 'livre' %}is-active{% endif %}" @click="menuOpen = false">Le livre</a>
+                <a href="{% url 'pages:bertin' %}"     class="nav-link-mobile {% if request.resolver_match.url_name == 'bertin' %}is-active{% endif %}" @click="menuOpen = false">Jacques Bertin</a>
+                <a href="{% url 'pages:auteur' %}"     class="nav-link-mobile {% if request.resolver_match.url_name == 'auteur' %}is-active{% endif %}" @click="menuOpen = false">L’auteur</a>
+                <a href="{% url 'actualites:liste' %}" class="nav-link-mobile {% if 'actualites' in request.path %}is-active{% endif %}" @click="menuOpen = false">Actualités</a>
+                <a href="{% url 'temoignages:liste' %}" class="nav-link-mobile {% if 'temoignages' in request.path %}is-active{% endif %}" @click="menuOpen = false">Témoignages</a>
+                <a href="{% url 'galerie:liste' %}"    class="nav-link-mobile {% if 'galerie' in request.path %}is-active{% endif %}" @click="menuOpen = false">Galerie</a>
+            </nav>
+
+            <div class="px-6 py-6 border-t border-mist/40">
+                <a href="{% url 'contact:form' %}"
+                   class="btn btn-primary w-full justify-center"
+                   @click="menuOpen = false">
+                    Commander le livre
+                    <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+        </div>
     </div>
 </header>

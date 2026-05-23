@@ -3,6 +3,9 @@
 /* Scan all templates and Python sources for class names */
 @source "../../../**/*.{html,py,js}";
 
+/* Alpine.js — masque les éléments x-cloak tant qu'Alpine n'a pas initialisé */
+[x-cloak] { display: none !important; }
+
 /* =========================================================================
    THEME — Bruno Boulais, auteur
    Inspiration : papier ivoire, encre tiède, sérénité éditoriale.
@@ -375,6 +378,16 @@
   .nav-link:hover::after,
   .nav-link.is-active::after { right: 0; }
   .nav-link.is-active { color: var(--color-brown); }
+
+  .nav-link-mobile {
+    color: var(--color-ink);
+    text-decoration: none;
+    padding: 0.875rem 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-mist) 40%, transparent);
+    transition: color 0.2s var(--ease-soft);
+  }
+  .nav-link-mobile:hover,
+  .nav-link-mobile.is-active { color: var(--color-terracotta); }
 
   /* --- Mosaïque galerie (columns CSS) --- */
   .masonry {
