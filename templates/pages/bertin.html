@@ -13,7 +13,7 @@
         <figure>
             {% with personne.images.all as portraits %}
             {% if portraits %}
-                {% include "partials/carrousel.html" with images=portraits alt_default="Portrait de "|add:personne.nom img_class="w-full max-w-md aspect-[4/5] object-cover shadow-xl border border-mist/40" hint_label="Portraits" only %}
+                {% include "partials/carrousel.html" with images=portraits alt_default="Portrait de "|add:personne.nom wrapper_class="w-full max-w-md aspect-[4/5] shadow-xl border border-mist/40" only %}
             {% else %}
                 <div class="w-full max-w-md aspect-[4/5] bg-gradient-to-br from-mist-light to-mist grid place-items-center">
                     <span class="font-display italic text-7xl text-brown/60">JB</span>

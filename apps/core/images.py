@@ -45,8 +45,9 @@ def strip_exif(uploaded_file):
                 target = ImageOps.exif_transpose(img)
 
             if pil_format == "JPEG":
-                save_kwargs["quality"] = 88
+                save_kwargs["quality"] = 92
                 save_kwargs["optimize"] = True
+                save_kwargs["progressive"] = True
                 if target.mode not in ("RGB", "L"):
                     target = target.convert("RGB")
 
