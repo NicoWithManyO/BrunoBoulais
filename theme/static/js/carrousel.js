@@ -61,6 +61,11 @@
       dot.addEventListener("click", () => { show(idx); sync(); });
     });
 
+    const stack = carrousel.querySelector(".carrousel__stack");
+    if (stack) {
+      stack.addEventListener("click", () => { show(current + 1); sync(); });
+    }
+
     carrousel.addEventListener("mouseenter", () => { hovered = true; stop(); });
     carrousel.addEventListener("mouseleave", () => { hovered = false; start(); });
     carrousel.addEventListener("focusin",    () => { focused = true; stop(); });
