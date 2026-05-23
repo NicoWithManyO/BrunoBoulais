@@ -53,11 +53,24 @@
     </div>
     {% endif %}
 
-    {# Carrousel d'images (1 -> figure simple, N -> autoplay fade) #}
+    {# Bande horizontale d'images, chacune avec sa légende. #}
     {% with obj.images.all as obj_images %}
     {% if obj_images %}
     <div class="container-page my-12">
-      {% include "partials/carrousel.html" with images=obj_images alt_default=obj.titre wrapper_class="w-full" media_class="aspect-[4/3] shadow-lg" delai_s=obj.delai_rotation_s only %}
+        <div class="flex shadow-md">
+            {% for img in obj_images %}
+            <figure class="flex-1 min-w-0">
+                <img src="{{ img.image.url }}" alt="{{ img.alt|default:obj.titre }}"
+                     class="block w-full aspect-[4/3] object-cover"
+                     loading="lazy" decoding="async">
+                {% if img.legende %}
+                <figcaption class="mt-2 font-serif italic text-sm text-slate text-center px-2">
+                    {{ img.legende|richtext:"inline" }}
+                </figcaption>
+                {% endif %}
+            </figure>
+            {% endfor %}
+        </div>
     </div>
     {% endif %}
     {% endwith %}
