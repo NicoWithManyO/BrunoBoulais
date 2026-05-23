@@ -38,6 +38,20 @@ def strip_exif(uploaded_file):
         uploaded_file.seek(0)
         with Image.open(uploaded_file) as img:
             is_animated = getattr(img, "is_animated", False)
+
+            # PNG opaques → JPEG : un portrait IA exporté en PNG pèse
+            # facilement 3 Mo pour 0 gain visuel face à un JPEG q92. Le
+            # ImageField persistera le nouveau nom .jpg dans la DB.
+            if pil_format == "PNG" and not is_animated:
+                opaque = img.mode in ("RGB", "L", "P")
+                if not opaque and img.mode in ("RGBA", "LA"):
+                    alpha = img.split()[-1]
+                    opaque = alpha.getextrema() == (255, 255)
+                if opaque:
+                    pil_format = "JPEG"
+                    if name.lower().endswith(".png"):
+                        name = name[:-4] + ".jpg"
+
             save_kwargs = {"format": pil_format, "exif": b""}
 
             if is_animated and pil_format in ("PNG", "WEBP", "AVIF"):
@@ -52,6 +66,8 @@ def strip_exif(uploaded_file):
                 save_kwargs["progressive"] = True
                 if target.mode not in ("RGB", "L"):
                     target = target.convert("RGB")
+            elif pil_format == "PNG":
+                save_kwargs["optimize"] = True
 
             buf = BytesIO()
             target.save(buf, **save_kwargs)
@@ -69,11 +85,14 @@ def strip_exif(uploaded_file):
             uploaded_file.seek(0)
             return uploaded_file
 
+        content_type = getattr(uploaded_file, "content_type", None)
+        if pil_format == "JPEG" and content_type != "image/jpeg":
+            content_type = "image/jpeg"
         return InMemoryUploadedFile(
             file=buf,
             field_name=getattr(uploaded_file, "field_name", None),
             name=name,
-            content_type=getattr(uploaded_file, "content_type", None),
+            content_type=content_type,
             size=buf.getbuffer().nbytes,
             charset=None,
         )
