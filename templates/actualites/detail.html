@@ -1,9 +1,75 @@
 {% extends "base.html" %}
+
+{% block title %}{{ obj.titre }} — {{ SITE_NAME }}{% endblock %}
+{% block description %}{% if obj.chapo %}{{ obj.chapo }}{% else %}{{ obj.titre }}{% endif %}{% endblock %}
+
 {% block content %}
-<section class="container-prose py-20">
-    <p class="eyebrow">{{ obj.get_type_display }}</p>
-    <h1 class="mt-4">{{ obj.titre }}</h1>
-    {% if obj.chapo %}<p class="mt-4 font-display italic text-xl text-brown-soft">{{ obj.chapo }}</p>{% endif %}
-    <div class="mt-10 prose">{{ obj.contenu|safe }}</div>
-</section>
+
+<article>
+
+    {# Header #}
+    <header class="container-prose pt-16 lg:pt-24 pb-10">
+        <p class="font-sans text-xs uppercase tracking-widest text-terracotta-deep">
+            <a href="{% url 'actualites:liste' %}" class="no-underline hover:text-terracotta">{{ obj.get_type_display }}</a>
+            {% if obj.date_evenement %} · {{ obj.date_evenement|date:"j F Y" }}{% endif %}
+            {% if obj.ville %} · {{ obj.ville }}{% endif %}
+        </p>
+        <h1 class="title-display mt-6 text-4xl md:text-5xl lg:text-6xl text-balance">{{ obj.titre }}</h1>
+
+        {% if obj.chapo %}
+        <p class="mt-6 font-display italic text-2xl text-brown-soft leading-snug max-w-[55ch]">
+            {{ obj.chapo }}
+        </p>
+        {% endif %}
+
+        {% if obj.lieu or obj.heure_debut %}
+        <dl class="mt-8 grid sm:grid-cols-3 gap-4 font-sans text-sm">
+            {% if obj.lieu %}
+            <div>
+                <dt class="text-xs uppercase tracking-widest text-slate-soft">Lieu</dt>
+                <dd class="mt-1 text-ink">{{ obj.lieu }}{% if obj.ville %}, {{ obj.ville }}{% endif %}</dd>
+            </div>
+            {% endif %}
+            {% if obj.heure_debut %}
+            <div>
+                <dt class="text-xs uppercase tracking-widest text-slate-soft">Horaires</dt>
+                <dd class="mt-1 text-ink">
+                    {{ obj.heure_debut|time:"H\hi" }}{% if obj.heure_fin %} – {{ obj.heure_fin|time:"H\hi" }}{% endif %}
+                </dd>
+            </div>
+            {% endif %}
+            {% if obj.est_a_venir %}
+            <div>
+                <dt class="text-xs uppercase tracking-widest text-slate-soft">Statut</dt>
+                <dd class="mt-1"><span class="tag tag-terra">À venir</span></dd>
+            </div>
+            {% endif %}
+        </dl>
+        {% endif %}
+    </header>
+
+    {# Image principale #}
+    {% if obj.image %}
+    <figure class="container-page mb-12">
+        <img src="{{ obj.image.url }}" alt="{{ obj.titre }}"
+             class="w-full max-h-[60vh] object-cover shadow-lg">
+    </figure>
+    {% endif %}
+
+    {# Contenu #}
+    <div class="container-prose pb-20">
+        {% if obj.contenu %}
+        <div class="prose">{{ obj.contenu|safe }}</div>
+        {% endif %}
+
+        <hr class="my-12">
+
+        <div class="flex flex-wrap items-center justify-between gap-6">
+            <a href="{% url 'actualites:liste' %}" class="btn-link">← Toutes les actualités</a>
+            <a href="{% url 'contact:form' %}" class="btn btn-ghost">Commander le livre</a>
+        </div>
+    </div>
+
+</article>
+
 {% endblock %}

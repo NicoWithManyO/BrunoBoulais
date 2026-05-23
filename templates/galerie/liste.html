@@ -1,27 +1,96 @@
 {% extends "base.html" %}
-{% block content %}
-<section class="container-wide py-20">
-    <p class="eyebrow">En images</p>
-    <h1 class="mt-4">Galerie</h1>
 
-    <div class="mt-8 flex flex-wrap gap-2">
-        <a href="?" class="tag {% if not categorie_active %}tag-terra{% endif %}">Tout</a>
+{% block title %}Galerie — {{ SITE_NAME }}{% endblock %}
+{% block description %}Photos et vidéo autour de Jacques Bertin, du livre, des dédicaces et de l’auteur.{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Mosaïque Pinterest-like via CSS columns */
+    .masonry { column-count: 2; column-gap: 1rem; }
+    @media (min-width: 768px)  { .masonry { column-count: 3; } }
+    @media (min-width: 1280px) { .masonry { column-count: 4; } }
+    .masonry > figure {
+        break-inside: avoid;
+        margin: 0 0 1rem;
+        background: var(--color-cream-dark);
+        border: 1px solid rgba(200, 188, 168, 0.4);
+        transition: transform .35s var(--ease-soft), box-shadow .35s var(--ease-soft);
+    }
+    .masonry > figure:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px -10px rgba(90, 58, 34, 0.25);
+    }
+    .masonry img, .masonry video { width: 100%; height: auto; display: block; }
+    .masonry figcaption {
+        padding: 0.5rem 0.75rem 0.75rem;
+        margin: 0;
+        font-family: var(--font-sans);
+        font-size: 0.72rem;
+        letter-spacing: 0.06em;
+        text-transform: none;
+        color: var(--color-slate-soft);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<section class="container-wide pt-16 lg:pt-24 pb-8">
+    <p class="eyebrow">En images</p>
+    <h1 class="title-display mt-6 text-5xl md:text-6xl">Galerie</h1>
+    <p class="mt-6 font-serif text-lg text-ink/80 max-w-2xl leading-relaxed">
+        Photographies de Jacques Bertin, pochettes de disques, livres, dédicaces de Bruno,
+        rencontres&nbsp;: un album vivant autour du livre et de son sujet.
+    </p>
+</section>
+
+{# Filtres par catégorie #}
+<section class="container-wide pb-8">
+    <div class="flex flex-wrap gap-2">
+        <a href="{% url 'galerie:liste' %}" class="tag {% if not categorie_active %}tag-terra{% endif %}">
+            Tout
+        </a>
         {% for value, label in categories %}
-        <a href="?c={{ value }}" class="tag {% if categorie_active == value %}tag-terra{% endif %}">{{ label }}</a>
+        <a href="?c={{ value }}"
+           class="tag {% if categorie_active == value %}tag-terra{% endif %}">
+            {{ label }}
+        </a>
         {% endfor %}
     </div>
+</section>
 
+{# Galerie #}
+<section class="container-wide pb-24">
     {% if medias %}
-    <div class="masonry mt-12">
+    <div class="masonry mt-4">
         {% for m in medias %}
         <figure>
-            <img src="{{ m.fichier.url }}" alt="{{ m.alt }}" class="w-full h-auto">
+            {% if m.type == 'video' %}
+                <video controls preload="metadata" poster="">
+                    <source src="{{ m.fichier.url }}">
+                </video>
+            {% else %}
+                <a href="{{ m.fichier.url }}" target="_blank" rel="noopener" class="no-underline">
+                    <img src="{{ m.fichier.url }}" alt="{{ m.alt|default:m.legende }}" loading="lazy">
+                </a>
+            {% endif %}
             {% if m.legende %}<figcaption>{{ m.legende }}</figcaption>{% endif %}
         </figure>
         {% endfor %}
     </div>
     {% else %}
-    <p class="mt-12 text-ink/70 italic">La galerie sera enrichie progressivement.</p>
+    <div class="mt-12 border border-dashed border-mist py-16 px-8 text-center">
+        <p class="font-display italic text-2xl text-brown-soft">
+            Cette galerie sera enrichie progressivement.
+        </p>
+        <p class="mt-4 text-ink/70 max-w-md mx-auto">
+            En attendant, vous pouvez
+            <a href="{% url 'pages:bertin' %}">découvrir Jacques Bertin</a>
+            ou
+            <a href="{% url 'pages:livre' %}">explorer le livre</a>.
+        </p>
+    </div>
     {% endif %}
 </section>
+
 {% endblock %}

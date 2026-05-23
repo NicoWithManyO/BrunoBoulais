@@ -1,23 +1,107 @@
 {% extends "base.html" %}
+
+{% block title %}Actualités &amp; dédicaces — {{ SITE_NAME }}{% endblock %}
+{% block description %}Dédicaces, rencontres, presse : retrouvez toutes les actualités autour du livre.{% endblock %}
+
 {% block content %}
-<section class="container-page py-20">
+
+<section class="container-wide pt-16 lg:pt-24 pb-12">
     <p class="eyebrow">Agenda &amp; nouvelles</p>
-    <h1 class="mt-4">Actualités</h1>
+    <h1 class="title-display mt-6 text-5xl md:text-6xl">Actualités &amp; dédicaces</h1>
+    <p class="mt-6 font-serif text-lg text-ink/80 max-w-2xl leading-relaxed">
+        Bruno parcourt la France pour porter son livre à la rencontre de ses lecteurs&nbsp;:
+        librairies, créperies, supermarchés, festivals. Retrouvez ici les prochaines dates
+        et celles déjà passées.
+    </p>
+</section>
+
+{# =========================  À VENIR  ========================= #}
+<section class="container-wide pb-16">
+    <div class="flex items-end justify-between flex-wrap gap-4 border-b border-mist/40 pb-4">
+        <h2 class="text-3xl">À venir</h2>
+        {% if a_venir %}
+        <p class="font-sans text-sm text-slate-soft">{{ a_venir|length }} date{{ a_venir|length|pluralize }} programmée{{ a_venir|length|pluralize }}</p>
+        {% endif %}
+    </div>
 
     {% if a_venir %}
-    <h2 class="mt-12">À venir</h2>
-    <div class="mt-6 grid md:grid-cols-2 gap-6">
-        {% for a in a_venir %}<article class="card-edito"><h3>{{ a.titre }}</h3></article>{% endfor %}
-    </div>
-    {% endif %}
-
-    <h2 class="mt-16">Passées</h2>
-    {% if passees %}
-    <div class="mt-6 grid md:grid-cols-2 gap-6">
-        {% for a in passees %}<article class="card-edito"><h3>{{ a.titre }}</h3></article>{% endfor %}
+    <div class="mt-10 grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {% for a in a_venir %}
+        <article class="card-edito flex flex-col">
+            {% if a.image %}
+            <a href="{{ a.get_absolute_url }}" class="block no-underline -m-6 mb-0 overflow-hidden">
+                <img src="{{ a.image.url }}" alt="{{ a.titre }}"
+                     class="w-full aspect-[4/3] object-cover transition-transform duration-500 hover:scale-105">
+            </a>
+            {% endif %}
+            <div class="{% if a.image %}mt-6{% endif %} flex flex-col flex-1">
+                <p class="font-sans text-xs uppercase tracking-widest text-terracotta-deep">
+                    {{ a.date_evenement|date:"j F Y" }}
+                    {% if a.ville %} · {{ a.ville }}{% endif %}
+                </p>
+                <h3 class="mt-3 text-2xl">
+                    <a href="{{ a.get_absolute_url }}" class="no-underline hover:text-terracotta">
+                        {{ a.titre }}
+                    </a>
+                </h3>
+                {% if a.lieu %}
+                <p class="mt-2 font-sans text-sm text-slate">{{ a.lieu }}</p>
+                {% endif %}
+                {% if a.heure_debut %}
+                <p class="mt-1 font-sans text-sm text-slate-soft">
+                    {{ a.heure_debut|time:"H\hi" }}{% if a.heure_fin %} – {{ a.heure_fin|time:"H\hi" }}{% endif %}
+                </p>
+                {% endif %}
+                {% if a.chapo %}
+                <p class="mt-4 text-sm text-ink/75 leading-relaxed">{{ a.chapo }}</p>
+                {% endif %}
+                <a href="{{ a.get_absolute_url }}" class="btn-link mt-auto pt-5">En savoir plus →</a>
+            </div>
+        </article>
+        {% endfor %}
     </div>
     {% else %}
-    <p class="mt-6 text-ink/70 italic">Aucune actualité publiée pour l’instant.</p>
+    <p class="mt-10 font-serif italic text-ink/70">
+        Aucune date à venir pour le moment. Revenez bientôt&nbsp;— ou
+        <a href="{% url 'contact:form' %}">écrivez à Bruno</a> pour organiser une rencontre.
+    </p>
     {% endif %}
 </section>
+
+{# =========================  PASSÉES  ========================= #}
+<section class="bg-cream-dark/40 border-t border-mist/30 py-16">
+    <div class="container-wide">
+        <div class="flex items-end justify-between flex-wrap gap-4 border-b border-mist/40 pb-4">
+            <h2 class="text-3xl">Déjà passées</h2>
+        </div>
+
+        {% if passees %}
+        <ul class="mt-8 divide-y divide-mist/40">
+            {% for a in passees %}
+            <li class="py-5 grid sm:grid-cols-[10rem_1fr_auto] gap-4 sm:gap-8 items-baseline">
+                <p class="font-sans text-xs uppercase tracking-widest text-slate-soft">
+                    {% if a.date_evenement %}{{ a.date_evenement|date:"j F Y" }}{% else %}{{ a.date_publication|date:"j F Y" }}{% endif %}
+                </p>
+                <div>
+                    <a href="{{ a.get_absolute_url }}" class="font-display text-xl text-brown hover:text-terracotta no-underline">
+                        {{ a.titre }}
+                    </a>
+                    {% if a.lieu or a.ville %}
+                    <p class="mt-1 font-sans text-sm text-slate-soft">
+                        {{ a.lieu }}{% if a.lieu and a.ville %} · {% endif %}{{ a.ville }}
+                    </p>
+                    {% endif %}
+                </div>
+                <span class="tag {% if a.type == 'dedicace' %}tag-terra{% elif a.type == 'presse' %}tag-slate{% endif %}">
+                    {{ a.get_type_display }}
+                </span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="mt-10 font-serif italic text-ink/70">Aucune actualité passée pour l’instant.</p>
+        {% endif %}
+    </div>
+</section>
+
 {% endblock %}

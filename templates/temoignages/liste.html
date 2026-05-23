@@ -1,19 +1,61 @@
 {% extends "base.html" %}
+
+{% block title %}Témoignages — {{ SITE_NAME }}{% endblock %}
+{% block description %}Retours de lecteurs sur « {{ BOOK_TITLE }} » de Bruno Boulais.{% endblock %}
+
 {% block content %}
-<section class="container-page py-20">
-    <p class="eyebrow">Retours lecteurs</p>
-    <h1 class="mt-4">Témoignages</h1>
+
+<section class="container-wide pt-16 lg:pt-24 pb-12">
+    <p class="eyebrow">Retours de lecteurs</p>
+    <h1 class="title-display mt-6 text-5xl md:text-6xl">Témoignages</h1>
+    <p class="mt-6 font-serif text-lg text-ink/80 max-w-2xl leading-relaxed">
+        Quelques mots reçus par Bruno après lecture du livre&nbsp;:
+        un dialogue qui se prolonge, lecteur après lecteur.
+    </p>
+</section>
+
+<section class="container-wide pb-24">
     {% if temoignages %}
-    <div class="mt-12 grid md:grid-cols-2 gap-10">
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-10">
         {% for t in temoignages %}
-        <figure class="border-l-2 border-terracotta pl-6">
-            <blockquote class="border-0 p-0 m-0">« {{ t.texte }} »</blockquote>
-            <figcaption class="mt-4">{{ t.auteur }}{% if t.source %} · {{ t.source }}{% endif %}</figcaption>
+        <figure class="card-edito flex flex-col">
+            <svg class="text-terracotta/40 -mt-2 -ml-1" width="36" height="28" viewBox="0 0 36 28" fill="currentColor" aria-hidden="true">
+                <path d="M0 28V18C0 8.4 5 2 14 0l2 4c-5 1.6-8 5-8 10h6v14H0zm20 0V18c0-9.6 5-16 14-18l2 4c-5 1.6-8 5-8 10h6v14H20z"/>
+            </svg>
+            <blockquote class="border-0 p-0 m-0 mt-2 font-display italic text-lg lg:text-xl leading-snug text-brown-soft">
+                {{ t.texte }}
+            </blockquote>
+            <figcaption class="mt-6 pt-4 border-t border-mist/40 not-italic">
+                <p class="font-display text-base text-brown not-italic">{{ t.auteur }}</p>
+                {% if t.source %}
+                <p class="mt-1 font-sans text-xs uppercase tracking-widest text-slate-soft">
+                    {{ t.source }}
+                </p>
+                {% endif %}
+            </figcaption>
         </figure>
         {% endfor %}
     </div>
     {% else %}
-    <p class="mt-8 text-ink/70 italic">Les premiers témoignages arriveront bientôt.</p>
+    <div class="border border-dashed border-mist py-16 px-8 text-center">
+        <p class="font-display italic text-2xl text-brown-soft">
+            Les premiers témoignages arriveront bientôt.
+        </p>
+    </div>
     {% endif %}
 </section>
+
+{# CTA partager #}
+<section class="bg-cream-dark/40 border-t border-mist/30 py-20">
+    <div class="container-page text-center">
+        <p class="eyebrow justify-center">Vous aussi&nbsp;?</p>
+        <h2 class="mt-4">Partagez votre lecture</h2>
+        <p class="mt-6 text-ink/80 max-w-xl mx-auto">
+            Un mot, une phrase, un ressenti après votre lecture&nbsp;? Écrivez à Bruno,
+            il publiera peut-être votre témoignage ici, avec votre accord.
+        </p>
+        <a href="{% url 'contact:form' %}" class="btn btn-primary mt-8">Partager mon ressenti</a>
+    </div>
+</section>
+
 {% endblock %}

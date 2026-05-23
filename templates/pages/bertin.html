@@ -1,8 +1,143 @@
 {% extends "base.html" %}
+
+{% block title %}Jacques Bertin — {{ SITE_NAME }}{% endblock %}
+{% block description %}Jacques Bertin, chanteur-poète : biographie, discographie, citations et galerie.{% endblock %}
+
 {% block content %}
-<section class="container-page py-20">
-    <p class="eyebrow">Le sujet du livre</p>
-    <h1 class="mt-4">Jacques Bertin</h1>
-    <p class="mt-6 text-ink/70 italic">Biographie, discographie et galerie consacrées à l’artiste — à venir.</p>
+
+{# =========================  HERO BERTIN  ========================= #}
+<section class="container-wide pt-16 lg:pt-24 pb-16 grid lg:grid-cols-12 gap-12 lg:gap-20 items-center">
+
+    <div class="lg:col-span-5">
+        <figure>
+            {% if personne.portrait %}
+                <img src="{{ personne.portrait.url }}" alt="Portrait de {{ personne.nom }}"
+                     class="w-full max-w-md aspect-[4/5] object-cover shadow-xl border border-mist/40">
+            {% else %}
+                <div class="w-full max-w-md aspect-[4/5] bg-gradient-to-br from-mist-light to-mist grid place-items-center">
+                    <span class="font-display italic text-7xl text-brown/60">JB</span>
+                </div>
+            {% endif %}
+            {% if personne.annee_naissance %}
+            <figcaption>Né à Rennes en {{ personne.annee_naissance }}</figcaption>
+            {% endif %}
+        </figure>
+    </div>
+
+    <div class="lg:col-span-7">
+        <p class="eyebrow">Le sujet du livre</p>
+        <h1 class="title-display mt-6 text-5xl md:text-6xl text-balance">
+            {{ personne.nom|default:"Jacques Bertin" }}
+        </h1>
+        {% if personne.sous_titre %}
+        <p class="mt-4 font-display italic text-xl text-brown-soft">{{ personne.sous_titre }}</p>
+        {% endif %}
+
+        {% if personne.bio_courte %}
+        <p class="mt-8 font-serif text-lg lg:text-xl text-ink/85 max-w-[55ch] leading-relaxed">
+            {{ personne.bio_courte }}
+        </p>
+        {% endif %}
+
+        <div class="mt-10 flex flex-wrap items-center gap-4">
+            <a href="{% url 'pages:livre' %}" class="btn btn-primary">Le livre qui lui est consacré</a>
+            <a href="{% url 'galerie:liste' %}?c=bertin" class="btn-link">Galerie photos →</a>
+        </div>
+    </div>
 </section>
+
+{# =========================  BIO LONGUE  ========================= #}
+{% if personne.bio_longue %}
+<section class="container-prose py-20 border-t border-mist/30">
+    <p class="eyebrow">Biographie</p>
+    <h2 class="mt-4">Le parcours</h2>
+    <div class="prose mt-8 drop-cap">
+        {{ personne.bio_longue|safe }}
+    </div>
+</section>
+{% endif %}
+
+{# =========================  CITATION  ========================= #}
+<section class="bg-cream-dark/40 border-y border-mist/30 py-20">
+    <div class="container-page">
+        <p class="pull-quote">
+            Dans un monde saturé de bruit, Jacques Bertin est une source claire&nbsp;:
+            celui qui ne crie pas pour qu’on l’entende, mais qui se penche pour qu’on l’écoute.
+        </p>
+        <p class="ornament mt-6">
+            <span class="font-sans text-xs uppercase tracking-widest">d’après Jean-Claude Guillebaud</span>
+        </p>
+    </div>
+</section>
+
+{# =========================  DISCOGRAPHIE (carrousel pochettes) ========================= #}
+<section class="container-wide py-20">
+    <div class="flex items-end justify-between flex-wrap gap-6">
+        <div>
+            <p class="eyebrow">Discographie</p>
+            <h2 class="mt-4">Les disques</h2>
+        </div>
+        <a href="{% url 'galerie:liste' %}?c=bertin" class="btn-link">Toute la galerie →</a>
+    </div>
+
+    {# Carrousel simple : scroll horizontal sur mobile, grille sur desktop. #}
+    {# V1 : placeholders carrés en attendant intégration des vraies pochettes. #}
+    <div class="mt-10 overflow-x-auto -mx-6 px-6 pb-4 snap-x snap-mandatory">
+        <ul class="flex gap-6 min-w-max lg:grid lg:grid-cols-6 lg:min-w-0">
+            <li class="snap-start shrink-0 w-44 lg:w-auto">
+                <div class="aspect-square bg-gradient-to-br from-sand to-sand-dark shadow-md grid place-items-center">
+                    <span class="font-display italic text-brown text-center px-3 text-sm">L’état des routes</span>
+                </div>
+                <p class="mt-3 font-sans text-xs uppercase tracking-widest text-slate-soft">Album</p>
+            </li>
+            <li class="snap-start shrink-0 w-44 lg:w-auto">
+                <div class="aspect-square bg-gradient-to-br from-mist-light to-mist shadow-md grid place-items-center">
+                    <span class="font-display italic text-brown text-center px-3 text-sm">Comme un pays</span>
+                </div>
+                <p class="mt-3 font-sans text-xs uppercase tracking-widest text-slate-soft">Album</p>
+            </li>
+            <li class="snap-start shrink-0 w-44 lg:w-auto">
+                <div class="aspect-square bg-gradient-to-br from-sand-dark to-brown-soft/40 shadow-md grid place-items-center">
+                    <span class="font-display italic text-brown text-center px-3 text-sm">Permanence du fleuve</span>
+                </div>
+                <p class="mt-3 font-sans text-xs uppercase tracking-widest text-slate-soft">Album</p>
+            </li>
+            <li class="snap-start shrink-0 w-44 lg:w-auto">
+                <div class="aspect-square bg-gradient-to-br from-cream-dark to-sand shadow-md grid place-items-center">
+                    <span class="font-display italic text-brown text-center px-3 text-sm">Seul, dans le paysage</span>
+                </div>
+                <p class="mt-3 font-sans text-xs uppercase tracking-widest text-slate-soft">Album</p>
+            </li>
+            <li class="snap-start shrink-0 w-44 lg:w-auto">
+                <div class="aspect-square bg-gradient-to-br from-slate-soft/30 to-slate/40 shadow-md grid place-items-center">
+                    <span class="font-display italic text-brown text-center px-3 text-sm">Les grands bras</span>
+                </div>
+                <p class="mt-3 font-sans text-xs uppercase tracking-widest text-slate-soft">Album</p>
+            </li>
+            <li class="snap-start shrink-0 w-44 lg:w-auto">
+                <div class="aspect-square bg-gradient-to-br from-ember/40 to-terracotta/40 shadow-md grid place-items-center">
+                    <span class="font-display italic text-brown text-center px-3 text-sm">Le poids des roses</span>
+                </div>
+                <p class="mt-3 font-sans text-xs uppercase tracking-widest text-slate-soft">Album</p>
+            </li>
+        </ul>
+    </div>
+    <p class="mt-4 font-sans text-xs text-slate-soft">
+        Pochettes&nbsp;: visuels indicatifs en attendant l’intégration des images d’origine.
+    </p>
+</section>
+
+{# =========================  CTA LIVRE  ========================= #}
+<section class="bg-cream-dark/40 border-t border-mist/30 py-20">
+    <div class="container-page text-center">
+        <p class="eyebrow justify-center">Pour aller plus loin</p>
+        <h2 class="mt-4">Découvrir l’œuvre dans le livre</h2>
+        <p class="mt-6 text-ink/80 max-w-2xl mx-auto">
+            Bruno Boulais consacre à Jacques Bertin un livre qui retrace sa vie, son écriture,
+            ses choix, ses silences. Un récit d’admiration et d’enquête.
+        </p>
+        <a href="{% url 'pages:livre' %}" class="btn btn-primary mt-8">Voir le livre</a>
+    </div>
+</section>
+
 {% endblock %}
