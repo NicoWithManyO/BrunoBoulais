@@ -27,14 +27,15 @@
     {% if a_venir %}
     <div class="mt-10 grid md:grid-cols-2 lg:grid-cols-3 gap-8">
         {% for a in a_venir %}
+        {% with a.image_principale as a_thumb %}
         <article class="card-edito flex flex-col">
-            {% if a.image %}
+            {% if a_thumb %}
             <a href="{{ a.get_absolute_url }}" class="block no-underline -m-6 mb-0 overflow-hidden">
-                <img src="{{ a.image.url }}" alt="{{ a.titre }}"
+                <img src="{{ a_thumb.image.url }}" alt="{{ a_thumb.alt|default:a.titre }}"
                      class="w-full aspect-[4/3] object-cover transition-transform duration-500 hover:scale-105">
             </a>
             {% endif %}
-            <div class="{% if a.image %}mt-6{% endif %} flex flex-col flex-1">
+            <div class="{% if a_thumb %}mt-6{% endif %} flex flex-col flex-1">
                 <p class="font-sans text-xs uppercase tracking-widest text-terracotta-deep">
                     {{ a.date_evenement|date:"j F Y" }}
                     {% if a.ville %} · {{ a.ville }}{% endif %}
@@ -58,6 +59,7 @@
                 <a href="{{ a.get_absolute_url }}" class="btn-link mt-auto pt-5">En savoir plus →</a>
             </div>
         </article>
+        {% endwith %}
         {% endfor %}
     </div>
     {% else %}

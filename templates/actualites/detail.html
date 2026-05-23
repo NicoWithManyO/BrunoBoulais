@@ -49,13 +49,14 @@
         {% endif %}
     </header>
 
-    {# Image principale #}
-    {% if obj.image %}
-    <figure class="container-page mb-12">
-        <img src="{{ obj.image.url }}" alt="{{ obj.titre }}"
-             class="w-full max-h-[60vh] object-cover shadow-lg">
-    </figure>
+    {# Carrousel d'images (1 -> figure simple, N -> scroll-snap) #}
+    {% with obj.images.all as obj_images %}
+    {% if obj_images %}
+    <div class="container-page mb-12">
+      {% include "partials/carrousel.html" with images=obj_images alt_default=obj.titre img_class="w-full max-h-[60vh] object-cover shadow-lg" hint_label="Photos de la dédicace" only %}
+    </div>
     {% endif %}
+    {% endwith %}
 
     {# Contenu #}
     <div class="container-prose pb-20">

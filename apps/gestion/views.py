@@ -27,8 +27,12 @@ def gestion_required(view_func):
 
     return wrapped
 
-from apps.actualites.models import Actualite
+from django.core.exceptions import ValidationError
+from django.db.models import Max
+
+from apps.actualites.models import Actualite, ActualiteImage
 from apps.contact.models import Message
+from apps.core.images import strip_exif
 from apps.galerie.models import Media
 from apps.livre.models import Livre
 from apps.pages.models import Accueil, Page
@@ -39,9 +43,11 @@ from apps.temoignages.models import Temoignage
 from .forms import (
     AccueilForm,
     ActualiteForm,
+    ActualiteImageFormSet,
     LienAchatFormSet,
     LivreForm,
     MediaForm,
+    NouvellesImagesField,
     ParametresForm,
     PersonneForm,
     TemoignageForm,
@@ -92,13 +98,47 @@ def actualites_liste(request):
 @gestion_required
 def actualite_form(request, pk=None):
     instance = get_object_or_404(Actualite, pk=pk) if pk is not None else None
-    form = ActualiteForm(request.POST or None, request.FILES or None, instance=instance)
-    if request.method == "POST" and form.is_valid():
+    form = ActualiteForm(request.POST or None, instance=instance)
+    image_formset = (
+        ActualiteImageFormSet(request.POST or None, request.FILES or None, instance=instance)
+        if instance is not None else None
+    )
+
+    nouvelles_field = NouvellesImagesField(
+        required=False,
+        label="Ajouter des images",
+        help_text="Sélectionnez plusieurs fichiers d'un coup (Ctrl/Cmd+clic). Formats : JPG, PNG, WEBP, AVIF. Taille max 8 Mo par image.",
+    )
+    nouvelles_files = []
+    nouvelles_errors = []
+    if request.method == "POST":
+        raw = request.FILES.getlist("nouvelles_images")
+        try:
+            nouvelles_files = nouvelles_field.clean(raw)
+        except ValidationError as e:
+            nouvelles_errors = list(e)
+
+    formset_ok = image_formset is None or image_formset.is_valid()
+    if request.method == "POST" and form.is_valid() and formset_ok and not nouvelles_errors:
         obj = form.save()
+        if image_formset is not None:
+            image_formset.save()
+        if nouvelles_files:
+            max_pos = obj.images.aggregate(Max("position"))["position__max"] or 0
+            for i, f in enumerate(nouvelles_files, start=1):
+                ActualiteImage.objects.create(
+                    actualite=obj,
+                    image=strip_exif(f),
+                    position=max_pos + i,
+                    alt="",
+                )
         messages.success(request, f"Actualité « {obj.titre} » enregistrée.")
         return redirect("gestion:actualites_liste")
     return render(request, "gestion/actualites/form.html", {
         "form": form,
+        "image_formset": image_formset,
+        "nouvelles_field": nouvelles_field,
+        "nouvelles_errors": nouvelles_errors,
         "instance": instance,
     })
 
@@ -108,8 +148,7 @@ def actualite_supprimer(request, pk):
     obj = get_object_or_404(Actualite, pk=pk)
     if request.method == "POST":
         titre = obj.titre
-        if obj.image:
-            obj.image.delete(save=False)
+        # CASCADE delete on ActualiteImage triggers pre_delete -> file cleanup.
         obj.delete()
         messages.success(request, f"Actualité « {titre} » supprimée.")
         return redirect("gestion:actualites_liste")

@@ -1,11 +1,12 @@
 from django.db import models
+from django.db.models.signals import pre_delete
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 
 from apps.core.fields import RichTextField
-from apps.core.models import SeoMixin, TimestampedModel
-from apps.core.uploads import actualites_upload_to
+from apps.core.models import OrderedImage, SeoMixin, TimestampedModel, delete_image_file
+from apps.core.uploads import actualites_image_upload_to, actualites_upload_to
 from apps.core.validators import IMAGE_VALIDATORS
 
 
@@ -50,10 +51,6 @@ class Actualite(TimestampedModel, SeoMixin):
         help_text="Phrase d'accroche affichée dans les listes."
     )
     contenu = RichTextField("Contenu", blank=True)
-    image = models.ImageField(
-        "Image", upload_to=actualites_upload_to, blank=True, null=True,
-        validators=IMAGE_VALIDATORS,
-    )
 
     date_publication = models.DateTimeField("Date de publication", default=timezone.now)
 
@@ -78,3 +75,23 @@ class Actualite(TimestampedModel, SeoMixin):
         if not self.date_evenement:
             return False
         return self.date_evenement >= timezone.localdate()
+
+    @property
+    def image_principale(self):
+        """First image, used as the OG/share image and as a fallback in lists."""
+        return self.images.first()
+
+
+class ActualiteImage(OrderedImage):
+    """An image attached to an Actualite (1-N for carousel)."""
+
+    actualite = models.ForeignKey(
+        Actualite, related_name="images", on_delete=models.CASCADE,
+        verbose_name="Actualité",
+    )
+    image = models.ImageField(
+        "Image", upload_to=actualites_image_upload_to, validators=IMAGE_VALIDATORS,
+    )
+
+
+pre_delete.connect(delete_image_file, sender=ActualiteImage)

@@ -3,8 +3,9 @@ from django import forms
 from django.core.files.uploadedfile import UploadedFile
 from django.forms import inlineformset_factory
 
-from apps.actualites.models import Actualite
+from apps.actualites.models import Actualite, ActualiteImage
 from apps.core.images import strip_exif
+from apps.core.validators import IMAGE_VALIDATORS
 from apps.galerie.models import Media
 from apps.livre.models import LienAchat, Livre
 from apps.pages.models import Accueil
@@ -44,16 +45,14 @@ class _TimeInput(forms.TimeInput):
     input_type = "time"
 
 
-class ActualiteForm(StripExifMixin, forms.ModelForm):
-    exif_fields = ["image"]
-
+class ActualiteForm(forms.ModelForm):
     class Meta:
         model = Actualite
         fields = [
             "titre", "type", "statut",
             "date_evenement", "heure_debut", "heure_fin",
             "lieu", "ville",
-            "chapo", "contenu", "image",
+            "chapo", "contenu",
             "date_publication",
         ]
         widgets = {
@@ -63,6 +62,55 @@ class ActualiteForm(StripExifMixin, forms.ModelForm):
             "date_publication": forms.DateTimeInput(attrs={"type": "datetime-local"}),
             "chapo": forms.Textarea(attrs={"rows": 2}),
         }
+
+
+class _ActualiteImageForm(StripExifMixin, forms.ModelForm):
+    """Inline form for an existing ActualiteImage: thumbnail + alt + position + delete."""
+    exif_fields = ["image"]
+
+    class Meta:
+        model = ActualiteImage
+        fields = ["image", "alt", "position"]
+
+
+ActualiteImageFormSet = inlineformset_factory(
+    Actualite, ActualiteImage,
+    form=_ActualiteImageForm,
+    extra=0,
+    can_delete=True,
+)
+
+
+class _MultiFileInput(forms.ClearableFileInput):
+    """Widget allowing <input type="file" multiple>."""
+    allow_multiple_selected = True
+
+
+class NouvellesImagesField(forms.FileField):
+    """File field accepting multiple uploads at once, validated as images.
+
+    Used as a *separate* control next to ActualiteImageFormSet: the formset
+    manages the existing rows (reorder/delete/alt), this field batches new
+    uploads in one click. Each file is run through the same IMAGE_VALIDATORS
+    as the formset's ImageField and then strip_exif at view-level.
+    """
+    widget = _MultiFileInput
+    default_validators = IMAGE_VALIDATORS
+
+    def to_python(self, data):
+        if not data:
+            return []
+        if not isinstance(data, list):
+            data = [data]
+        return [super().to_python(d) for d in data]
+
+    def validate(self, data):
+        for f in data:
+            super().validate(f)
+
+    def run_validators(self, data):
+        for f in data:
+            super().run_validators(f)
 
 
 class TemoignageForm(forms.ModelForm):

@@ -1,0 +1,38 @@
+{% comment %}
+Carrousel d'images réutilisable.
+Arguments attendus (passés via include with ...) :
+  - images       : iterable d'objets OrderedImage (avec .image.url et .alt)
+  - alt_default  : alt utilisé si l'image n'en a pas
+  - img_class    : classes CSS appliquées à chaque img
+  - hint_label   : libellé optionnel pour la zone à défiler (sinon défaut)
+
+Si 1 image  -> figure simple, pas de scroll.
+Si N > 1    -> track scroll-snap horizontal + hint texte.
+{% endcomment %}
+{% if images %}
+  {% with images|length as n_images %}
+  {% if n_images == 1 %}
+    {% for img in images %}
+    <figure class="carrousel carrousel--single">
+      <img src="{{ img.image.url }}" alt="{{ img.alt|default:alt_default }}" class="{{ img_class }}">
+    </figure>
+    {% endfor %}
+  {% else %}
+    <figure class="carrousel"
+            role="region"
+            aria-roledescription="carrousel"
+            aria-label="{{ alt_default }}">
+      <ol class="carrousel__track" tabindex="0">
+        {% for img in images %}
+        <li class="carrousel__slide" aria-roledescription="diapositive" aria-label="Image {{ forloop.counter }} sur {{ n_images }}">
+          <img src="{{ img.image.url }}" alt="{{ img.alt|default:alt_default }}" class="{{ img_class }}">
+        </li>
+        {% endfor %}
+      </ol>
+      <figcaption class="carrousel__hint" aria-hidden="true">
+        {{ hint_label|default:"Faites défiler" }} · {{ n_images }} photos
+      </figcaption>
+    </figure>
+  {% endif %}
+  {% endwith %}
+{% endif %}

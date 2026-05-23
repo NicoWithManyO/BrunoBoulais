@@ -33,3 +33,41 @@ class SeoMixin(models.Model):
 
     class Meta:
         abstract = True
+
+
+class OrderedImage(models.Model):
+    """Abstract base for 1-N "gallery / carousel" image attached to a parent.
+
+    Concrete subclasses must declare:
+      - a `parent` ForeignKey with `related_name='images'`
+      - override `image` with a proper `upload_to=...` callable
+
+    Pair with `delete_image_file` via `pre_delete.connect(..., sender=Cls)` in
+    the subclass module to clean up files on cascade delete (handled per-class
+    because Django bulk deletes bypass Model.delete()).
+    """
+
+    position = models.PositiveSmallIntegerField(
+        "Ordre", default=0,
+        help_text="Plus le nombre est petit, plus l'image apparaît tôt."
+    )
+    alt = models.CharField(
+        "Texte alternatif", max_length=180, blank=True,
+        help_text="Décrit l'image pour les lecteurs d'écran. Laisser vide reprend le titre du parent."
+    )
+    image = models.ImageField(
+        "Image", upload_to="overridden/", validators=IMAGE_VALIDATORS,
+    )
+
+    class Meta:
+        abstract = True
+        ordering = ["position", "pk"]
+
+    def __str__(self):
+        return f"Image #{self.pk} (pos {self.position})"
+
+
+def delete_image_file(sender, instance, **kwargs):
+    """pre_delete handler that removes the underlying file from storage."""
+    if getattr(instance, "image", None):
+        instance.image.delete(save=False)

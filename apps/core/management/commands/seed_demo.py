@@ -2,17 +2,50 @@
 
 Idempotent: safe to re-run, updates existing rows instead of duplicating them.
 """
+import io
 from datetime import time, timedelta
 
+from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from django.utils import timezone
+from PIL import Image, ImageDraw, ImageFont
 
-from apps.actualites.models import Actualite
+from apps.actualites.models import Actualite, ActualiteImage
 from apps.livre.models import LienAchat, Livre
 from apps.pages.models import Accueil
 from apps.parametres.models import Parametres
 from apps.personnes.models import Personne
 from apps.temoignages.models import Temoignage
+
+
+# Earth-toned palette matching the site's --color-terracotta / --color-brown / --color-sand.
+_PLACEHOLDER_PALETTE = [
+    ((196, 110, 70), (90, 58, 34)),     # terracotta on brown
+    ((229, 213, 184), (90, 58, 34)),    # sand on brown
+    ((62, 86, 112), (246, 239, 227)),   # slate on cream
+    ((142, 63, 31), (246, 239, 227)),   # terracotta-deep on cream
+]
+
+
+def _placeholder_jpeg(label, idx, size=(1200, 800)):
+    """Generate a simple JPEG placeholder with a label, returned as ContentFile."""
+    bg, fg = _PLACEHOLDER_PALETTE[idx % len(_PLACEHOLDER_PALETTE)]
+    img = Image.new("RGB", size, bg)
+    draw = ImageDraw.Draw(img)
+    try:
+        font = ImageFont.truetype("DejaVuSerif.ttf", 56)
+    except (OSError, IOError):
+        font = ImageFont.load_default()
+    text = f"{label}\n#{idx + 1}"
+    bbox = draw.multiline_textbbox((0, 0), text, font=font, align="center")
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    draw.multiline_text(
+        ((size[0] - tw) / 2, (size[1] - th) / 2),
+        text, fill=fg, font=font, align="center",
+    )
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=82, optimize=True)
+    return ContentFile(buf.getvalue())
 
 
 class Command(BaseCommand):
@@ -216,7 +249,7 @@ class Command(BaseCommand):
             },
         ]
         for data in items:
-            Actualite.objects.update_or_create(
+            actu, _ = Actualite.objects.update_or_create(
                 titre=data["titre"],
                 defaults={
                     "statut": Actualite.STATUT_PUBLIE,
@@ -230,6 +263,19 @@ class Command(BaseCommand):
                     "contenu": data["contenu"],
                 },
             )
+            # Seed a couple of placeholder images so the public carrousel has
+            # something to show. Skip if the actu already has its own images
+            # (re-running seed_demo should not nuke a curated upload).
+            if not actu.images.exists():
+                n = 2 if data["type"] == Actualite.TYPE_DEDICACE else 1
+                for i in range(n):
+                    img = ActualiteImage(actualite=actu, position=i, alt=data["titre"])
+                    img.image.save(
+                        f"seed-{actu.pk}-{i}.jpg",
+                        _placeholder_jpeg(data["titre"], i),
+                        save=False,
+                    )
+                    img.save()
 
     # --- Témoignages ---------------------------------------------------
 
