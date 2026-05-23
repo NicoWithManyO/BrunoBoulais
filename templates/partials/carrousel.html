@@ -48,7 +48,7 @@ accessible de chaque <img>.
     {% endif %}
   </div>
   <figcaption class="carrousel__caption">
-    {% for img in images %}<span class="carrousel__caption-item{% if forloop.first %} is-active{% endif %}" data-idx="{{ forloop.counter0 }}">{% if img.legende %}{{ img.legende|richtext:"inline" }}{% endif %}</span>{% endfor %}
+    {% for img in images %}<span class="carrousel__caption-item{% if forloop.first %} is-active{% endif %}" data-idx="{{ forloop.counter0 }}">{{ img.legende|richtext:"inline" }}</span>{% endfor %}
   </figcaption>
 </figure>
 {% endwith %}

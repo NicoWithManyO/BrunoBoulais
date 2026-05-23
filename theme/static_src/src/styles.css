@@ -529,8 +529,8 @@
     transition: opacity 700ms ease;
   }
   .carrousel__caption-item.is-active { opacity: 1; }
-  .carrousel__caption-item:empty { visibility: hidden; }
-  /* :has() hides the whole figcaption if every legende is empty. */
+  /* Hide the whole figcaption when every legende is empty. Inactive items
+     are already invisible via opacity:0, so no per-item :empty rule needed. */
   .carrousel__caption:not(:has(.carrousel__caption-item:not(:empty))) {
     display: none;
   }

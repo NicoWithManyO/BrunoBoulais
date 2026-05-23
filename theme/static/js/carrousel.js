@@ -31,18 +31,12 @@
     function show(next) {
       next = ((next % slides.length) + slides.length) % slides.length;
       if (next === current) return;
-      slides[current].classList.remove("is-active");
-      slides[next].classList.add("is-active");
-      if (dots[current]) {
-        dots[current].classList.remove("is-active");
-        dots[current].setAttribute("aria-pressed", "false");
-      }
-      if (dots[next]) {
-        dots[next].classList.add("is-active");
-        dots[next].setAttribute("aria-pressed", "true");
-      }
-      if (captions[current]) captions[current].classList.remove("is-active");
-      if (captions[next]) captions[next].classList.add("is-active");
+      [slides, dots, captions].forEach((group) => {
+        group[current]?.classList.remove("is-active");
+        group[next]?.classList.add("is-active");
+      });
+      dots[current]?.setAttribute("aria-pressed", "false");
+      dots[next]?.setAttribute("aria-pressed", "true");
       current = next;
     }
 
