@@ -1,0 +1,25 @@
+{% extends "gestion/_layout.html" %}
+
+{% block title %}{% if instance %}Modifier{% else %}Nouveau{% endif %} témoignage · Gestion{% endblock %}
+{% block crumb %}Témoignages{% endblock %}
+{% block heading %}{% if instance %}Modifier le témoignage de {{ instance.auteur }}{% else %}Nouveau témoignage{% endif %}{% endblock %}
+
+{% block header_actions %}
+    <a href="{% url 'gestion:temoignages_liste' %}" class="btn-sm btn-ghost">← Liste</a>
+{% endblock %}
+
+{% block content %}
+<form method="post" class="gform max-w-2xl">
+    {% csrf_token %}
+    <div class="panel">
+        {% include "gestion/_form.html" %}
+    </div>
+    <div class="mt-6 flex items-center gap-3">
+        <button type="submit" class="btn btn-primary">{% if instance %}Enregistrer{% else %}Créer{% endif %}</button>
+        <a href="{% url 'gestion:temoignages_liste' %}" class="btn-sm btn-ghost">Annuler</a>
+        {% if instance %}
+        <a href="{% url 'gestion:temoignage_supprimer' instance.pk %}" class="btn-sm btn-danger ml-auto">Supprimer</a>
+        {% endif %}
+    </div>
+</form>
+{% endblock %}

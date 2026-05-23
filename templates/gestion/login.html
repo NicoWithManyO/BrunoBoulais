@@ -1,13 +1,51 @@
-{% extends "base.html" %}
-{% block title %}Connexion · Gestion{% endblock %}
-{% block content %}
-<section class="container-prose py-24">
-    <p class="eyebrow">Espace privé</p>
-    <h1 class="mt-4">Connexion</h1>
-    <form method="post" class="mt-10 space-y-5 max-w-md">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button class="btn btn-primary" type="submit">Se connecter</button>
-    </form>
+{% load static tailwind_tags %}<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Connexion · Gestion · Bruno Boulais</title>
+    <meta name="robots" content="noindex,nofollow">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..700,30..100&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    {% tailwind_css %}
+</head>
+<body class="min-h-screen flex items-center justify-center bg-cream font-sans text-ink">
+
+<section class="w-full max-w-md px-8 py-12">
+    <a href="/" class="block text-center no-underline mb-10">
+        <span class="block font-display text-2xl text-brown">Bruno Boulais</span>
+        <span class="block text-[10px] tracking-[0.22em] uppercase text-slate mt-1.5">Espace gestion</span>
+    </a>
+
+    <div class="panel">
+        <h1 class="font-display text-xl text-brown mb-1">Connexion</h1>
+        <p class="text-sm text-slate-soft mb-6">Accédez à votre espace de gestion.</p>
+
+        <form method="post" class="gform">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="flash flash-error mb-4">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <div>
+                <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+                {{ form.username }}
+                {{ form.username.errors }}
+            </div>
+            <div>
+                <label for="{{ form.password.id_for_label }}">Mot de passe</label>
+                {{ form.password }}
+                {{ form.password.errors }}
+            </div>
+            <button type="submit" class="btn btn-primary mt-6 w-full justify-center">Se connecter</button>
+            <input type="hidden" name="next" value="{{ next }}">
+        </form>
+    </div>
+
+    <p class="text-center text-xs text-slate-soft mt-6">
+        <a href="/" class="hover:text-terracotta">← Retour au site public</a>
+    </p>
 </section>
-{% endblock %}
+
+</body>
+</html>

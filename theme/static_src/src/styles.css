@@ -381,6 +381,218 @@
     break-inside: avoid;
     margin-bottom: 1.25rem;
   }
+
+  /* =====================================================================
+     GESTION — interface admin pour Bruno
+     ===================================================================== */
+
+  /* --- Sidebar nav --- */
+  .gnav {
+    @apply flex items-center gap-3 px-3 py-2 font-sans text-sm rounded-sm;
+    color: var(--color-ink);
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+  }
+  .gnav:hover {
+    background: rgba(184, 84, 43, 0.08);
+    color: var(--color-brown);
+  }
+  .gnav.is-active {
+    background: var(--color-sand);
+    color: var(--color-brown);
+    font-weight: 500;
+  }
+  .gnav-ico {
+    display: inline-flex;
+    width: 1.25rem;
+    justify-content: center;
+    color: var(--color-terracotta);
+    font-size: 0.95rem;
+  }
+  .gnav-foot {
+    @apply block px-2 py-1.5 text-xs;
+    color: var(--color-slate-soft);
+    text-decoration: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  .gnav-foot:hover {
+    color: var(--color-terracotta-deep);
+  }
+
+  /* --- Cards / panneaux --- */
+  .panel {
+    background: #fffdf7;
+    border: 1px solid var(--color-mist-light);
+    border-radius: 2px;
+    padding: 1.5rem;
+  }
+  .panel-flat {
+    background: rgba(255, 253, 247, 0.6);
+    border: 1px solid var(--color-mist-light);
+    border-radius: 2px;
+  }
+
+  /* --- Stats KPI --- */
+  .kpi {
+    @apply flex flex-col gap-1 p-5;
+    background: #fffdf7;
+    border: 1px solid var(--color-mist-light);
+    border-radius: 2px;
+  }
+  .kpi-label {
+    @apply text-[10px] uppercase tracking-widest;
+    color: var(--color-slate);
+  }
+  .kpi-value {
+    font-family: var(--font-display);
+    font-size: var(--text-4xl);
+    color: var(--color-brown);
+    line-height: 1;
+  }
+  .kpi-hint {
+    @apply text-xs;
+    color: var(--color-slate-soft);
+  }
+
+  /* --- Tables admin --- */
+  .table-admin {
+    @apply w-full text-sm font-sans;
+    border-collapse: collapse;
+  }
+  .table-admin th {
+    @apply text-left px-4 py-3 text-[10px] uppercase tracking-widest;
+    color: var(--color-slate);
+    border-bottom: 1px solid var(--color-mist);
+    background: rgba(232, 220, 196, 0.35);
+    font-weight: 600;
+  }
+  .table-admin td {
+    @apply px-4 py-3 align-middle;
+    border-bottom: 1px solid var(--color-mist-light);
+    color: var(--color-ink);
+  }
+  .table-admin tr:hover td {
+    background: rgba(184, 84, 43, 0.04);
+  }
+  .table-admin tr.is-unread td {
+    background: rgba(184, 84, 43, 0.06);
+    font-weight: 500;
+  }
+
+  /* --- Badges statut --- */
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 text-[10px] font-sans uppercase tracking-wider rounded-sm;
+  }
+  .badge-publie    { background: rgba(62, 86, 112, 0.14);  color: var(--color-slate); }
+  .badge-brouillon { background: rgba(184, 84, 43, 0.14);  color: var(--color-terracotta-deep); }
+  .badge-refuse    { background: rgba(120, 120, 120, 0.18); color: #555; }
+  .badge-avenir    { background: rgba(214, 122, 62, 0.18); color: var(--color-terracotta-deep); }
+  .badge-passe     { background: rgba(120, 120, 120, 0.15); color: #555; }
+
+  /* --- Flash messages --- */
+  .flash {
+    @apply px-4 py-3 font-sans text-sm rounded-sm;
+    border: 1px solid var(--color-mist);
+    background: #fffdf7;
+  }
+  .flash-success { border-color: rgba(62, 86, 112, 0.4); background: rgba(62, 86, 112, 0.08); color: var(--color-slate); }
+  .flash-error,
+  .flash-danger  { border-color: rgba(184, 84, 43, 0.5); background: rgba(184, 84, 43, 0.1); color: var(--color-terracotta-deep); }
+  .flash-warning { border-color: rgba(214, 122, 62, 0.5); background: rgba(214, 122, 62, 0.1); color: var(--color-brown); }
+
+  /* --- Boutons compacts admin --- */
+  .btn-sm {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 font-sans text-xs;
+    transition: all 0.15s var(--ease-soft);
+    text-decoration: none;
+    border: 1px solid transparent;
+    border-radius: 2px;
+  }
+  .btn-sm.btn-primary {
+    background: var(--color-brown);
+    color: var(--color-cream);
+    border-color: var(--color-brown);
+  }
+  .btn-sm.btn-primary:hover {
+    background: var(--color-terracotta-deep);
+    border-color: var(--color-terracotta-deep);
+  }
+  .btn-sm.btn-ghost {
+    background: transparent;
+    color: var(--color-brown);
+    border-color: var(--color-mist);
+  }
+  .btn-sm.btn-ghost:hover {
+    background: var(--color-sand);
+  }
+  .btn-sm.btn-danger {
+    background: transparent;
+    color: var(--color-terracotta-deep);
+    border-color: rgba(184, 84, 43, 0.4);
+  }
+  .btn-sm.btn-danger:hover {
+    background: rgba(184, 84, 43, 0.1);
+  }
+
+  /* --- Form fields (overrides Django default) --- */
+  .gform label {
+    @apply block font-sans text-xs uppercase tracking-widest mb-1.5 mt-4;
+    color: var(--color-slate);
+  }
+  .gform input[type="text"],
+  .gform input[type="email"],
+  .gform input[type="url"],
+  .gform input[type="number"],
+  .gform input[type="date"],
+  .gform input[type="time"],
+  .gform input[type="password"],
+  .gform input[type="datetime-local"],
+  .gform select,
+  .gform textarea {
+    @apply block w-full px-3 py-2 font-sans text-sm;
+    background: #fffdf7;
+    border: 1px solid var(--color-mist);
+    color: var(--color-ink);
+    border-radius: 2px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .gform textarea {
+    min-height: 8rem;
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    line-height: 1.6;
+  }
+  .gform input:focus,
+  .gform select:focus,
+  .gform textarea:focus {
+    outline: none;
+    border-color: var(--color-terracotta);
+    background: #fff;
+  }
+  .gform .helptext {
+    @apply block mt-1 text-xs font-sans;
+    color: var(--color-slate-soft);
+  }
+  .gform .errorlist {
+    @apply mt-1 mb-1 font-sans text-xs;
+    color: var(--color-terracotta-deep);
+    list-style: none;
+    padding: 0;
+  }
+  .gform input[type="checkbox"] {
+    @apply mr-2 align-middle;
+    width: auto;
+    accent-color: var(--color-terracotta);
+  }
+  .gform .form-check {
+    @apply flex items-center gap-2 mt-3;
+  }
+  .gform .form-check label {
+    @apply mt-0 mb-0 normal-case tracking-normal text-sm;
+    color: var(--color-ink);
+  }
 }
 
 /* =========================================================================

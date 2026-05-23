@@ -1,0 +1,122 @@
+{% load static tailwind_tags %}<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Gestion · Bruno Boulais{% endblock %}</title>
+    <meta name="robots" content="noindex,nofollow">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..700,30..100&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><text y='52' font-size='52' font-family='Georgia,serif' fill='%23B8542B'>B</text></svg>">
+
+    {% tailwind_css %}
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen bg-cream font-sans text-ink antialiased">
+
+<div class="flex min-h-screen">
+
+    {# ---- Sidebar -------------------------------------------------------- #}
+    <aside class="hidden md:flex md:flex-col w-64 shrink-0 border-r border-mist/40 bg-cream-dark/60">
+        <div class="px-6 py-7 border-b border-mist/40">
+            <a href="{% url 'gestion:dashboard' %}" class="block no-underline">
+                <span class="block font-display text-xl text-brown leading-none">Bruno Boulais</span>
+                <span class="block text-[10px] tracking-[0.22em] uppercase text-slate mt-1.5">Espace gestion</span>
+            </a>
+        </div>
+
+        <nav class="flex-1 py-4 px-3 space-y-0.5 text-sm">
+            {% with sec=request.resolver_match.url_name %}
+            <a href="{% url 'gestion:dashboard' %}"
+               class="gnav {% if sec == 'dashboard' %}is-active{% endif %}">
+                <span class="gnav-ico">◐</span> Tableau de bord
+            </a>
+
+            <div class="pt-4 pb-1 px-3 text-[10px] uppercase tracking-widest text-slate-soft">Contenus</div>
+            <a href="{% url 'gestion:pages_liste' %}"
+               class="gnav {% if 'page' in sec %}is-active{% endif %}">
+                <span class="gnav-ico">▤</span> Pages éditoriales
+            </a>
+            <a href="{% url 'gestion:livre' %}"
+               class="gnav {% if sec == 'livre' %}is-active{% endif %}">
+                <span class="gnav-ico">▢</span> Le livre
+            </a>
+            <a href="{% url 'gestion:actualites_liste' %}"
+               class="gnav {% if 'actualite' in sec %}is-active{% endif %}">
+                <span class="gnav-ico">◉</span> Actualités & dédicaces
+            </a>
+            <a href="{% url 'gestion:temoignages_liste' %}"
+               class="gnav {% if 'temoignage' in sec %}is-active{% endif %}">
+                <span class="gnav-ico">❝</span> Témoignages
+            </a>
+            <a href="{% url 'gestion:galerie_liste' %}"
+               class="gnav {% if 'media' in sec or sec == 'galerie_liste' %}is-active{% endif %}">
+                <span class="gnav-ico">▦</span> Galerie
+            </a>
+
+            <div class="pt-4 pb-1 px-3 text-[10px] uppercase tracking-widest text-slate-soft">Boîte de réception</div>
+            <a href="{% url 'gestion:messages_liste' %}"
+               class="gnav {% if 'message' in sec %}is-active{% endif %}">
+                <span class="gnav-ico">✉</span> Messages
+                {% if unread_messages_count %}
+                <span class="ml-auto inline-flex items-center justify-center min-w-[1.4rem] h-5 px-1.5 text-[10px] bg-terracotta text-cream rounded-full">{{ unread_messages_count }}</span>
+                {% endif %}
+            </a>
+
+            <div class="pt-4 pb-1 px-3 text-[10px] uppercase tracking-widest text-slate-soft">Site</div>
+            <a href="{% url 'gestion:parametres' %}"
+               class="gnav {% if sec == 'parametres' %}is-active{% endif %}">
+                <span class="gnav-ico">⚙</span> Paramètres
+            </a>
+            {% endwith %}
+        </nav>
+
+        <div class="border-t border-mist/40 px-4 py-4 text-xs">
+            <div class="px-2 py-1 text-slate-soft truncate">{{ request.user.email|default:request.user.username }}</div>
+            <a href="{% url 'pages:home' %}" class="gnav-foot">↗ Voir le site</a>
+            <form method="post" action="{% url 'gestion:logout' %}" class="mt-1">
+                {% csrf_token %}
+                <button type="submit" class="gnav-foot w-full text-left">⏻ Déconnexion</button>
+            </form>
+        </div>
+    </aside>
+
+    {# ---- Main content --------------------------------------------------- #}
+    <div class="flex-1 flex flex-col min-w-0">
+
+        <header class="border-b border-mist/40 bg-cream/80 backdrop-blur sticky top-0 z-10">
+            <div class="px-6 lg:px-10 py-4 flex items-center justify-between gap-6">
+                <div>
+                    <p class="text-[10px] uppercase tracking-[0.22em] text-slate-soft">{% block crumb %}{% endblock %}</p>
+                    <h1 class="font-display text-2xl text-brown leading-tight mt-0.5">{% block heading %}{% endblock %}</h1>
+                </div>
+                <div class="flex items-center gap-3">
+                    {% block header_actions %}{% endblock %}
+                </div>
+            </div>
+        </header>
+
+        {% if messages %}
+        <div class="px-6 lg:px-10 pt-4 space-y-2">
+            {% for message in messages %}
+            <div class="flash flash-{{ message.tags|default:'info' }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <main class="flex-1 px-6 lg:px-10 py-8">
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="border-t border-mist/40 px-6 lg:px-10 py-4 text-xs text-slate-soft">
+            Espace de gestion privé · {{ BOOK_TITLE }}
+        </footer>
+    </div>
+</div>
+
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

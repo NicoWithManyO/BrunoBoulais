@@ -1,0 +1,56 @@
+{% extends "gestion/_layout.html" %}
+
+{% block title %}Galerie · Gestion{% endblock %}
+{% block crumb %}Contenus{% endblock %}
+{% block heading %}Galerie{% endblock %}
+
+{% block header_actions %}
+    <a href="{% url 'gestion:media_ajouter' %}" class="btn-sm btn-primary">+ Ajouter un média</a>
+{% endblock %}
+
+{% block content %}
+
+<form method="get" class="flex items-end gap-3 mb-6 gform">
+    <div>
+        <label class="!mt-0">Catégorie</label>
+        <select name="categorie">
+            <option value="">Toutes</option>
+            {% for val, label in categorie_choices %}
+            <option value="{{ val }}" {% if categorie_filter == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn-sm btn-ghost mb-[1px]">Filtrer</button>
+    {% if categorie_filter %}
+    <a href="{% url 'gestion:galerie_liste' %}" class="text-xs text-slate-soft mb-[1px]">Réinitialiser</a>
+    {% endif %}
+</form>
+
+{% if medias %}
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+    {% for m in medias %}
+    <a href="{% url 'gestion:media_modifier' m.pk %}"
+       class="block panel-flat no-underline overflow-hidden hover:border-terracotta group">
+        <div class="aspect-square bg-sand/30 flex items-center justify-center overflow-hidden">
+            {% if m.type == 'image' and m.fichier %}
+                <img src="{{ m.fichier.url }}" alt="{{ m.alt }}" class="w-full h-full object-cover">
+            {% else %}
+                <span class="font-display text-3xl text-mist">▶</span>
+            {% endif %}
+        </div>
+        <div class="px-3 py-2">
+            <div class="text-xs font-medium text-ink truncate">{{ m.legende|default:m.fichier.name }}</div>
+            <div class="flex items-center gap-1 mt-1">
+                <span class="badge badge-publie text-[9px]">{{ m.get_categorie_display }}</span>
+                {% if not m.publie %}<span class="badge badge-brouillon text-[9px]">Brouillon</span>{% endif %}
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="panel text-center text-slate-soft italic py-12">
+    Aucun média. <a href="{% url 'gestion:media_ajouter' %}" class="text-terracotta-deep">En ajouter</a>.
+</div>
+{% endif %}
+{% endblock %}

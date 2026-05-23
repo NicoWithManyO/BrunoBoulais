@@ -1,0 +1,40 @@
+{% extends "gestion/_layout.html" %}
+
+{% block title %}Message de {{ msg.nom }} · Gestion{% endblock %}
+{% block crumb %}Messages{% endblock %}
+{% block heading %}{{ msg.get_sujet_display }}{% endblock %}
+
+{% block header_actions %}
+    <a href="{% url 'gestion:messages_liste' %}" class="btn-sm btn-ghost">← Boîte de réception</a>
+{% endblock %}
+
+{% block content %}
+<div class="panel max-w-3xl">
+    <div class="flex items-start justify-between gap-6 pb-4 border-b border-mist-light">
+        <div>
+            <div class="font-medium text-brown text-lg">{{ msg.nom }}</div>
+            <a href="mailto:{{ msg.email }}" class="text-sm text-terracotta-deep">{{ msg.email }}</a>
+            {% if msg.telephone %}<div class="text-sm text-slate-soft">{{ msg.telephone }}</div>{% endif %}
+        </div>
+        <time class="text-xs text-slate-soft">{{ msg.created_at|date:"l j F Y · H:i" }}</time>
+    </div>
+
+    <div class="py-6 font-serif text-base whitespace-pre-line leading-relaxed">{{ msg.contenu }}</div>
+
+    <form method="post" class="flex flex-wrap items-center gap-2 pt-4 border-t border-mist-light">
+        {% csrf_token %}
+        <a href="mailto:{{ msg.email }}?subject=Re:%20{{ msg.get_sujet_display|urlencode }}" class="btn-sm btn-primary">↳ Répondre par mail</a>
+
+        <button name="action" value="marquer_non_lu" class="btn-sm btn-ghost">Marquer non lu</button>
+
+        {% if msg.archive %}
+        <button name="action" value="desarchiver" class="btn-sm btn-ghost">Désarchiver</button>
+        {% else %}
+        <button name="action" value="archiver" class="btn-sm btn-ghost">Archiver</button>
+        {% endif %}
+
+        <button name="action" value="supprimer" class="btn-sm btn-danger ml-auto"
+                onclick="return confirm('Supprimer définitivement ce message ?');">Supprimer</button>
+    </form>
+</div>
+{% endblock %}

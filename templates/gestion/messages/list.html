@@ -1,0 +1,53 @@
+{% extends "gestion/_layout.html" %}
+
+{% block title %}Messages · Gestion{% endblock %}
+{% block crumb %}Boîte de réception{% endblock %}
+{% block heading %}Messages{% endblock %}
+
+{% block content %}
+
+<nav class="flex items-center gap-1 mb-6 text-sm">
+    {% url 'gestion:messages_liste' as base %}
+    <a href="{{ base }}?filtre=inbox"
+       class="px-3 py-1.5 {% if filtre == 'inbox' %}bg-sand text-brown{% else %}text-slate hover:text-brown{% endif %} rounded-sm">Boîte de réception</a>
+    <a href="{{ base }}?filtre=non-lus"
+       class="px-3 py-1.5 {% if filtre == 'non-lus' %}bg-sand text-brown{% else %}text-slate hover:text-brown{% endif %} rounded-sm">Non lus</a>
+    <a href="{{ base }}?filtre=archives"
+       class="px-3 py-1.5 {% if filtre == 'archives' %}bg-sand text-brown{% else %}text-slate hover:text-brown{% endif %} rounded-sm">Archives</a>
+</nav>
+
+<div class="panel-flat">
+<table class="table-admin">
+    <thead>
+        <tr>
+            <th>Expéditeur</th>
+            <th>Sujet</th>
+            <th>Extrait</th>
+            <th>Reçu</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for m in messages_list %}
+        <tr class="{% if not m.lu %}is-unread{% endif %}">
+            <td>
+                <div class="flex items-center gap-2">
+                    {% if not m.lu %}<span class="w-1.5 h-1.5 rounded-full bg-terracotta inline-block"></span>{% endif %}
+                    <a href="{% url 'gestion:message_detail' m.pk %}" class="font-medium text-brown no-underline hover:text-terracotta">{{ m.nom }}</a>
+                </div>
+                <p class="text-xs text-slate-soft">{{ m.email }}</p>
+            </td>
+            <td class="text-xs">{{ m.get_sujet_display }}</td>
+            <td class="text-xs text-slate-soft max-w-md truncate">{{ m.contenu|truncatechars:100 }}</td>
+            <td class="text-xs whitespace-nowrap">{{ m.created_at|date:"d M Y H:i" }}</td>
+            <td class="text-right">
+                <a href="{% url 'gestion:message_detail' m.pk %}" class="btn-sm btn-ghost">Lire</a>
+            </td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="5" class="text-center text-slate-soft italic py-12">Aucun message.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

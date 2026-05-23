@@ -1,0 +1,77 @@
+{% extends "gestion/_layout.html" %}
+
+{% block title %}Actualités · Gestion{% endblock %}
+{% block crumb %}Contenus{% endblock %}
+{% block heading %}Actualités & dédicaces{% endblock %}
+
+{% block header_actions %}
+    <a href="{% url 'gestion:actualite_ajouter' %}" class="btn-sm btn-primary">+ Nouvelle actualité</a>
+{% endblock %}
+
+{% block content %}
+
+<form method="get" class="flex flex-wrap items-end gap-3 mb-6 gform">
+    <div>
+        <label class="!mt-0">Type</label>
+        <select name="type">
+            <option value="">Tous</option>
+            {% for val, label in type_choices %}
+            <option value="{{ val }}" {% if type_filter == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label class="!mt-0">Statut</label>
+        <select name="statut">
+            <option value="">Tous</option>
+            {% for val, label in statut_choices %}
+            <option value="{{ val }}" {% if statut_filter == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn-sm btn-ghost mb-[1px]">Filtrer</button>
+    {% if type_filter or statut_filter %}
+    <a href="{% url 'gestion:actualites_liste' %}" class="text-xs text-slate-soft mb-[1px]">Réinitialiser</a>
+    {% endif %}
+</form>
+
+<div class="panel-flat">
+<table class="table-admin">
+    <thead>
+        <tr>
+            <th>Titre</th>
+            <th>Type</th>
+            <th>Date</th>
+            <th>Lieu</th>
+            <th>Statut</th>
+            <th class="text-right">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for a in actualites %}
+        <tr>
+            <td>
+                <a href="{% url 'gestion:actualite_modifier' a.pk %}" class="font-medium text-brown no-underline hover:text-terracotta">{{ a.titre }}</a>
+                {% if a.chapo %}<p class="text-xs text-slate-soft truncate max-w-md mt-0.5">{{ a.chapo }}</p>{% endif %}
+            </td>
+            <td class="text-xs">{{ a.get_type_display }}</td>
+            <td class="text-xs">
+                {% if a.date_evenement %}{{ a.date_evenement|date:"d/m/Y" }}{% else %}—{% endif %}
+            </td>
+            <td class="text-xs">{{ a.lieu|default:"—" }}{% if a.ville %}, {{ a.ville }}{% endif %}</td>
+            <td>
+                <span class="badge badge-{{ a.statut }}">{{ a.get_statut_display }}</span>
+                {% if a.est_a_venir %}<span class="badge badge-avenir ml-1">À venir</span>{% endif %}
+            </td>
+            <td class="text-right whitespace-nowrap">
+                <a href="{% url 'gestion:actualite_modifier' a.pk %}" class="btn-sm btn-ghost">Éditer</a>
+                <a href="{% url 'gestion:actualite_supprimer' a.pk %}" class="btn-sm btn-danger">Supprimer</a>
+            </td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="6" class="text-center text-slate-soft italic py-12">Aucune actualité.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "gestion/_layout.html" %}
+
+{% block title %}Témoignages · Gestion{% endblock %}
+{% block crumb %}Contenus{% endblock %}
+{% block heading %}Témoignages{% endblock %}
+
+{% block header_actions %}
+    <a href="{% url 'gestion:temoignage_ajouter' %}" class="btn-sm btn-primary">+ Nouveau témoignage</a>
+{% endblock %}
+
+{% block content %}
+
+<form method="get" class="flex items-end gap-3 mb-6 gform">
+    <div>
+        <label class="!mt-0">Statut</label>
+        <select name="statut">
+            <option value="">Tous</option>
+            {% for val, label in statut_choices %}
+            <option value="{{ val }}" {% if statut_filter == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn-sm btn-ghost mb-[1px]">Filtrer</button>
+    {% if statut_filter %}
+    <a href="{% url 'gestion:temoignages_liste' %}" class="text-xs text-slate-soft mb-[1px]">Réinitialiser</a>
+    {% endif %}
+</form>
+
+<div class="panel-flat">
+<table class="table-admin">
+    <thead>
+        <tr>
+            <th>Auteur</th>
+            <th>Extrait</th>
+            <th>Source</th>
+            <th>Statut</th>
+            <th>Position</th>
+            <th class="text-right">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for t in temoignages %}
+        <tr>
+            <td>
+                <a href="{% url 'gestion:temoignage_modifier' t.pk %}" class="font-medium text-brown no-underline hover:text-terracotta">{{ t.auteur }}</a>
+                {% if t.mis_en_avant %}<span class="badge badge-avenir ml-1">★ Accueil</span>{% endif %}
+            </td>
+            <td class="text-xs text-slate-soft max-w-md">{{ t.texte|truncatechars:120 }}</td>
+            <td class="text-xs">{{ t.source|default:"—" }}</td>
+            <td><span class="badge badge-{{ t.statut }}">{{ t.get_statut_display }}</span></td>
+            <td class="text-xs">{{ t.position }}</td>
+            <td class="text-right whitespace-nowrap">
+                <a href="{% url 'gestion:temoignage_modifier' t.pk %}" class="btn-sm btn-ghost">Éditer</a>
+                <a href="{% url 'gestion:temoignage_supprimer' t.pk %}" class="btn-sm btn-danger">Supprimer</a>
+            </td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="6" class="text-center text-slate-soft italic py-12">Aucun témoignage.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

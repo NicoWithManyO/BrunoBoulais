@@ -1,0 +1,106 @@
+{% extends "gestion/_layout.html" %}
+
+{% block title %}Tableau de bord · Gestion{% endblock %}
+{% block crumb %}Espace gestion{% endblock %}
+{% block heading %}Bonjour{% if request.user.first_name %}, {{ request.user.first_name }}{% endif %}.{% endblock %}
+
+{% block header_actions %}
+    <a href="{% url 'gestion:actualite_ajouter' %}" class="btn-sm btn-primary">+ Nouvelle actualité</a>
+{% endblock %}
+
+{% block content %}
+
+<section class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+    <a href="{% url 'gestion:messages_liste' %}?filtre=non-lus" class="kpi hover:border-terracotta no-underline">
+        <span class="kpi-label">Messages non lus</span>
+        <span class="kpi-value">{{ kpi_unread }}</span>
+        <span class="kpi-hint">Boîte de réception</span>
+    </a>
+    <a href="{% url 'gestion:actualites_liste' %}" class="kpi hover:border-terracotta no-underline">
+        <span class="kpi-label">Dédicaces à venir</span>
+        <span class="kpi-value">{{ kpi_upcoming }}</span>
+        <span class="kpi-hint">Événements futurs</span>
+    </a>
+    <a href="{% url 'gestion:temoignages_liste' %}?statut=brouillon" class="kpi hover:border-terracotta no-underline">
+        <span class="kpi-label">Témoignages à valider</span>
+        <span class="kpi-value">{{ kpi_temoignages_brouillon }}</span>
+        <span class="kpi-hint">En attente de publication</span>
+    </a>
+    <a href="{% url 'gestion:temoignages_liste' %}?statut=publie" class="kpi hover:border-terracotta no-underline">
+        <span class="kpi-label">Témoignages publiés</span>
+        <span class="kpi-value">{{ kpi_temoignages_publies }}</span>
+        <span class="kpi-hint">Visibles sur le site</span>
+    </a>
+    <a href="{% url 'gestion:galerie_liste' %}" class="kpi hover:border-terracotta no-underline">
+        <span class="kpi-label">Galerie</span>
+        <span class="kpi-value">{{ kpi_medias }}</span>
+        <span class="kpi-hint">Médias publiés</span>
+    </a>
+</section>
+
+<section class="grid lg:grid-cols-2 gap-6 mt-8">
+    <div class="panel">
+        <div class="flex items-baseline justify-between mb-4">
+            <h2 class="font-display text-lg text-brown">Derniers messages</h2>
+            <a href="{% url 'gestion:messages_liste' %}" class="text-xs text-terracotta-deep">Tout voir →</a>
+        </div>
+        {% if recent_messages %}
+        <ul class="divide-y divide-mist-light">
+            {% for m in recent_messages %}
+            <li>
+                <a href="{% url 'gestion:message_detail' m.pk %}"
+                   class="flex items-start justify-between gap-4 py-3 no-underline group">
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2">
+                            <span class="font-medium text-ink {% if not m.lu %}text-brown{% endif %}">{{ m.nom }}</span>
+                            {% if not m.lu %}<span class="w-1.5 h-1.5 rounded-full bg-terracotta"></span>{% endif %}
+                        </div>
+                        <p class="text-xs text-slate-soft truncate">{{ m.get_sujet_display }} · {{ m.contenu|truncatechars:80 }}</p>
+                    </div>
+                    <time class="text-xs text-slate-soft whitespace-nowrap">{{ m.created_at|date:"d M" }}</time>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-sm text-slate-soft italic">Aucun message pour l'instant.</p>
+        {% endif %}
+    </div>
+
+    <div class="panel">
+        <div class="flex items-baseline justify-between mb-4">
+            <h2 class="font-display text-lg text-brown">Prochaines dédicaces</h2>
+            <a href="{% url 'gestion:actualites_liste' %}" class="text-xs text-terracotta-deep">Tout voir →</a>
+        </div>
+        {% if upcoming_actualites %}
+        <ul class="divide-y divide-mist-light">
+            {% for a in upcoming_actualites %}
+            <li>
+                <a href="{% url 'gestion:actualite_modifier' a.pk %}"
+                   class="flex items-start justify-between gap-4 py-3 no-underline">
+                    <div class="min-w-0 flex-1">
+                        <div class="font-medium text-ink">{{ a.titre }}</div>
+                        <p class="text-xs text-slate-soft">{{ a.lieu }}{% if a.ville %}, {{ a.ville }}{% endif %}</p>
+                    </div>
+                    <time class="text-xs text-slate whitespace-nowrap">{{ a.date_evenement|date:"d M Y" }}</time>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-sm text-slate-soft italic">Aucune dédicace prévue. <a href="{% url 'gestion:actualite_ajouter' %}" class="text-terracotta-deep">En ajouter une</a>.</p>
+        {% endif %}
+    </div>
+</section>
+
+<section class="mt-8 panel-flat p-6">
+    <h2 class="font-display text-lg text-brown mb-4">Raccourcis</h2>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <a href="{% url 'gestion:actualite_ajouter' %}" class="btn-sm btn-ghost">+ Ajouter une actualité</a>
+        <a href="{% url 'gestion:temoignage_ajouter' %}" class="btn-sm btn-ghost">+ Ajouter un témoignage</a>
+        <a href="{% url 'gestion:media_ajouter' %}" class="btn-sm btn-ghost">+ Ajouter à la galerie</a>
+        <a href="{% url 'gestion:livre' %}" class="btn-sm btn-ghost">Modifier le livre</a>
+    </div>
+</section>
+
+{% endblock %}

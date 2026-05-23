@@ -97,6 +97,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.core.context_processors.site_context",
+                "apps.gestion.context_processors.gestion_context",
             ],
         },
     },
@@ -142,6 +143,7 @@ LOGOUT_REDIRECT_URL = "/"
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "optional"
+ACCOUNT_ADAPTER = "apps.core.adapters.NoSignupAccountAdapter"
 
 # --- I18N / TZ -----------------------------------------------------------
 

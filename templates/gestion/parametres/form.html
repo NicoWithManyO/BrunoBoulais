@@ -1,0 +1,17 @@
+{% extends "gestion/_layout.html" %}
+
+{% block title %}Paramètres · Gestion{% endblock %}
+{% block crumb %}Site{% endblock %}
+{% block heading %}Paramètres du site{% endblock %}
+
+{% block content %}
+<form method="post" class="gform max-w-2xl">
+    {% csrf_token %}
+    <div class="panel">
+        {% include "gestion/_form.html" %}
+    </div>
+    <div class="mt-6">
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+    </div>
+</form>
+{% endblock %}

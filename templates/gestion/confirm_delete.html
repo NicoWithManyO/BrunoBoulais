@@ -1,0 +1,19 @@
+{% extends "gestion/_layout.html" %}
+
+{% block title %}Confirmer la suppression · Gestion{% endblock %}
+{% block crumb %}Suppression{% endblock %}
+{% block heading %}Supprimer ce {{ label }} ?{% endblock %}
+
+{% block content %}
+<div class="panel max-w-xl">
+    <p class="text-sm">
+        Vous êtes sur le point de supprimer&nbsp;: <strong>{{ objet }}</strong>.<br>
+        Cette action est <strong>irréversible</strong>.
+    </p>
+    <form method="post" class="mt-6 flex items-center gap-3">
+        {% csrf_token %}
+        <button type="submit" class="btn-sm btn-danger">Oui, supprimer</button>
+        <a href="{{ retour_url }}" class="btn-sm btn-ghost">Annuler</a>
+    </form>
+</div>
+{% endblock %}

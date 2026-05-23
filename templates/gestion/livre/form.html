@@ -1,0 +1,51 @@
+{% extends "gestion/_layout.html" %}
+
+{% block title %}Le livre · Gestion{% endblock %}
+{% block crumb %}Contenus{% endblock %}
+{% block heading %}Le livre{% endblock %}
+
+{% block header_actions %}
+    <a href="{% url 'pages:livre' %}" target="_blank" class="btn-sm btn-ghost">↗ Voir sur le site</a>
+{% endblock %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data" class="gform max-w-3xl">
+    {% csrf_token %}
+
+    <div class="panel">
+        <h2 class="font-display text-lg text-brown mb-2">Informations principales</h2>
+        {% include "gestion/_form.html" %}
+    </div>
+
+    <div class="panel mt-6">
+        <h2 class="font-display text-lg text-brown mb-3">Où l'on peut se procurer le livre</h2>
+        <p class="text-xs text-slate-soft mb-4">Liens externes (Mondial Relay, éditeur, libraires en ligne, etc.). Laissez les champs vides pour supprimer un lien.</p>
+
+        {{ formset.management_form }}
+        {% for sub in formset %}
+        <div class="border border-mist-light p-4 mb-3 rounded-sm">
+            {% for field in sub %}
+                {% if field.is_hidden %}{{ field }}
+                {% elif field.name == 'DELETE' %}
+                <div class="form-check">
+                    {{ field }}
+                    <label for="{{ field.id_for_label }}">Supprimer ce lien</label>
+                </div>
+                {% else %}
+                <div class="mb-1">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<span class="helptext">{{ field.help_text|safe }}</span>{% endif %}
+                    {{ field.errors }}
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="mt-6 flex items-center gap-3">
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+    </div>
+</form>
+{% endblock %}

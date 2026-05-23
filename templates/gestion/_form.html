@@ -1,0 +1,24 @@
+{# Default Django form rendering wrapped in our .gform styling. #}
+{% if form.non_field_errors %}
+<div class="flash flash-error mb-4">{{ form.non_field_errors }}</div>
+{% endif %}
+
+{% for field in form %}
+    {% if field.is_hidden %}
+        {{ field }}
+    {% elif field.field.widget.input_type == "checkbox" %}
+    <div class="form-check">
+        {{ field }}
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    </div>
+    {% if field.help_text %}<span class="helptext">{{ field.help_text|safe }}</span>{% endif %}
+    {{ field.errors }}
+    {% else %}
+    <div class="mb-1">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<span class="helptext">{{ field.help_text|safe }}</span>{% endif %}
+        {{ field.errors }}
+    </div>
+    {% endif %}
+{% endfor %}
