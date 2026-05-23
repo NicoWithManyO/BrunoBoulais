@@ -1,0 +1,13 @@
+Django>=5.1,<5.2
+django-environ>=0.11
+django-tailwind>=3.8
+django-crispy-forms>=2.3
+crispy-tailwind>=1.0
+django-allauth>=65.0
+django-honeypot>=1.2
+django-taggit>=6.1
+django-imagekit>=5.0
+django-anymail[brevo]>=12.0
+django-csp>=3.8
+Pillow>=11.0
+whitenoise>=6.8

@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Style guide — dev only{% endblock %}
+
+{% block content %}
+<section class="container-page py-16 space-y-20">
+
+    <header>
+        <p class="eyebrow">Dev</p>
+        <h1>Style guide</h1>
+        <p class="mt-4 text-ink/70 max-w-2xl">
+            Référentiel visuel pour vérifier que la charte tient debout&nbsp;: palette, typographies,
+            composants. Page disponible uniquement en mode debug.
+        </p>
+    </header>
+
+    {# --- Palette --- #}
+    <section>
+        <h2>Palette</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4 mt-8">
+            {% for c in "cream,cream-dark,sand,sand-dark,terracotta,terracotta-deep,ember,ink,brown,brown-soft,slate,slate-soft,mist,mist-light"|cut:" " %}{% endfor %}
+            {% for tup in palette %}{% endfor %}
+            <div class="space-y-2"><div class="h-24" style="background:#F6EFE3"></div><p class="font-sans text-xs">cream</p></div>
+            <div class="space-y-2"><div class="h-24" style="background:#ECE3D2"></div><p class="font-sans text-xs">cream-dark</p></div>
+            <div class="space-y-2"><div class="h-24" style="background:#E4D6BC"></div><p class="font-sans text-xs">sand</p></div>
+            <div class="space-y-2"><div class="h-24" style="background:#C8B58F"></div><p class="font-sans text-xs">sand-dark</p></div>
+            <div class="space-y-2"><div class="h-24" style="background:#B8542B"></div><p class="font-sans text-xs">terracotta</p></div>
+            <div class="space-y-2"><div class="h-24" style="background:#8E3F1F"></div><p class="font-sans text-xs">terracotta-deep</p></div>
+            <div class="space-y-2"><div class="h-24" style="background:#D67A3E"></div><p class="font-sans text-xs">ember</p></div>
+            <div class="space-y-2"><div class="h-24" style="background:#2A2622"></div><p class="font-sans text-xs">ink</p></div>
+            <div class="space-y-2"><div class="h-24" style="background:#5A3A22"></div><p class="font-sans text-xs">brown</p></div>
+            <div class="space-y-2"><div class="h-24" style="background:#7A5A40"></div><p class="font-sans text-xs">brown-soft</p></div>
+            <div class="space-y-2"><div class="h-24" style="background:#3E5670"></div><p class="font-sans text-xs">slate</p></div>
+            <div class="space-y-2"><div class="h-24" style="background:#6B7E94"></div><p class="font-sans text-xs">slate-soft</p></div>
+            <div class="space-y-2"><div class="h-24" style="background:#C8BCA8"></div><p class="font-sans text-xs">mist</p></div>
+            <div class="space-y-2"><div class="h-24" style="background:#DDD1BC"></div><p class="font-sans text-xs">mist-light</p></div>
+        </div>
+    </section>
+
+    {# --- Typo --- #}
+    <section>
+        <h2>Typographie</h2>
+        <div class="mt-8 space-y-6">
+            <div>
+                <p class="eyebrow">Display · Fraunces</p>
+                <p class="title-display text-6xl mt-2">Le géant discret</p>
+            </div>
+            <div>
+                <p class="eyebrow">Serif body · Spectral</p>
+                <p class="font-serif text-lg leading-relaxed max-w-prose mt-2">
+                    Il y a, dans la trajectoire de Jacques Bertin, quelque chose d’un pas obstiné dans la
+                    lumière oblique&nbsp;: une manière d’avancer sans bruit, mais avec une intensité qui
+                    marque ceux qui croisent sa voix.
+                </p>
+            </div>
+            <div>
+                <p class="eyebrow">Sans · Inter</p>
+                <p class="font-sans text-sm mt-2 max-w-prose">
+                    Utilisée pour la navigation, les boutons, les formulaires et les métadonnées.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    {# --- Boutons --- #}
+    <section>
+        <h2>Boutons &amp; liens</h2>
+        <div class="mt-8 flex flex-wrap items-center gap-4">
+            <a href="#" class="btn btn-primary">Commander avec dédicace</a>
+            <a href="#" class="btn btn-ghost">En savoir plus</a>
+            <a href="#" class="btn-link">Lien éditorial →</a>
+        </div>
+    </section>
+
+    {# --- Cartes --- #}
+    <section>
+        <h2>Cartes</h2>
+        <div class="grid md:grid-cols-3 gap-6 mt-8">
+            <article class="card-edito">
+                <p class="font-sans text-xs uppercase tracking-widest text-terracotta-deep">25 avril 2026</p>
+                <h3 class="mt-3 text-2xl">Dédicace à Pouillon</h3>
+                <p class="mt-3 text-sm text-ink/75">Rencontre avec l’auteur, signature des exemplaires.</p>
+            </article>
+            <article class="card-edito">
+                <p class="font-sans text-xs uppercase tracking-widest text-slate">Presse</p>
+                <h3 class="mt-3 text-2xl">L’Est Républicain</h3>
+                <p class="mt-3 text-sm text-ink/75">Un portrait du chanteur poète à découvrir.</p>
+            </article>
+            <article class="card-edito">
+                <p class="font-sans text-xs uppercase tracking-widest text-brown">Lecture</p>
+                <h3 class="mt-3 text-2xl">Extrait du livre</h3>
+                <p class="mt-3 text-sm text-ink/75">« Ses chansons ne séduisent pas, elles touchent. »</p>
+            </article>
+        </div>
+    </section>
+
+    {# --- Citation --- #}
+    <section>
+        <h2>Citation magazine</h2>
+        <p class="pull-quote mt-8">
+            Dans un monde saturé de bruit, Jacques Bertin est une source claire.
+        </p>
+    </section>
+
+    {# --- Tags --- #}
+    <section>
+        <h2>Étiquettes</h2>
+        <div class="mt-6 flex flex-wrap gap-2">
+            <span class="tag">Dédicace</span>
+            <span class="tag tag-slate">Presse</span>
+            <span class="tag tag-terra">Nouveauté</span>
+        </div>
+    </section>
+
+    {# --- Form --- #}
+    <section>
+        <h2>Formulaire</h2>
+        <form class="mt-8 max-w-xl space-y-5">
+            <div>
+                <label class="field-label" for="sg-name">Nom</label>
+                <input class="field-input" id="sg-name" type="text" placeholder="Bruno Boulais">
+            </div>
+            <div>
+                <label class="field-label" for="sg-mail">Email</label>
+                <input class="field-input" id="sg-mail" type="email" placeholder="vous@exemple.fr">
+            </div>
+            <div>
+                <label class="field-label" for="sg-msg">Message</label>
+                <textarea class="field-textarea" id="sg-msg" rows="4" placeholder="Quelques mots…"></textarea>
+            </div>
+            <button type="button" class="btn btn-primary">Envoyer</button>
+        </form>
+    </section>
+
+    {# --- Filets --- #}
+    <section>
+        <h2>Ornements</h2>
+        <hr class="my-8">
+        <p class="ornament my-8"><span class="font-display italic">~</span></p>
+    </section>
+
+</section>
+{% endblock %}

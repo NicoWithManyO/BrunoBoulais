@@ -1,0 +1,47 @@
+<footer class="mt-24 border-t border-mist/40 bg-cream-dark/50">
+    <div class="container-wide py-14 grid gap-12 lg:grid-cols-3">
+
+        <div>
+            <p class="title-display text-2xl text-brown leading-tight">Bruno Boulais</p>
+            <p class="mt-2 font-sans text-xs tracking-[0.22em] uppercase text-slate-soft">auteur · Misson (40)</p>
+            <p class="mt-6 font-serif text-ink/80 italic leading-relaxed max-w-sm">
+                « Écrire comme on respire quand l’air devient rare : avec urgence, avec nécessité. »
+            </p>
+        </div>
+
+        <div>
+            <p class="eyebrow mb-5">Le site</p>
+            <ul class="space-y-2 font-sans text-sm">
+                <li><a href="{% url 'pages:livre' %}">Le livre</a></li>
+                <li><a href="{% url 'pages:bertin' %}">Jacques Bertin</a></li>
+                <li><a href="{% url 'pages:auteur' %}">L’auteur</a></li>
+                <li><a href="{% url 'actualites:liste' %}">Actualités &amp; dédicaces</a></li>
+                <li><a href="{% url 'temoignages:liste' %}">Témoignages</a></li>
+                <li><a href="{% url 'galerie:liste' %}">Galerie</a></li>
+            </ul>
+        </div>
+
+        <div>
+            <p class="eyebrow mb-5">Contact</p>
+            <ul class="space-y-2 font-sans text-sm">
+                <li>
+                    <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a>
+                </li>
+                <li>
+                    <a href="{% url 'contact:form' %}">Commander le livre</a>
+                </li>
+                <li class="text-ink/70">Envoi avec dédicace via&nbsp;Mondial&nbsp;Relay.</li>
+            </ul>
+        </div>
+
+    </div>
+
+    <div class="border-t border-mist/30">
+        <div class="container-wide py-5 flex flex-wrap items-center justify-between gap-4 font-sans text-xs text-slate-soft">
+            <p>© {% now "Y" %} Bruno Boulais. Tous droits réservés.</p>
+            <p>
+                <a href="{% url 'pages:mentions' %}" class="text-slate-soft">Mentions légales</a>
+            </p>
+        </div>
+    </div>
+</footer>

@@ -1,0 +1,29 @@
+{% load static %}
+<header class="border-b border-mist/40">
+    <div class="container-wide py-6 lg:py-8 flex items-center justify-between gap-8">
+
+        <a href="{% url 'pages:home' %}" class="group flex items-baseline gap-3 no-underline">
+            <span class="title-display text-2xl lg:text-3xl text-brown leading-none">
+                Bruno&nbsp;Boulais
+            </span>
+            <span class="hidden md:inline font-sans text-xs tracking-[0.22em] uppercase text-slate-soft">
+                auteur
+            </span>
+        </a>
+
+        <nav class="hidden lg:flex items-center gap-8" aria-label="Navigation principale">
+            <a href="{% url 'pages:livre' %}"   class="nav-link {% if request.resolver_match.url_name == 'livre' %}is-active{% endif %}">Le livre</a>
+            <a href="{% url 'pages:bertin' %}"  class="nav-link {% if request.resolver_match.url_name == 'bertin' %}is-active{% endif %}">Jacques Bertin</a>
+            <a href="{% url 'pages:auteur' %}"  class="nav-link {% if request.resolver_match.url_name == 'auteur' %}is-active{% endif %}">L’auteur</a>
+            <a href="{% url 'actualites:liste' %}" class="nav-link {% if 'actualites' in request.path %}is-active{% endif %}">Actualités</a>
+            <a href="{% url 'temoignages:liste' %}" class="nav-link {% if 'temoignages' in request.path %}is-active{% endif %}">Témoignages</a>
+            <a href="{% url 'galerie:liste' %}" class="nav-link {% if 'galerie' in request.path %}is-active{% endif %}">Galerie</a>
+        </nav>
+
+        <a href="{% url 'contact:form' %}" class="btn btn-primary">
+            Commander
+            <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </a>
+
+    </div>
+</header>

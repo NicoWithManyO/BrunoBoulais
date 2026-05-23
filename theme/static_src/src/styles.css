@@ -1,0 +1,405 @@
+@import "tailwindcss";
+
+/* Scan all templates and Python sources for class names */
+@source "../../../**/*.{html,py,js}";
+
+/* =========================================================================
+   THEME — Bruno Boulais, auteur
+   Inspiration : papier ivoire, encre tiède, sérénité éditoriale.
+   ========================================================================= */
+
+@theme {
+  /* ---- Couleurs ---- */
+  --color-cream:      #F6EFE3;   /* Fond principal : papier crème, légèrement chaud */
+  --color-cream-dark: #ECE3D2;   /* Fond alterné */
+  --color-sand:       #E4D6BC;   /* Cartes, surlignages doux */
+  --color-sand-dark:  #C8B58F;   /* Variante */
+  --color-terracotta: #B8542B;   /* Accent chaud (titres, liens) */
+  --color-terracotta-deep: #8E3F1F;
+  --color-ember:      #D67A3E;   /* Accent doux (badges) */
+  --color-ink:        #2A2622;   /* Texte courant : encre sépia */
+  --color-brown:      #5A3A22;   /* Marron profond — titres */
+  --color-brown-soft: #7A5A40;
+  --color-slate:      #3E5670;   /* Bleu nuit littéraire */
+  --color-slate-soft: #6B7E94;
+  --color-mist:       #C8BCA8;   /* Gris-beige, séparateurs */
+  --color-mist-light: #DDD1BC;
+
+  /* ---- Polices ----
+     Fraunces : sérif moderne expressif, variable (titres, accroches)
+     Spectral : sérif littéraire pour le corps long (lisible à toute taille)
+     Inter    : sans-serif pour l'UI (nav, formulaires, badges, dates)
+  */
+  --font-display: "Fraunces", "Times New Roman", Georgia, serif;
+  --font-serif:   "Spectral", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --font-sans:    "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* ---- Échelle typographique (musical, ratio 1.250) ---- */
+  --text-xs:   0.78rem;
+  --text-sm:   0.875rem;
+  --text-base: 1.0625rem;
+  --text-lg:   1.18rem;
+  --text-xl:   1.4rem;
+  --text-2xl:  1.75rem;
+  --text-3xl:  2.2rem;
+  --text-4xl:  2.85rem;
+  --text-5xl:  3.6rem;
+  --text-6xl:  4.6rem;
+  --text-7xl:  5.9rem;
+
+  /* ---- Espacements (rythme vertical éditorial) ---- */
+  --spacing-prose: 68ch;
+  --spacing-content: 72rem;
+
+  /* ---- Animations ---- */
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* =========================================================================
+   BASE — éléments natifs
+   ========================================================================= */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background: var(--color-cream);
+    color: var(--color-ink);
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    line-height: 1.7;
+    font-weight: 400;
+    /* Léger grain papier (SVG inline, ultra discret) */
+    background-image:
+      radial-gradient(at 0% 0%, rgba(184, 84, 43, 0.04) 0, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(62, 86, 112, 0.035) 0, transparent 50%);
+  }
+
+  h1, h2, h3, h4, h5 {
+    font-family: var(--font-display);
+    color: var(--color-brown);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    line-height: 1.15;
+    /* Fraunces opsz axis : titres */
+    font-variation-settings: "opsz" 144, "SOFT" 30;
+  }
+
+  h1 { font-size: var(--text-5xl); font-weight: 400; }
+  h2 { font-size: var(--text-3xl); }
+  h3 { font-size: var(--text-2xl); }
+  h4 { font-size: var(--text-xl); }
+
+  p { max-width: var(--spacing-prose); }
+
+  a {
+    color: var(--color-terracotta-deep);
+    text-decoration: underline;
+    text-decoration-color: rgba(184, 84, 43, 0.35);
+    text-underline-offset: 0.18em;
+    text-decoration-thickness: 1px;
+    transition: color 0.18s var(--ease-soft), text-decoration-color 0.18s;
+  }
+  a:hover {
+    color: var(--color-terracotta);
+    text-decoration-color: currentColor;
+  }
+
+  ::selection { background: var(--color-terracotta); color: var(--color-cream); }
+
+  hr {
+    border: none;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--color-mist), transparent);
+    margin: 3rem 0;
+  }
+
+  blockquote {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: var(--text-xl);
+    line-height: 1.4;
+    color: var(--color-brown-soft);
+    border-left: 2px solid var(--color-terracotta);
+    padding-left: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  figcaption {
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-slate-soft);
+    margin-top: 0.75rem;
+  }
+
+  /* Honeypot : caché visuellement, accessible mais hors écran */
+  .hp-field {
+    position: absolute !important;
+    left: -10000px !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden;
+  }
+}
+
+/* =========================================================================
+   COMPOSANTS — bibliothèque éditoriale
+   ========================================================================= */
+@layer components {
+
+  /* --- Container éditorial --- */
+  .container-prose { @apply mx-auto max-w-[68ch] px-6; }
+  .container-wide  { @apply mx-auto max-w-7xl px-6 lg:px-10; }
+  .container-page  { @apply mx-auto max-w-5xl px-6 lg:px-10; }
+
+  /* --- Eyebrow : petit label au-dessus d'un titre --- */
+  .eyebrow {
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--color-terracotta);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .eyebrow::before {
+    content: "";
+    display: inline-block;
+    width: 1.8rem;
+    height: 1px;
+    background: currentColor;
+  }
+
+  /* --- Titre éditorial avec drop cap optionnel --- */
+  .title-display {
+    font-family: var(--font-display);
+    font-weight: 300;
+    color: var(--color-brown);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    font-variation-settings: "opsz" 144, "SOFT" 50, "WONK" 0;
+  }
+
+  .drop-cap::first-letter {
+    font-family: var(--font-display);
+    font-size: 4.5rem;
+    font-weight: 400;
+    color: var(--color-terracotta);
+    float: left;
+    line-height: 0.85;
+    margin: 0.45rem 0.6rem 0 0;
+  }
+
+  /* --- Boutons --- */
+  .btn {
+    @apply inline-flex items-center gap-2 px-5 py-3 font-sans text-sm font-medium tracking-wide;
+    transition: all 0.2s var(--ease-soft);
+    text-decoration: none;
+  }
+  .btn-primary {
+    background: var(--color-brown);
+    color: var(--color-cream);
+    border: 1px solid var(--color-brown);
+  }
+  .btn-primary:hover {
+    background: var(--color-terracotta-deep);
+    border-color: var(--color-terracotta-deep);
+    color: var(--color-cream);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--color-brown);
+    border: 1px solid var(--color-mist);
+  }
+  .btn-ghost:hover {
+    background: var(--color-sand);
+    color: var(--color-brown);
+  }
+  .btn-link {
+    @apply inline-flex items-center gap-2 font-sans text-sm font-medium tracking-wide;
+    color: var(--color-terracotta-deep);
+    text-decoration: none;
+    padding-bottom: 2px;
+    border-bottom: 1px solid currentColor;
+  }
+  .btn-link:hover { color: var(--color-terracotta); }
+
+  /* --- Carte éditoriale --- */
+  .card-edito {
+    background: rgba(255, 252, 244, 0.6);
+    border: 1px solid var(--color-mist-light);
+    padding: 2rem;
+    transition: transform 0.3s var(--ease-soft), box-shadow 0.3s var(--ease-soft);
+  }
+  .card-edito:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 38px -22px rgba(90, 58, 34, 0.25);
+  }
+
+  /* --- Filet décoratif --- */
+  .ornament {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    color: var(--color-mist);
+  }
+  .ornament::before,
+  .ornament::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: currentColor;
+    max-width: 5rem;
+  }
+
+  /* --- Pull quote (citation magazine) --- */
+  .pull-quote {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: var(--text-3xl);
+    line-height: 1.25;
+    color: var(--color-brown);
+    text-align: center;
+    max-width: 36ch;
+    margin: 3rem auto;
+    position: relative;
+    font-variation-settings: "opsz" 144, "SOFT" 80;
+  }
+  .pull-quote::before {
+    content: "“";
+    position: absolute;
+    top: -2.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 6rem;
+    line-height: 1;
+    color: var(--color-terracotta);
+    opacity: 0.6;
+  }
+
+  /* --- Couverture livre : object 3D doux --- */
+  .book-cover {
+    position: relative;
+    display: inline-block;
+    transform: rotate(-1.5deg);
+    transition: transform 0.5s var(--ease-soft);
+  }
+  .book-cover:hover { transform: rotate(0) translateY(-4px); }
+  .book-cover img {
+    display: block;
+    box-shadow:
+      0 1px 1px rgba(0,0,0,0.05),
+      6px 8px 0 -2px var(--color-sand),
+      14px 18px 28px -6px rgba(90, 58, 34, 0.25);
+  }
+
+  /* --- Bandeau (sticky) --- */
+  .ribbon {
+    background: var(--color-brown);
+    color: var(--color-cream);
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    letter-spacing: 0.02em;
+  }
+  .ribbon a {
+    color: var(--color-cream);
+    text-decoration: underline;
+    text-decoration-color: rgba(246, 239, 227, 0.4);
+  }
+  .ribbon a:hover { text-decoration-color: currentColor; }
+
+  /* --- Tag / badge --- */
+  .tag {
+    @apply inline-flex items-center px-2.5 py-1 font-sans text-xs tracking-wide;
+    background: var(--color-sand);
+    color: var(--color-brown);
+    border-radius: 0;
+  }
+  .tag-slate { background: rgba(62, 86, 112, 0.12); color: var(--color-slate); }
+  .tag-terra { background: rgba(184, 84, 43, 0.14); color: var(--color-terracotta-deep); }
+
+  /* --- Form fields --- */
+  .field-label {
+    @apply block font-sans text-xs uppercase tracking-widest mb-2;
+    color: var(--color-slate);
+  }
+  .field-input,
+  .field-textarea,
+  .field-select {
+    @apply block w-full px-4 py-3 font-serif text-base;
+    background: rgba(255, 252, 244, 0.6);
+    border: 1px solid var(--color-mist);
+    color: var(--color-ink);
+    transition: border-color 0.18s, background 0.18s;
+  }
+  .field-input:focus,
+  .field-textarea:focus,
+  .field-select:focus {
+    outline: none;
+    border-color: var(--color-terracotta);
+    background: #fffdf7;
+  }
+
+  /* --- Navigation --- */
+  .nav-link {
+    @apply font-sans text-sm tracking-wide;
+    color: var(--color-ink);
+    text-decoration: none;
+    position: relative;
+    padding-bottom: 4px;
+  }
+  .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 100%;
+    bottom: 0;
+    height: 1.5px;
+    background: var(--color-terracotta);
+    transition: right 0.3s var(--ease-soft);
+  }
+  .nav-link:hover::after,
+  .nav-link.is-active::after { right: 0; }
+  .nav-link.is-active { color: var(--color-brown); }
+
+  /* --- Mosaïque galerie (columns CSS) --- */
+  .masonry {
+    column-count: 1;
+    column-gap: 1.25rem;
+  }
+  @media (min-width: 640px)  { .masonry { column-count: 2; } }
+  @media (min-width: 1024px) { .masonry { column-count: 3; } }
+  .masonry > * {
+    break-inside: avoid;
+    margin-bottom: 1.25rem;
+  }
+}
+
+/* =========================================================================
+   UTILITIES additionnelles
+   ========================================================================= */
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .text-pretty  { text-wrap: pretty; }
+
+  .grain {
+    position: relative;
+  }
+  .grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.04;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+}

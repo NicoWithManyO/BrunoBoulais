@@ -1,0 +1,116 @@
+# ─── Python ──────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+.eggs/
+build/
+dist/
+wheels/
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ─── Virtual environments ────────────────────────────────────────────
+.venv/
+venv/
+ENV/
+env/
+.python-version
+
+# ─── Django ──────────────────────────────────────────────────────────
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+db.sqlite3-shm
+db.sqlite3-wal
+/media/
+/staticfiles/
+/static_collected/
+
+# Migrations : on garde, mais ignore les éventuels backups
+*.pyc.bak
+
+# ─── Secrets / config locale ─────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.json
+
+# ─── Tailwind / Node (django-tailwind) ───────────────────────────────
+node_modules/
+theme/static_src/node_modules/
+theme/static/css/dist/
+theme/static_src/.parcel-cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+package-lock.json.bak
+
+# ─── Tests / coverage / lint ─────────────────────────────────────────
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyre/
+.pytype/
+.dmypy.json
+dmypy.json
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+nosetests.xml
+
+# ─── Jupyter / notebooks ─────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ─── IDE / éditeurs ──────────────────────────────────────────────────
+.idea/
+.vscode/
+*.code-workspace
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# ─── OS ──────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ─── Logs / temp ─────────────────────────────────────────────────────
+logs/
+*.log
+*.bak
+*.tmp
+*.pid
+*.seed
+
+# ─── Sources brutes (matériel client, pas versionné) ─────────────────
+/sources/
+
+# ─── Claude / outils locaux ──────────────────────────────────────────
+.claude/
+CLAUDE.local.md

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="container-page py-20">
+    <p class="eyebrow">Retours lecteurs</p>
+    <h1 class="mt-4">Témoignages</h1>
+    {% if temoignages %}
+    <div class="mt-12 grid md:grid-cols-2 gap-10">
+        {% for t in temoignages %}
+        <figure class="border-l-2 border-terracotta pl-6">
+            <blockquote class="border-0 p-0 m-0">« {{ t.texte }} »</blockquote>
+            <figcaption class="mt-4">{{ t.auteur }}{% if t.source %} · {{ t.source }}{% endif %}</figcaption>
+        </figure>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="mt-8 text-ink/70 italic">Les premiers témoignages arriveront bientôt.</p>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="container-prose py-20">
+    <p class="eyebrow">{{ obj.get_type_display }}</p>
+    <h1 class="mt-4">{{ obj.titre }}</h1>
+    {% if obj.chapo %}<p class="mt-4 font-display italic text-xl text-brown-soft">{{ obj.chapo }}</p>{% endif %}
+    <div class="mt-10 prose">{{ obj.contenu|safe }}</div>
+</section>
+{% endblock %}

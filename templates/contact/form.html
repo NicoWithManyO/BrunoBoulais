@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="container-prose py-20">
+    <p class="eyebrow">Écrire à l’auteur</p>
+    <h1 class="mt-4">Contact &amp; commande</h1>
+    <p class="mt-6 text-ink/80 leading-relaxed">
+        Pour commander le livre avec dédicace (envoi via Mondial Relay) ou poser une question,
+        utilisez ce formulaire. Vous pouvez aussi écrire directement à
+        <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a>.
+    </p>
+
+    <form method="post" class="mt-12 space-y-6">
+        {% csrf_token %}
+        {{ form.website }}
+
+        <div>
+            <label class="field-label" for="{{ form.nom.id_for_label }}">Nom</label>
+            {{ form.nom }}
+        </div>
+        <div class="grid sm:grid-cols-2 gap-6">
+            <div>
+                <label class="field-label" for="{{ form.email.id_for_label }}">Email</label>
+                {{ form.email }}
+            </div>
+            <div>
+                <label class="field-label" for="{{ form.telephone.id_for_label }}">Téléphone (optionnel)</label>
+                {{ form.telephone }}
+            </div>
+        </div>
+        <div>
+            <label class="field-label" for="{{ form.sujet.id_for_label }}">Sujet</label>
+            {{ form.sujet }}
+        </div>
+        <div>
+            <label class="field-label" for="{{ form.contenu.id_for_label }}">Votre message</label>
+            {{ form.contenu }}
+        </div>
+
+        {% if form.errors %}
+        <ul class="text-terracotta-deep text-sm">
+            {% for f in form %}{% for e in f.errors %}<li>{{ f.label }} : {{ e }}</li>{% endfor %}{% endfor %}
+        </ul>
+        {% endif %}
+
+        <button type="submit" class="btn btn-primary">Envoyer le message</button>
+    </form>
+</section>
+{% endblock %}

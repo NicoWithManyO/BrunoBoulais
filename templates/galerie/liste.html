@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="container-wide py-20">
+    <p class="eyebrow">En images</p>
+    <h1 class="mt-4">Galerie</h1>
+
+    <div class="mt-8 flex flex-wrap gap-2">
+        <a href="?" class="tag {% if not categorie_active %}tag-terra{% endif %}">Tout</a>
+        {% for value, label in categories %}
+        <a href="?c={{ value }}" class="tag {% if categorie_active == value %}tag-terra{% endif %}">{{ label }}</a>
+        {% endfor %}
+    </div>
+
+    {% if medias %}
+    <div class="masonry mt-12">
+        {% for m in medias %}
+        <figure>
+            <img src="{{ m.fichier.url }}" alt="{{ m.alt }}" class="w-full h-auto">
+            {% if m.legende %}<figcaption>{{ m.legende }}</figcaption>{% endif %}
+        </figure>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="mt-12 text-ink/70 italic">La galerie sera enrichie progressivement.</p>
+    {% endif %}
+</section>
+{% endblock %}

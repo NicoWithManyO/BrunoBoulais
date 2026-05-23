@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="container-page py-20">
+    <p class="eyebrow">Agenda &amp; nouvelles</p>
+    <h1 class="mt-4">Actualités</h1>
+
+    {% if a_venir %}
+    <h2 class="mt-12">À venir</h2>
+    <div class="mt-6 grid md:grid-cols-2 gap-6">
+        {% for a in a_venir %}<article class="card-edito"><h3>{{ a.titre }}</h3></article>{% endfor %}
+    </div>
+    {% endif %}
+
+    <h2 class="mt-16">Passées</h2>
+    {% if passees %}
+    <div class="mt-6 grid md:grid-cols-2 gap-6">
+        {% for a in passees %}<article class="card-edito"><h3>{{ a.titre }}</h3></article>{% endfor %}
+    </div>
+    {% else %}
+    <p class="mt-6 text-ink/70 italic">Aucune actualité publiée pour l’instant.</p>
+    {% endif %}
+</section>
+{% endblock %}

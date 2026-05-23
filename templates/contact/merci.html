@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="container-prose py-24 text-center">
+    <p class="eyebrow justify-center">Message envoyé</p>
+    <h1 class="mt-4">Merci.</h1>
+    <p class="mt-6 text-ink/80">
+        Bruno revient vers vous dès que possible.
+    </p>
+    <a href="{% url 'pages:home' %}" class="btn btn-ghost mt-10">Retour à l’accueil</a>
+</section>
+{% endblock %}

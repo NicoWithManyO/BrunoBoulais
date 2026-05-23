@@ -1,0 +1,43 @@
+{% load static tailwind_tags %}<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>{% block title %}{{ SITE_NAME }} — {{ BOOK_TITLE }}{% endblock %}</title>
+    <meta name="description" content="{% block description %}Site officiel de Bruno Boulais, auteur de « {{ BOOK_TITLE }} ».{% endblock %}">
+
+    {# Open Graph #}
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="fr_FR">
+    <meta property="og:title" content="{% block og_title %}{{ self.title }}{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}{{ self.description }}{% endblock %}">
+    {% block og_image %}{% endblock %}
+
+    {# Fonts — Fraunces (display), Spectral (serif body), Inter (sans UI) #}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..700,30..100&family=Spectral:ital,wght@0,300;0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    {# Favicon (placeholder) #}
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><text y='52' font-size='52' font-family='Georgia,serif' fill='%23B8542B'>B</text></svg>">
+
+    {% tailwind_css %}
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen flex flex-col">
+
+    {% include "partials/ribbon.html" %}
+
+    {% include "partials/header.html" %}
+
+    <main class="flex-1">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% include "partials/footer.html" %}
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

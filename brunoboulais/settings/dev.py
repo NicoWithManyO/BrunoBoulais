@@ -1,0 +1,11 @@
+"""Development settings."""
+from .base import *  # noqa: F401,F403
+
+DEBUG = True
+SECRET_KEY = "dev-insecure-change-me-for-prod-only"
+ALLOWED_HOSTS = ["*"]
+
+INSTALLED_APPS += ["django_browser_reload"]  # noqa: F405
+MIDDLEWARE += ["django_browser_reload.middleware.BrowserReloadMiddleware"]  # noqa: F405
+
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
