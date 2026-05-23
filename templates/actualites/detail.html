@@ -49,21 +49,24 @@
         {% endif %}
     </header>
 
+    {# Contenu #}
+    {% if obj.contenu %}
+    <div class="container-prose">
+        <div class="prose">{{ obj.contenu|richtext }}</div>
+    </div>
+    {% endif %}
+
     {# Carrousel d'images (1 -> figure simple, N -> autoplay fade) #}
     {% with obj.images.all as obj_images %}
     {% if obj_images %}
-    <div class="container-page mb-12">
+    <div class="container-page my-12">
       {% include "partials/carrousel.html" with images=obj_images alt_default=obj.titre wrapper_class="w-full" media_class="aspect-[4/3] shadow-lg" delai_s=obj.delai_rotation_s only %}
     </div>
     {% endif %}
     {% endwith %}
 
-    {# Contenu #}
+    {# Pied de page #}
     <div class="container-prose pb-20">
-        {% if obj.contenu %}
-        <div class="prose">{{ obj.contenu|richtext }}</div>
-        {% endif %}
-
         <hr class="my-12">
 
         <div class="flex flex-wrap items-center justify-between gap-6">
