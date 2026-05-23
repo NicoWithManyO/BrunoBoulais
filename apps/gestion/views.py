@@ -121,7 +121,9 @@ def actualites_liste(request):
     if request.method == "POST" and page_form.is_valid():
         page_form.save()
         messages.success(request, "En-tête de la page mis à jour.")
-        return redirect("gestion:actualites_liste")
+        target = reverse("gestion:actualites_liste")
+        qs = request.GET.urlencode()
+        return redirect(f"{target}?{qs}" if qs else target)
 
     qs = Actualite.objects.all()
     type_filter = request.GET.get("type")
@@ -187,7 +189,9 @@ def temoignages_liste(request):
     if request.method == "POST" and page_form.is_valid():
         page_form.save()
         messages.success(request, "En-tête de la page mis à jour.")
-        return redirect("gestion:temoignages_liste")
+        target = reverse("gestion:temoignages_liste")
+        qs = request.GET.urlencode()
+        return redirect(f"{target}?{qs}" if qs else target)
 
     qs = Temoignage.objects.all()
     statut_filter = request.GET.get("statut")

@@ -11,7 +11,7 @@
 
 {% block content %}
 
-<details class="panel mb-6">
+<details class="panel mb-6"{% if page_form.errors %} open{% endif %}>
     <summary class="cursor-pointer font-display text-base text-brown select-none">
         ✎ En-tête de la page publique
         <span class="ml-2 text-xs text-slate-soft font-sans">surtitre · titre · introduction</span>
