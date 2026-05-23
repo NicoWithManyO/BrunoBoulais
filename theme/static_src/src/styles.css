@@ -336,27 +336,39 @@
   .tag-slate { background: rgba(62, 86, 112, 0.12); color: var(--color-slate); }
   .tag-terra { background: rgba(184, 84, 43, 0.14); color: var(--color-terracotta-deep); }
 
-  /* --- Form fields --- */
+  /* --- Form fields (public, scoped under .pform) --- */
   .field-label {
     @apply block font-sans text-xs uppercase tracking-widest mb-2;
     color: var(--color-slate);
   }
   .field-input,
   .field-textarea,
-  .field-select {
+  .field-select,
+  .pform input[type="text"],
+  .pform input[type="email"],
+  .pform input[type="tel"],
+  .pform input[type="url"],
+  .pform input[type="number"],
+  .pform input[type="password"],
+  .pform select,
+  .pform textarea {
     @apply block w-full px-4 py-3 font-serif text-base;
-    background: rgba(255, 252, 244, 0.6);
+    background: #ffffff;
     border: 1px solid var(--color-mist);
     color: var(--color-ink);
     transition: border-color 0.18s, background 0.18s;
   }
   .field-input:focus,
   .field-textarea:focus,
-  .field-select:focus {
+  .field-select:focus,
+  .pform input:focus,
+  .pform select:focus,
+  .pform textarea:focus {
     outline: none;
     border-color: var(--color-terracotta);
     background: #fffdf7;
   }
+  .pform textarea { min-height: 9rem; }
 
   /* --- Navigation --- */
   .nav-link {
