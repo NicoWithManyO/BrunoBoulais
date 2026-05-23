@@ -1,0 +1,10 @@
+{% spaceless %}
+<div class="richtext" data-richtext data-mode="{{ widget.mode }}">
+    <div class="richtext__toolbar" role="toolbar" aria-label="Formatage du texte">
+        <button type="button" data-cmd="bold" title="Gras (Ctrl+B)" aria-label="Gras"><strong>B</strong></button>
+        <button type="button" data-cmd="italic" title="Italique (Ctrl+I)" aria-label="Italique"><em>I</em></button>
+    </div>
+    <div class="richtext__editor" contenteditable="true" data-richtext-editor>{{ widget.value|default:''|safe }}</div>
+    <textarea name="{{ widget.name }}"{% if widget.attrs.id %} id="{{ widget.attrs.id }}"{% endif %} hidden data-richtext-input>{{ widget.value|default:'' }}</textarea>
+</div>
+{% endspaceless %}

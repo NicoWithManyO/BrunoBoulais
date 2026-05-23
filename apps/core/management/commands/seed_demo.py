@@ -299,15 +299,15 @@ class Command(BaseCommand):
     def _seed_accueil(self):
         accueil = Accueil.get_solo()
         accueil.hero_titre = (
-            "Dans les pas de<br>\n"
-            "<em class=\"not-italic text-terracotta\">Jacques Bertin</em>,<br>\n"
+            "Dans les pas de<br>"
+            "<em>Jacques Bertin</em>,<br>"
             "le géant discret<br>de la chanson."
         )
         accueil.hero_pitch = (
-            "Bruno Boulais consacre un livre&nbsp;à <em>Jacques Bertin</em>, poète et chanteur "
+            "<p>Bruno Boulais consacre un livre à <em>Jacques Bertin</em>, poète et chanteur "
             "à l’œuvre monumentale, longtemps tenu à l’écart des projecteurs. Une porte "
-            "d’entrée vers ses chansons, ses poèmes, ses écrits — discrets comme&nbsp;lui, "
-            "puissants comme une braise."
+            "d’entrée vers ses chansons, ses poèmes, ses écrits — discrets comme lui, "
+            "puissants comme une braise.</p>"
         )
         accueil.pull_quote_texte = (
             "Ses chansons ne séduisent pas, elles touchent. "
@@ -315,8 +315,8 @@ class Command(BaseCommand):
         )
         accueil.pull_quote_auteur = "Bruno Boulais"
         accueil.dedicaces_intro = (
-            "Bruno parcourt la France, des librairies aux créperies, pour porter ce livre&nbsp;"
-            "à la rencontre de ses lecteurs."
+            "Bruno parcourt la France, des librairies aux créperies, "
+            "pour porter ce livre à la rencontre de ses lecteurs."
         )
         accueil.temoignages_intro = ""
         accueil.save()

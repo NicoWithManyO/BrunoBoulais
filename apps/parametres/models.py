@@ -2,6 +2,7 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from apps.core.fields import RichTextField
 from apps.core.models import TimestampedModel
 
 CACHE_KEY = "site_parametres"
@@ -14,9 +15,9 @@ class Parametres(TimestampedModel):
     telephone = models.CharField("Téléphone", max_length=30, blank=True)
     ville = models.CharField("Ville", max_length=100, blank=True, default="Misson (40)")
 
-    texte_pied_de_page = models.TextField(
+    texte_pied_de_page = RichTextField(
         "Texte du pied de page", blank=True,
-        help_text="Quelques mots affichés dans le footer (HTML autorisé)."
+        help_text="Quelques mots affichés dans le footer."
     )
 
     facebook_url = models.URLField("URL Facebook", blank=True)

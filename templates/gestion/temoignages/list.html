@@ -1,4 +1,5 @@
 {% extends "gestion/_layout.html" %}
+{% load richtext %}
 
 {% block title %}Témoignages · Gestion{% endblock %}
 {% block crumb %}Contenus{% endblock %}
@@ -45,7 +46,7 @@
                 <a href="{% url 'gestion:temoignage_modifier' t.pk %}" class="font-medium text-brown no-underline hover:text-terracotta">{{ t.auteur }}</a>
                 {% if t.mis_en_avant %}<span class="badge badge-avenir ml-1">★ Accueil</span>{% endif %}
             </td>
-            <td class="text-xs text-slate-soft max-w-md">{{ t.texte|truncatechars:120 }}</td>
+            <td class="text-xs text-slate-soft max-w-md">{{ t.texte|richtext_plain|truncatechars:120 }}</td>
             <td class="text-xs">{{ t.source|default:"—" }}</td>
             <td><span class="badge badge-{{ t.statut }}">{{ t.get_statut_display }}</span></td>
             <td class="text-xs">{{ t.position }}</td>

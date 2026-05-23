@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 
+from apps.core.fields import RichTextField
 from apps.core.models import SeoMixin, TimestampedModel
 from apps.core.uploads import actualites_upload_to
 from apps.core.validators import IMAGE_VALIDATORS
@@ -48,7 +49,7 @@ class Actualite(TimestampedModel, SeoMixin):
         "Chapeau", max_length=300, blank=True,
         help_text="Phrase d'accroche affichée dans les listes."
     )
-    contenu = models.TextField("Contenu", blank=True, help_text="HTML autorisé.")
+    contenu = RichTextField("Contenu", blank=True)
     image = models.ImageField(
         "Image", upload_to=actualites_upload_to, blank=True, null=True,
         validators=IMAGE_VALIDATORS,

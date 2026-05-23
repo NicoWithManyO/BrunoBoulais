@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load richtext %}
 
 {% block title %}Le livre — {{ BOOK_TITLE }}{% endblock %}
 {% block description %}{% if livre.pitch_court %}{{ livre.pitch_court }}{% else %}Présentation détaillée du livre « {{ BOOK_TITLE }} » de Bruno Boulais.{% endif %}{% endblock %}
@@ -87,7 +88,7 @@
     <p class="eyebrow">Présentation</p>
     <h2 class="mt-4">À propos du livre</h2>
     <div class="prose mt-8 drop-cap">
-        {{ livre.pitch_long|safe }}
+        {{ livre.pitch_long|richtext }}
     </div>
 </section>
 {% endif %}
@@ -99,7 +100,7 @@
         <p class="eyebrow">Extrait choisi</p>
         <h2 class="mt-4">Quelques pages</h2>
         <div class="prose mt-10 font-serif text-lg leading-relaxed text-ink/90">
-            {{ livre.extrait|safe }}
+            {{ livre.extrait|richtext }}
         </div>
     </div>
 </section>
@@ -111,7 +112,7 @@
     <p class="eyebrow">Sommaire</p>
     <h2 class="mt-4">Au fil des pages</h2>
     <div class="prose mt-8">
-        {{ livre.sommaire|safe }}
+        {{ livre.sommaire|richtext }}
     </div>
 </section>
 {% endif %}

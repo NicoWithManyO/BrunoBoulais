@@ -187,6 +187,12 @@
     letter-spacing: -0.02em;
     font-variation-settings: "opsz" 144, "SOFT" 50, "WONK" 0;
   }
+  /* Italic content inside the hero title gets the terracotta accent
+     without the actual italic slant — Bruno just uses the I button. */
+  .title-display em {
+    font-style: normal;
+    color: var(--color-terracotta);
+  }
 
   .drop-cap::first-letter {
     font-family: var(--font-display);
@@ -592,6 +598,54 @@
   .gform .form-check label {
     @apply mt-0 mb-0 normal-case tracking-normal text-sm;
     color: var(--color-ink);
+  }
+
+  /* Mini rich-text editor — bold/italic toolbar above a contenteditable */
+  .richtext {
+    background: #fffdf7;
+    border: 1px solid var(--color-mist);
+    border-radius: 2px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .richtext:focus-within {
+    border-color: var(--color-terracotta);
+    background: #fff;
+  }
+  .richtext__toolbar {
+    @apply flex gap-1 px-2 py-1;
+    background: var(--color-sand);
+    border-bottom: 1px solid var(--color-mist);
+  }
+  .richtext__toolbar button {
+    @apply px-2 py-0.5 text-sm font-sans;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--color-ink);
+    border-radius: 2px;
+    cursor: pointer;
+    min-width: 1.75rem;
+  }
+  .richtext__toolbar button:hover {
+    background: #fff;
+    border-color: var(--color-mist);
+  }
+  .richtext__toolbar button:active {
+    background: var(--color-cream);
+  }
+  .richtext__editor {
+    @apply block w-full px-3 py-2;
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    line-height: 1.6;
+    color: var(--color-ink);
+    min-height: 5rem;
+    outline: none;
+  }
+  .richtext__editor p { margin: 0 0 0.6em 0; }
+  .richtext__editor p:last-child { margin-bottom: 0; }
+  .richtext__editor:empty::before {
+    content: attr(data-placeholder);
+    color: var(--color-slate-soft);
   }
 }
 

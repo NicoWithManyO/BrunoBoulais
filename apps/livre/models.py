@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from apps.core.fields import RichTextField
 from apps.core.models import TimestampedModel
 from apps.core.uploads import livre_upload_to
 from apps.core.validators import IMAGE_VALIDATORS
@@ -15,17 +16,17 @@ class Livre(TimestampedModel):
         "Pitch court", max_length=300, blank=True,
         help_text="Une ou deux phrases d'accroche, visible sur la page d'accueil."
     )
-    pitch_long = models.TextField(
+    pitch_long = RichTextField(
         "Présentation longue", blank=True,
-        help_text="Texte riche présentant le livre sur sa page dédiée (HTML autorisé)."
+        help_text="Texte riche présentant le livre sur sa page dédiée."
     )
-    sommaire = models.TextField(
+    sommaire = RichTextField(
         "Sommaire", blank=True,
-        help_text="Sommaire du livre (HTML autorisé)."
+        help_text="Sommaire du livre."
     )
-    extrait = models.TextField(
+    extrait = RichTextField(
         "Extrait", blank=True,
-        help_text="Extrait choisi du livre (HTML autorisé)."
+        help_text="Extrait choisi du livre."
     )
     couverture = models.ImageField(
         "Couverture", upload_to=livre_upload_to, blank=True, null=True,

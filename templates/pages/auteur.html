@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load richtext %}
 
 {% block title %}Bruno Boulais, l’auteur — {{ SITE_NAME }}{% endblock %}
 {% block description %}Bruno Boulais, auteur installé près de Dax : présentation, parcours et engagement littéraire.{% endblock %}
@@ -57,7 +58,7 @@
     <p class="eyebrow">Parcours</p>
     <h2 class="mt-4">L’homme derrière le livre</h2>
     <div class="prose mt-8 drop-cap">
-        {{ personne.bio_longue|safe }}
+        {{ personne.bio_longue|richtext }}
     </div>
 </section>
 {% else %}

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load richtext %}
 
 {% block title %}{{ obj.titre }} — {{ SITE_NAME }}{% endblock %}
 {% block description %}{% if obj.chapo %}{{ obj.chapo }}{% else %}{{ obj.titre }}{% endif %}{% endblock %}
@@ -59,7 +60,7 @@
     {# Contenu #}
     <div class="container-prose pb-20">
         {% if obj.contenu %}
-        <div class="prose">{{ obj.contenu|safe }}</div>
+        <div class="prose">{{ obj.contenu|richtext }}</div>
         {% endif %}
 
         <hr class="my-12">

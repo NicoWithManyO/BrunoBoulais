@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
 
+from apps.core.fields import RichTextField
 from apps.core.models import SeoMixin, TimestampedModel
 from apps.core.uploads import accueil_upload_to
 from apps.core.validators import IMAGE_VALIDATORS
@@ -75,15 +76,13 @@ class ContentBlock(TimestampedModel):
 class Accueil(TimestampedModel, SeoMixin):
     """Singleton holding the editable content of the public home page."""
 
-    hero_titre = models.TextField(
+    hero_titre = RichTextField(
         "Titre du hero",
         blank=True,
-        help_text=(
-            "Titre principal de la page d'accueil. HTML autorisé : <em>…</em> "
-            "pour l'accent terracotta, <br> pour les retours à la ligne."
-        ),
+        mode="inline",
+        help_text="Titre principal de la page d'accueil. Utilise l'italique pour l'accent terracotta.",
     )
-    hero_pitch = models.TextField(
+    hero_pitch = RichTextField(
         "Pitch du hero",
         blank=True,
         help_text="Paragraphe d'introduction sous le titre.",
@@ -99,9 +98,10 @@ class Accueil(TimestampedModel, SeoMixin):
         ),
     )
 
-    pull_quote_texte = models.TextField(
+    pull_quote_texte = RichTextField(
         "Citation centrale",
         blank=True,
+        mode="inline",
         help_text="Phrase mise en exergue entre le hero et les actualités.",
     )
     pull_quote_auteur = models.CharField(
@@ -110,12 +110,12 @@ class Accueil(TimestampedModel, SeoMixin):
         blank=True,
     )
 
-    dedicaces_intro = models.TextField(
+    dedicaces_intro = RichTextField(
         "Introduction du bloc Dédicaces",
         blank=True,
         help_text="Texte sous le titre « Dédicaces & actualités ».",
     )
-    temoignages_intro = models.TextField(
+    temoignages_intro = RichTextField(
         "Introduction du bloc Témoignages",
         blank=True,
         help_text="Texte affiché au-dessus du carrousel de témoignages (optionnel).",

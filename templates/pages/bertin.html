@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load richtext %}
 
 {% block title %}Jacques Bertin — {{ SITE_NAME }}{% endblock %}
 {% block description %}Jacques Bertin, chanteur-poète : biographie, discographie, citations et galerie.{% endblock %}
@@ -52,7 +53,7 @@
     <p class="eyebrow">Biographie</p>
     <h2 class="mt-4">Le parcours</h2>
     <div class="prose mt-8 drop-cap">
-        {{ personne.bio_longue|safe }}
+        {{ personne.bio_longue|richtext }}
     </div>
 </section>
 {% endif %}

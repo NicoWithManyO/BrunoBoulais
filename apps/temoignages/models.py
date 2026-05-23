@@ -1,5 +1,6 @@
 from django.db import models
 
+from apps.core.fields import RichTextField
 from apps.core.models import TimestampedModel
 
 
@@ -20,7 +21,7 @@ class Temoignage(TimestampedModel):
         "Source", max_length=200, blank=True,
         help_text="Optionnel : ville, lien, contexte (ex. 'Mairie de Pouillon, Facebook')."
     )
-    texte = models.TextField("Texte")
+    texte = RichTextField("Texte")
     statut = models.CharField("Statut", max_length=20, choices=STATUT_CHOICES, default=STATUT_BROUILLON)
     mis_en_avant = models.BooleanField(
         "Mis en avant", default=False,

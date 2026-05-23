@@ -1,5 +1,6 @@
 from django.db import models
 
+from apps.core.fields import RichTextField
 from apps.core.models import TimestampedModel
 from apps.core.uploads import portraits_upload_to
 from apps.core.validators import IMAGE_VALIDATORS
@@ -26,9 +27,9 @@ class Personne(TimestampedModel):
         "Bio courte", max_length=300, blank=True,
         help_text="Pour les vignettes et le pied de page."
     )
-    bio_longue = models.TextField(
+    bio_longue = RichTextField(
         "Biographie", blank=True,
-        help_text="Texte riche (HTML autorisé)."
+        help_text="Texte riche : gras, italique, sauts de ligne."
     )
     portrait = models.ImageField(
         "Portrait", upload_to=portraits_upload_to, blank=True, null=True,

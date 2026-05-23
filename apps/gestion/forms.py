@@ -64,7 +64,6 @@ class ActualiteForm(StripExifMixin, forms.ModelForm):
             "heure_fin": _TimeInput(),
             "date_publication": forms.DateTimeInput(attrs={"type": "datetime-local"}),
             "chapo": forms.Textarea(attrs={"rows": 2}),
-            "contenu": forms.Textarea(attrs={"rows": 8}),
         }
 
 
@@ -72,9 +71,6 @@ class TemoignageForm(forms.ModelForm):
     class Meta:
         model = Temoignage
         fields = ["auteur", "source", "texte", "statut", "mis_en_avant", "position"]
-        widgets = {
-            "texte": forms.Textarea(attrs={"rows": 5}),
-        }
 
 
 class MediaForm(StripExifMixin, forms.ModelForm):
@@ -103,9 +99,6 @@ class LivreForm(StripExifMixin, forms.ModelForm):
         ]
         widgets = {
             "pitch_court": forms.Textarea(attrs={"rows": 2}),
-            "pitch_long": forms.Textarea(attrs={"rows": 8}),
-            "sommaire": forms.Textarea(attrs={"rows": 6}),
-            "extrait": forms.Textarea(attrs={"rows": 6}),
         }
 
 
@@ -127,9 +120,6 @@ class ParametresForm(forms.ModelForm):
             "facebook_url", "instagram_url",
             "bandeau_actif", "bandeau_texte", "bandeau_url",
         ]
-        widgets = {
-            "texte_pied_de_page": forms.Textarea(attrs={"rows": 3}),
-        }
 
 
 class PersonneForm(StripExifMixin, forms.ModelForm):
@@ -143,7 +133,6 @@ class PersonneForm(StripExifMixin, forms.ModelForm):
         ]
         widgets = {
             "bio_courte": forms.Textarea(attrs={"rows": 2}),
-            "bio_longue": forms.Textarea(attrs={"rows": 12}),
         }
 
 
@@ -159,10 +148,5 @@ class AccueilForm(StripExifMixin, forms.ModelForm):
             "seo_title", "seo_description", "og_image",
         ]
         widgets = {
-            "hero_titre": forms.Textarea(attrs={"rows": 3}),
-            "hero_pitch": forms.Textarea(attrs={"rows": 5}),
-            "pull_quote_texte": forms.Textarea(attrs={"rows": 3}),
-            "dedicaces_intro": forms.Textarea(attrs={"rows": 3}),
-            "temoignages_intro": forms.Textarea(attrs={"rows": 3}),
             "seo_description": forms.Textarea(attrs={"rows": 2}),
         }

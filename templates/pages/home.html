@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load richtext %}
 
 {% block content %}
 
@@ -9,13 +10,13 @@
         <div class="lg:col-span-7">
             <p class="eyebrow">Un livre · Éditions du Petit Pavé</p>
             <h1 class="title-display mt-6 text-5xl md:text-6xl lg:text-7xl text-balance">
-                {% if accueil.hero_titre %}{{ accueil.hero_titre|safe }}{% else %}Dans les pas de<br>
+                {% if accueil.hero_titre %}{{ accueil.hero_titre|richtext:"inline" }}{% else %}Dans les pas de<br>
                 <em class="not-italic text-terracotta">Jacques Bertin</em>,<br>
                 le géant discret<br>de la chanson.{% endif %}
             </h1>
 
             <p class="mt-8 font-serif text-lg lg:text-xl text-ink/85 max-w-[55ch] leading-relaxed">
-                {% if accueil.hero_pitch %}{{ accueil.hero_pitch|safe }}{% else %}Bruno Boulais consacre un livre&nbsp;à <em>Jacques Bertin</em>, poète et chanteur
+                {% if accueil.hero_pitch %}{{ accueil.hero_pitch|richtext:"inline" }}{% else %}Bruno Boulais consacre un livre&nbsp;à <em>Jacques Bertin</em>, poète et chanteur
                 à l’œuvre monumentale, longtemps tenu à l’écart des projecteurs. Une porte
                 d’entrée vers ses chansons, ses poèmes, ses écrits — discrets comme&nbsp;lui,
                 puissants comme une braise.{% endif %}
@@ -57,7 +58,7 @@
 {# =========================  PULL QUOTE  ========================= #}
 <section class="container-page py-12">
     <p class="pull-quote">
-        {% if accueil.pull_quote_texte %}{{ accueil.pull_quote_texte|safe }}{% else %}Ses chansons ne séduisent pas, elles touchent. Ses poèmes ne décorent pas, ils dévoilent.{% endif %}
+        {% if accueil.pull_quote_texte %}{{ accueil.pull_quote_texte|richtext:"inline" }}{% else %}Ses chansons ne séduisent pas, elles touchent. Ses poèmes ne décorent pas, ils dévoilent.{% endif %}
     </p>
     <p class="ornament mt-4"><span class="font-sans text-xs uppercase tracking-widest">{{ accueil.pull_quote_auteur|default:"Bruno Boulais" }}</span></p>
 </section>
@@ -70,7 +71,7 @@
             <p class="eyebrow">Prochaines rencontres</p>
             <h2 class="mt-4 text-balance">Dédicaces &amp; actualités</h2>
             <p class="mt-4 text-ink/75 max-w-sm">
-                {% if accueil.dedicaces_intro %}{{ accueil.dedicaces_intro|safe }}{% else %}Bruno parcourt la France, des librairies aux créperies, pour porter ce livre&nbsp;
+                {% if accueil.dedicaces_intro %}{{ accueil.dedicaces_intro|richtext:"inline" }}{% else %}Bruno parcourt la France, des librairies aux créperies, pour porter ce livre&nbsp;
                 à la rencontre de ses lecteurs.{% endif %}
             </p>
             <a href="{% url 'actualites:liste' %}" class="btn-link mt-6">Toutes les actualités →</a>
@@ -107,7 +108,7 @@
         <p class="eyebrow justify-center">Ils ont lu le livre</p>
         <h2 class="mt-4">Quelques mots de lecteurs</h2>
         {% if accueil.temoignages_intro %}
-        <p class="mt-4 text-ink/75 max-w-xl mx-auto">{{ accueil.temoignages_intro|safe }}</p>
+        <p class="mt-4 text-ink/75 max-w-xl mx-auto">{{ accueil.temoignages_intro|richtext:"inline" }}</p>
         {% endif %}
     </div>
 
@@ -116,7 +117,7 @@
         {% for t in temoignages|slice:":3" %}
         <figure class="border-l-2 border-terracotta pl-6">
             <blockquote class="border-0 p-0 m-0 text-lg leading-snug">
-                « {{ t.texte }} »
+                « {{ t.texte|richtext:"inline" }} »
             </blockquote>
             <figcaption class="mt-4">{{ t.auteur }}</figcaption>
         </figure>
