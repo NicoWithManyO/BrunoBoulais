@@ -11,13 +11,11 @@ from django.db import migrations
 def copy_images_forward(apps, schema_editor):
     Actualite = apps.get_model("actualites", "Actualite")
     ActualiteImage = apps.get_model("actualites", "ActualiteImage")
-    for actu in Actualite.objects.exclude(image="").exclude(image__isnull=True):
-        ActualiteImage.objects.create(
-            actualite=actu,
-            image=actu.image.name,  # reuse the same stored path, no file copy
-            position=0,
-            alt="",
-        )
+    # Reuse the same stored path, no file copy.
+    ActualiteImage.objects.bulk_create([
+        ActualiteImage(actualite=actu, image=actu.image.name, position=0)
+        for actu in Actualite.objects.exclude(image="").exclude(image__isnull=True)
+    ])
 
 
 def copy_images_reverse(apps, schema_editor):

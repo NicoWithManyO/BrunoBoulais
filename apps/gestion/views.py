@@ -33,6 +33,7 @@ from django.db.models import Max
 from apps.actualites.models import Actualite, ActualiteImage
 from apps.contact.models import Message
 from apps.core.images import strip_exif
+from apps.core.validators import IMAGE_VALIDATORS
 from apps.galerie.models import Media
 from apps.livre.models import Livre
 from apps.pages.models import Accueil, Page
@@ -47,7 +48,6 @@ from .forms import (
     LienAchatFormSet,
     LivreForm,
     MediaForm,
-    NouvellesImagesField,
     ParametresForm,
     PersonneForm,
     TemoignageForm,
@@ -104,19 +104,14 @@ def actualite_form(request, pk=None):
         if instance is not None else None
     )
 
-    nouvelles_field = NouvellesImagesField(
-        required=False,
-        label="Ajouter des images",
-        help_text="Sélectionnez plusieurs fichiers d'un coup (Ctrl/Cmd+clic). Formats : JPG, PNG, WEBP, AVIF. Taille max 8 Mo par image.",
-    )
-    nouvelles_files = []
+    nouvelles_files = request.FILES.getlist("nouvelles_images") if request.method == "POST" else []
     nouvelles_errors = []
-    if request.method == "POST":
-        raw = request.FILES.getlist("nouvelles_images")
-        try:
-            nouvelles_files = nouvelles_field.clean(raw)
-        except ValidationError as e:
-            nouvelles_errors = list(e)
+    for f in nouvelles_files:
+        for validator in IMAGE_VALIDATORS:
+            try:
+                validator(f)
+            except ValidationError as e:
+                nouvelles_errors.extend(e.messages)
 
     formset_ok = image_formset is None or image_formset.is_valid()
     if request.method == "POST" and form.is_valid() and formset_ok and not nouvelles_errors:
@@ -130,14 +125,12 @@ def actualite_form(request, pk=None):
                     actualite=obj,
                     image=strip_exif(f),
                     position=max_pos + i,
-                    alt="",
                 )
         messages.success(request, f"Actualité « {obj.titre} » enregistrée.")
         return redirect("gestion:actualites_liste")
     return render(request, "gestion/actualites/form.html", {
         "form": form,
         "image_formset": image_formset,
-        "nouvelles_field": nouvelles_field,
         "nouvelles_errors": nouvelles_errors,
         "instance": instance,
     })

@@ -27,8 +27,8 @@ _PLACEHOLDER_PALETTE = [
 ]
 
 
-def _placeholder_jpeg(label, idx, size=(1200, 800)):
-    """Generate a simple JPEG placeholder with a label, returned as ContentFile."""
+def _placeholder_jpeg(label, idx, name, size=(1200, 800)):
+    """Generate a JPEG placeholder with a label, returned as a named ContentFile."""
     bg, fg = _PLACEHOLDER_PALETTE[idx % len(_PLACEHOLDER_PALETTE)]
     img = Image.new("RGB", size, bg)
     draw = ImageDraw.Draw(img)
@@ -45,7 +45,7 @@ def _placeholder_jpeg(label, idx, size=(1200, 800)):
     )
     buf = io.BytesIO()
     img.save(buf, format="JPEG", quality=82, optimize=True)
-    return ContentFile(buf.getvalue())
+    return ContentFile(buf.getvalue(), name=name)
 
 
 class Command(BaseCommand):
@@ -269,13 +269,12 @@ class Command(BaseCommand):
             if not actu.images.exists():
                 n = 2 if data["type"] == Actualite.TYPE_DEDICACE else 1
                 for i in range(n):
-                    img = ActualiteImage(actualite=actu, position=i, alt=data["titre"])
-                    img.image.save(
-                        f"seed-{actu.pk}-{i}.jpg",
-                        _placeholder_jpeg(data["titre"], i),
-                        save=False,
+                    ActualiteImage.objects.create(
+                        actualite=actu,
+                        position=i,
+                        alt=data["titre"],
+                        image=_placeholder_jpeg(data["titre"], i, f"seed-{actu.pk}-{i}.jpg"),
                     )
-                    img.save()
 
     # --- Témoignages ---------------------------------------------------
 

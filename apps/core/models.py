@@ -40,7 +40,7 @@ class OrderedImage(models.Model):
 
     Concrete subclasses must declare:
       - a `parent` ForeignKey with `related_name='images'`
-      - override `image` with a proper `upload_to=...` callable
+      - an `image = ImageField(upload_to=..., validators=IMAGE_VALIDATORS)`
 
     Pair with `delete_image_file` via `pre_delete.connect(..., sender=Cls)` in
     the subclass module to clean up files on cascade delete (handled per-class
@@ -54,9 +54,6 @@ class OrderedImage(models.Model):
     alt = models.CharField(
         "Texte alternatif", max_length=180, blank=True,
         help_text="Décrit l'image pour les lecteurs d'écran. Laisser vide reprend le titre du parent."
-    )
-    image = models.ImageField(
-        "Image", upload_to="overridden/", validators=IMAGE_VALIDATORS,
     )
 
     class Meta:

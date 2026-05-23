@@ -5,7 +5,6 @@ from django.forms import inlineformset_factory
 
 from apps.actualites.models import Actualite, ActualiteImage
 from apps.core.images import strip_exif
-from apps.core.validators import IMAGE_VALIDATORS
 from apps.galerie.models import Media
 from apps.livre.models import LienAchat, Livre
 from apps.pages.models import Accueil
@@ -79,38 +78,6 @@ ActualiteImageFormSet = inlineformset_factory(
     extra=0,
     can_delete=True,
 )
-
-
-class _MultiFileInput(forms.ClearableFileInput):
-    """Widget allowing <input type="file" multiple>."""
-    allow_multiple_selected = True
-
-
-class NouvellesImagesField(forms.FileField):
-    """File field accepting multiple uploads at once, validated as images.
-
-    Used as a *separate* control next to ActualiteImageFormSet: the formset
-    manages the existing rows (reorder/delete/alt), this field batches new
-    uploads in one click. Each file is run through the same IMAGE_VALIDATORS
-    as the formset's ImageField and then strip_exif at view-level.
-    """
-    widget = _MultiFileInput
-    default_validators = IMAGE_VALIDATORS
-
-    def to_python(self, data):
-        if not data:
-            return []
-        if not isinstance(data, list):
-            data = [data]
-        return [super().to_python(d) for d in data]
-
-    def validate(self, data):
-        for f in data:
-            super().validate(f)
-
-    def run_validators(self, data):
-        for f in data:
-            super().run_validators(f)
 
 
 class TemoignageForm(forms.ModelForm):

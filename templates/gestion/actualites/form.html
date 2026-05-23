@@ -64,9 +64,9 @@
         {% if nouvelles_errors %}
         <ul class="errorlist mb-2">{% for e in nouvelles_errors %}<li>{{ e }}</li>{% endfor %}</ul>
         {% endif %}
-        <label for="id_nouvelles_images">{{ nouvelles_field.label }}</label>
+        <label for="id_nouvelles_images">Ajouter des images</label>
         <input type="file" name="nouvelles_images" id="id_nouvelles_images" multiple accept="image/*">
-        <span class="helptext">{{ nouvelles_field.help_text }}</span>
+        <span class="helptext">Sélectionnez plusieurs fichiers d'un coup (Ctrl/Cmd+clic). Formats : JPG, PNG, WEBP, AVIF. Taille max 8 Mo par image.</span>
         {% if not instance %}
         <p class="helptext mt-3 italic">Astuce : créez d'abord l'actualité sans images si vous préférez les ajouter une par une plus tard.</p>
         {% endif %}
