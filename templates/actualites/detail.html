@@ -1,9 +1,6 @@
 {% extends "base.html" %}
 {% load richtext %}
 
-{% block title %}{{ obj.titre }} — {{ SITE_NAME }}{% endblock %}
-{% block description %}{% if obj.chapo %}{{ obj.chapo }}{% else %}{{ obj.titre }}{% endif %}{% endblock %}
-
 {% block content %}
 
 <article>
