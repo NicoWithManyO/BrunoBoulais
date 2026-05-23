@@ -70,7 +70,7 @@ class ContentBlock(TimestampedModel):
         return f"{self.page.slug} · {self.get_type_display()} #{self.position}"
 
 
-class Accueil(TimestampedModel):
+class Accueil(TimestampedModel, SeoMixin):
     """Singleton holding the editable content of the public home page."""
 
     hero_titre = models.TextField(
