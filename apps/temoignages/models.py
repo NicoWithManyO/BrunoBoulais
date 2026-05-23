@@ -1,7 +1,11 @@
+from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from apps.core.fields import RichTextField
 from apps.core.models import TimestampedModel
+
+CACHE_KEY_TEMOIGNAGES_PAGE = "temoignages_page"
 
 
 class Temoignage(TimestampedModel):
@@ -36,3 +40,35 @@ class Temoignage(TimestampedModel):
 
     def __str__(self):
         return f"{self.auteur} — {self.texte[:60]}…"
+
+
+class TemoignagesPage(TimestampedModel):
+    """Singleton holding the editable header of the public /temoignages/ page."""
+
+    eyebrow = models.CharField("Surtitre", max_length=80, blank=True)
+    titre = models.CharField("Titre", max_length=120, blank=True)
+    intro = RichTextField("Texte d'introduction", blank=True)
+
+    class Meta:
+        verbose_name = "En-tête /témoignages/"
+        verbose_name_plural = "En-tête /témoignages/"
+
+    def __str__(self):
+        return "En-tête /témoignages/"
+
+    def clean(self):
+        if not self.pk and TemoignagesPage.objects.exists():
+            raise ValidationError("Un seul en-tête peut exister (singleton).")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+        cache.delete(CACHE_KEY_TEMOIGNAGES_PAGE)
+
+    @classmethod
+    def get_solo(cls):
+        obj = cache.get(CACHE_KEY_TEMOIGNAGES_PAGE)
+        if obj is None:
+            obj, _ = cls.objects.get_or_create(pk=1)
+            cache.set(CACHE_KEY_TEMOIGNAGES_PAGE, obj, 300)
+        return obj

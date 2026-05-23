@@ -3,14 +3,14 @@ from django import forms
 from django.core.files.uploadedfile import UploadedFile
 from django.forms import inlineformset_factory
 
-from apps.actualites.models import Actualite, ActualiteImage
+from apps.actualites.models import Actualite, ActualiteImage, ActualitesPage
 from apps.core.images import strip_exif
 from apps.galerie.models import Media
 from apps.livre.models import LienAchat, Livre, LivreImage
 from apps.pages.models import Accueil, AccueilImage
 from apps.parametres.models import Parametres
 from apps.personnes.models import Personne, PersonneImage
-from apps.temoignages.models import Temoignage
+from apps.temoignages.models import Temoignage, TemoignagesPage
 
 
 class StripExifMixin:
@@ -86,10 +86,22 @@ class ActualiteForm(forms.ModelForm):
 ActualiteImageFormSet = _make_image_formset(Actualite, ActualiteImage)
 
 
+class ActualitesPageForm(forms.ModelForm):
+    class Meta:
+        model = ActualitesPage
+        fields = ["eyebrow", "titre", "intro"]
+
+
 class TemoignageForm(forms.ModelForm):
     class Meta:
         model = Temoignage
         fields = ["auteur", "source", "texte", "statut", "mis_en_avant", "position"]
+
+
+class TemoignagesPageForm(forms.ModelForm):
+    class Meta:
+        model = TemoignagesPage
+        fields = ["eyebrow", "titre", "intro"]
 
 
 class MediaForm(StripExifMixin, forms.ModelForm):

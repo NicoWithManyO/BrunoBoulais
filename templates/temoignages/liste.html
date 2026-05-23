@@ -7,12 +7,14 @@
 {% block content %}
 
 <section class="container-wide pt-16 lg:pt-24 pb-12">
-    <p class="eyebrow">Retours de lecteurs</p>
-    <h1 class="title-display mt-6 text-5xl md:text-6xl">Témoignages</h1>
-    <p class="mt-6 font-serif text-lg text-ink/80 max-w-2xl leading-relaxed">
-        Quelques mots reçus par Bruno après lecture du livre&nbsp;:
-        un dialogue qui se prolonge, lecteur après lecteur.
-    </p>
+    <p class="eyebrow">{{ page.eyebrow|default:"Retours de lecteurs" }}</p>
+    <h1 class="title-display mt-6 text-5xl md:text-6xl">{{ page.titre|default:"Témoignages" }}</h1>
+    <div class="mt-6 font-serif text-lg text-ink/80 max-w-2xl leading-relaxed [&>p+p]:mt-4">
+        {% if page.intro %}{{ page.intro|richtext }}{% else %}
+        <p>Quelques mots reçus par Bruno après lecture du livre&nbsp;:
+            un dialogue qui se prolonge, lecteur après lecteur.</p>
+        {% endif %}
+    </div>
 </section>
 
 <section class="container-wide pb-24">

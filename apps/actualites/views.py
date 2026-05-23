@@ -3,7 +3,7 @@ from django.utils import timezone
 
 from apps.core.seo import seo, seo_from_obj
 
-from .models import Actualite
+from .models import Actualite, ActualitesPage
 
 
 def liste(request):
@@ -17,6 +17,7 @@ def liste(request):
         {
             "a_venir": a_venir,
             "passees": passees,
+            "page": ActualitesPage.get_solo(),
             **seo(
                 request,
                 title="Actualités & dédicaces · Bruno Boulais",

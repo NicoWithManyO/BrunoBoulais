@@ -27,11 +27,13 @@ urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     # Actualités
     path("actualites/", views.actualites_liste, name="actualites_liste"),
+    path("actualites/page/", views.actualites_page_form, name="actualites_page"),
     path("actualites/ajouter/", views.actualite_form, name="actualite_ajouter"),
     path("actualites/<int:pk>/", views.actualite_form, name="actualite_modifier"),
     path("actualites/<int:pk>/supprimer/", views.actualite_supprimer, name="actualite_supprimer"),
     # Témoignages
     path("temoignages/", views.temoignages_liste, name="temoignages_liste"),
+    path("temoignages/page/", views.temoignages_page_form, name="temoignages_page"),
     path("temoignages/ajouter/", views.temoignage_form, name="temoignage_ajouter"),
     path("temoignages/<int:pk>/", views.temoignage_form, name="temoignage_modifier"),
     path("temoignages/<int:pk>/supprimer/", views.temoignage_supprimer, name="temoignage_supprimer"),

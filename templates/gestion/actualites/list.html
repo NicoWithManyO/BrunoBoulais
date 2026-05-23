@@ -5,6 +5,7 @@
 {% block heading %}Actualités & dédicaces{% endblock %}
 
 {% block header_actions %}
+    <a href="{% url 'gestion:actualites_page' %}" class="btn-sm btn-ghost">✎ En-tête de la page</a>
     <a href="{% url 'gestion:actualite_ajouter' %}" class="btn-sm btn-primary">+ Nouvelle actualité</a>
 {% endblock %}
 

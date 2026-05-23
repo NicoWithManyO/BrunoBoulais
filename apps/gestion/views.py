@@ -32,7 +32,7 @@ def gestion_required(view_func):
 from django.core.exceptions import ValidationError
 from django.db.models import Max
 
-from apps.actualites.models import Actualite, ActualiteImage
+from apps.actualites.models import Actualite, ActualiteImage, ActualitesPage
 from apps.contact.models import Message
 from apps.core.images import strip_exif
 from apps.core.validators import IMAGE_VALIDATORS
@@ -41,13 +41,14 @@ from apps.livre.models import Livre, LivreImage
 from apps.pages.models import Accueil, AccueilImage, Page
 from apps.parametres.models import Parametres
 from apps.personnes.models import Personne, PersonneImage
-from apps.temoignages.models import Temoignage
+from apps.temoignages.models import Temoignage, TemoignagesPage
 
 from .forms import (
     AccueilForm,
     AccueilImageFormSet,
     ActualiteForm,
     ActualiteImageFormSet,
+    ActualitesPageForm,
     LienAchatFormSet,
     LivreForm,
     LivreImageFormSet,
@@ -56,6 +57,7 @@ from .forms import (
     PersonneForm,
     PersonneImageFormSet,
     TemoignageForm,
+    TemoignagesPageForm,
 )
 
 
@@ -152,6 +154,41 @@ def actualite_form(request, pk=None):
         "image_formset": image_formset,
         "instance": instance,
     })
+
+
+def _make_page_header_view(form_cls, model_cls, *, label, page_url_name, list_url_name):
+    """Build a singleton header-editor view (eyebrow / titre / intro).
+
+    Used by /gestion/actualites/page/ and /gestion/temoignages/page/.
+    """
+    @gestion_required
+    def view(request):
+        obj = model_cls.get_solo()
+        form = form_cls(request.POST or None, instance=obj)
+        if request.method == "POST" and form.is_valid():
+            form.save()
+            messages.success(request, f"En-tête « {label} » mis à jour.")
+            return redirect(page_url_name)
+        return render(request, "gestion/_page_header_form.html", {
+            "form": form,
+            "label": label,
+            "list_url_name": list_url_name,
+        })
+    return view
+
+
+actualites_page_form = _make_page_header_view(
+    ActualitesPageForm, ActualitesPage,
+    label="Actualités & dédicaces",
+    page_url_name="gestion:actualites_page",
+    list_url_name="gestion:actualites_liste",
+)
+temoignages_page_form = _make_page_header_view(
+    TemoignagesPageForm, TemoignagesPage,
+    label="Témoignages",
+    page_url_name="gestion:temoignages_page",
+    list_url_name="gestion:temoignages_liste",
+)
 
 
 @gestion_required

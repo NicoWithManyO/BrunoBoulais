@@ -10,12 +10,12 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from PIL import Image, ImageDraw, ImageFont
 
-from apps.actualites.models import Actualite, ActualiteImage
+from apps.actualites.models import Actualite, ActualiteImage, ActualitesPage
 from apps.livre.models import LienAchat, Livre, LivreImage
 from apps.pages.models import Accueil, AccueilImage
 from apps.parametres.models import Parametres
 from apps.personnes.models import Personne, PersonneImage
-from apps.temoignages.models import Temoignage
+from apps.temoignages.models import Temoignage, TemoignagesPage
 
 
 # Earth-toned palette matching the site's --color-terracotta / --color-brown / --color-sand.
@@ -61,6 +61,7 @@ class Command(BaseCommand):
         self._seed_temoignages()
         self._seed_parametres()
         self._seed_accueil()
+        self._seed_page_headers()
 
         self.stdout.write(self.style.SUCCESS("Done."))
 
@@ -387,3 +388,25 @@ class Command(BaseCommand):
                 alt="Hero placeholder",
                 image=_placeholder_jpeg("Hero accueil", 0, f"seed-accueil-{accueil.pk}.jpg", size=(800, 1200)),
             )
+
+    # --- En-têtes éditables des pages liste --------------------------
+
+    def _seed_page_headers(self):
+        actu_page = ActualitesPage.get_solo()
+        actu_page.eyebrow = "Agenda & nouvelles"
+        actu_page.titre = "Actualités & dédicaces"
+        actu_page.intro = (
+            "<p>Bruno parcourt la France pour porter son livre à la rencontre de ses lecteurs&nbsp;: "
+            "librairies, créperies, supermarchés, festivals. Retrouvez ici les prochaines dates "
+            "et celles déjà passées.</p>"
+        )
+        actu_page.save()
+
+        temoignages_page = TemoignagesPage.get_solo()
+        temoignages_page.eyebrow = "Retours de lecteurs"
+        temoignages_page.titre = "Témoignages"
+        temoignages_page.intro = (
+            "<p>Quelques mots reçus par Bruno après lecture du livre&nbsp;: "
+            "un dialogue qui se prolonge, lecteur après lecteur.</p>"
+        )
+        temoignages_page.save()

@@ -6,6 +6,7 @@
 {% block heading %}Témoignages{% endblock %}
 
 {% block header_actions %}
+    <a href="{% url 'gestion:temoignages_page' %}" class="btn-sm btn-ghost">✎ En-tête de la page</a>
     <a href="{% url 'gestion:temoignage_ajouter' %}" class="btn-sm btn-primary">+ Nouveau témoignage</a>
 {% endblock %}
 

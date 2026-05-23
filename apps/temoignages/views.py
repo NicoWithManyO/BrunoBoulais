@@ -2,7 +2,7 @@ from django.shortcuts import render
 
 from apps.core.seo import seo
 
-from .models import Temoignage
+from .models import Temoignage, TemoignagesPage
 
 
 def liste(request):
@@ -12,6 +12,7 @@ def liste(request):
         "temoignages/liste.html",
         {
             "temoignages": qs,
+            "page": TemoignagesPage.get_solo(),
             **seo(
                 request,
                 title="Témoignages de lecteurs · Bruno Boulais",

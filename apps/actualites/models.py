@@ -1,3 +1,5 @@
+from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.signals import pre_delete
 from django.urls import reverse
@@ -14,6 +16,8 @@ from apps.core.models import (
 )
 from apps.core.uploads import actualites_image_upload_to, actualites_upload_to
 from apps.core.validators import IMAGE_VALIDATORS
+
+CACHE_KEY_ACTUALITES_PAGE = "actualites_page"
 
 
 class Actualite(TimestampedModel, SeoMixin, CarrouselSettingsMixin):
@@ -101,3 +105,35 @@ class ActualiteImage(OrderedImage):
 
 
 pre_delete.connect(delete_image_file, sender=ActualiteImage)
+
+
+class ActualitesPage(TimestampedModel):
+    """Singleton holding the editable header of the public /actualites/ page."""
+
+    eyebrow = models.CharField("Surtitre", max_length=80, blank=True)
+    titre = models.CharField("Titre", max_length=120, blank=True)
+    intro = RichTextField("Texte d'introduction", blank=True)
+
+    class Meta:
+        verbose_name = "En-tête /actualités/"
+        verbose_name_plural = "En-tête /actualités/"
+
+    def __str__(self):
+        return "En-tête /actualités/"
+
+    def clean(self):
+        if not self.pk and ActualitesPage.objects.exists():
+            raise ValidationError("Un seul en-tête peut exister (singleton).")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+        cache.delete(CACHE_KEY_ACTUALITES_PAGE)
+
+    @classmethod
+    def get_solo(cls):
+        obj = cache.get(CACHE_KEY_ACTUALITES_PAGE)
+        if obj is None:
+            obj, _ = cls.objects.get_or_create(pk=1)
+            cache.set(CACHE_KEY_ACTUALITES_PAGE, obj, 300)
+        return obj
