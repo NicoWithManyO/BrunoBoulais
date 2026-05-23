@@ -30,15 +30,15 @@ def gestion_required(view_func):
 from django.core.exceptions import ValidationError
 from django.db.models import Max
 
-from apps.actualites.models import Actualite, ActualiteImage
+from apps.actualites.models import Actualite
 from apps.contact.models import Message
 from apps.core.images import strip_exif
 from apps.core.validators import IMAGE_VALIDATORS
 from apps.galerie.models import Media
-from apps.livre.models import Livre, LivreImage
-from apps.pages.models import Accueil, AccueilImage, Page
+from apps.livre.models import Livre
+from apps.pages.models import Accueil, Page
 from apps.parametres.models import Parametres
-from apps.personnes.models import Personne, PersonneImage
+from apps.personnes.models import Personne
 from apps.temoignages.models import Temoignage
 
 from .forms import (
@@ -75,17 +75,17 @@ def _validate_new_images(request):
     return files, errors
 
 
-def _save_new_images(image_model, files, **fk):
-    """Create one image row per file at the next available `position`."""
+def _save_new_images(parent, files):
+    """Create one image row per file at the next available `position`.
+
+    Relies on the reverse manager `parent.images` (every OrderedImage
+    subclass uses `related_name="images"`).
+    """
     if not files:
         return
-    max_pos = image_model.objects.filter(**fk).aggregate(Max("position"))["position__max"] or 0
+    max_pos = parent.images.aggregate(Max("position"))["position__max"] or 0
     for i, f in enumerate(files, start=1):
-        image_model.objects.create(
-            image=strip_exif(f),
-            position=max_pos + i,
-            **fk,
-        )
+        parent.images.create(image=strip_exif(f), position=max_pos + i)
 
 
 # ---- Dashboard ---------------------------------------------------------------
@@ -144,7 +144,7 @@ def actualite_form(request, pk=None):
         obj = form.save()
         if image_formset is not None:
             image_formset.save()
-        _save_new_images(ActualiteImage, nouvelles_files, actualite=obj)
+        _save_new_images(obj, nouvelles_files)
         messages.success(request, f"Actualité « {obj.titre} » enregistrée.")
         return redirect("gestion:actualites_liste")
     return render(request, "gestion/actualites/form.html", {
@@ -328,7 +328,7 @@ def accueil_form(request):
     if request.method == "POST" and form.is_valid() and image_formset.is_valid() and not nouvelles_errors:
         form.save()
         image_formset.save()
-        _save_new_images(AccueilImage, nouvelles_files, accueil=obj)
+        _save_new_images(obj, nouvelles_files)
         messages.success(request, "Page d'accueil mise à jour.")
         return redirect("gestion:accueil")
     return render(request, "gestion/accueil/form.html", {
@@ -359,7 +359,7 @@ def personne_form(request, role):
     if request.method == "POST" and form.is_valid() and image_formset.is_valid() and not nouvelles_errors:
         form.save()
         image_formset.save()
-        _save_new_images(PersonneImage, nouvelles_files, personne=obj)
+        _save_new_images(obj, nouvelles_files)
         messages.success(request, f"« {obj.nom} » mis à jour.")
         return redirect(PERSONNE_LABELS[role][2])
     label, public_url, _ = PERSONNE_LABELS[role]
@@ -391,7 +391,7 @@ def livre_form(request):
         form.save()
         formset.save()
         image_formset.save()
-        _save_new_images(LivreImage, nouvelles_files, livre=livre)
+        _save_new_images(livre, nouvelles_files)
         messages.success(request, "Livre enregistré.")
         return redirect("gestion:livre")
     return render(request, "gestion/livre/form.html", {

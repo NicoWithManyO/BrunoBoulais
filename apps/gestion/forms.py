@@ -36,6 +36,25 @@ class StripExifMixin:
         return cleaned
 
 
+def _make_image_formset(parent_model, image_model):
+    """Build an inline formset for an OrderedImage subclass (image + alt + position).
+
+    Shared between Actualite, Accueil, Personne, Livre: same fields, same
+    StripExif behaviour, no extra blank rows (uploads happen via the
+    `nouvelles_images` multi-file field handled in the view).
+    """
+    class _Form(StripExifMixin, forms.ModelForm):
+        exif_fields = ["image"]
+
+        class Meta:
+            model = image_model
+            fields = ["image", "alt", "position"]
+
+    return inlineformset_factory(
+        parent_model, image_model, form=_Form, extra=0, can_delete=True,
+    )
+
+
 class _DateInput(forms.DateInput):
     input_type = "date"
 
@@ -63,21 +82,7 @@ class ActualiteForm(forms.ModelForm):
         }
 
 
-class _ActualiteImageForm(StripExifMixin, forms.ModelForm):
-    """Inline form for an existing ActualiteImage: thumbnail + alt + position + delete."""
-    exif_fields = ["image"]
-
-    class Meta:
-        model = ActualiteImage
-        fields = ["image", "alt", "position"]
-
-
-ActualiteImageFormSet = inlineformset_factory(
-    Actualite, ActualiteImage,
-    form=_ActualiteImageForm,
-    extra=0,
-    can_delete=True,
-)
+ActualiteImageFormSet = _make_image_formset(Actualite, ActualiteImage)
 
 
 class TemoignageForm(forms.ModelForm):
@@ -122,20 +127,7 @@ LienAchatFormSet = inlineformset_factory(
 )
 
 
-class _LivreImageForm(StripExifMixin, forms.ModelForm):
-    exif_fields = ["image"]
-
-    class Meta:
-        model = LivreImage
-        fields = ["image", "alt", "position"]
-
-
-LivreImageFormSet = inlineformset_factory(
-    Livre, LivreImage,
-    form=_LivreImageForm,
-    extra=0,
-    can_delete=True,
-)
+LivreImageFormSet = _make_image_formset(Livre, LivreImage)
 
 
 class ParametresForm(forms.ModelForm):
@@ -161,20 +153,7 @@ class PersonneForm(forms.ModelForm):
         }
 
 
-class _PersonneImageForm(StripExifMixin, forms.ModelForm):
-    exif_fields = ["image"]
-
-    class Meta:
-        model = PersonneImage
-        fields = ["image", "alt", "position"]
-
-
-PersonneImageFormSet = inlineformset_factory(
-    Personne, PersonneImage,
-    form=_PersonneImageForm,
-    extra=0,
-    can_delete=True,
-)
+PersonneImageFormSet = _make_image_formset(Personne, PersonneImage)
 
 
 class AccueilForm(StripExifMixin, forms.ModelForm):
@@ -193,17 +172,4 @@ class AccueilForm(StripExifMixin, forms.ModelForm):
         }
 
 
-class _AccueilImageForm(StripExifMixin, forms.ModelForm):
-    exif_fields = ["image"]
-
-    class Meta:
-        model = AccueilImage
-        fields = ["image", "alt", "position"]
-
-
-AccueilImageFormSet = inlineformset_factory(
-    Accueil, AccueilImage,
-    form=_AccueilImageForm,
-    extra=0,
-    can_delete=True,
-)
+AccueilImageFormSet = _make_image_formset(Accueil, AccueilImage)

@@ -51,10 +51,6 @@ class Livre(TimestampedModel):
         self.full_clean()
         super().save(*args, **kwargs)
 
-    @property
-    def image_principale(self):
-        return self.images.first()
-
 
 class LivreImage(OrderedImage):
     """A cover/image attached to the Livre singleton (1-N for carousel)."""

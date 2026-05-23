@@ -40,10 +40,6 @@ class Personne(TimestampedModel):
     def __str__(self):
         return self.nom
 
-    @property
-    def image_principale(self):
-        return self.images.first()
-
 
 class PersonneImage(OrderedImage):
     """A portrait image attached to a Personne (1-N for carousel)."""

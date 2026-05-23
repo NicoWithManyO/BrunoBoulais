@@ -135,10 +135,6 @@ class Accueil(TimestampedModel, SeoMixin):
             cache.set(CACHE_KEY_ACCUEIL, obj, 300)
         return obj
 
-    @property
-    def image_principale(self):
-        return self.images.first()
-
 
 class AccueilImage(OrderedImage):
     """An image attached to the Accueil singleton (1-N for hero carousel).
