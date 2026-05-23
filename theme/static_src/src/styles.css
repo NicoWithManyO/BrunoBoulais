@@ -6,6 +6,12 @@
 /* Alpine.js — masque les éléments x-cloak tant qu'Alpine n'a pas initialisé */
 [x-cloak] { display: none !important; }
 
+/* Menu mobile pure-CSS : la checkbox #menu-toggle pilote l'affichage du drawer */
+.mobile-menu { display: none; }
+.menu-toggle:checked ~ .mobile-menu { display: block; }
+/* Bloque le scroll du body quand le drawer est ouvert (browsers récents : :has supporté partout) */
+html:has(.menu-toggle:checked) { overflow: hidden; }
+
 /* =========================================================================
    THEME — Bruno Boulais, auteur
    Inspiration : papier ivoire, encre tiède, sérénité éditoriale.
