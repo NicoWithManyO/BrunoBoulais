@@ -33,11 +33,11 @@
       slides[next].classList.add("is-active");
       if (dots[current]) {
         dots[current].classList.remove("is-active");
-        dots[current].setAttribute("aria-selected", "false");
+        dots[current].setAttribute("aria-pressed", "false");
       }
       if (dots[next]) {
         dots[next].classList.add("is-active");
-        dots[next].setAttribute("aria-selected", "true");
+        dots[next].setAttribute("aria-pressed", "true");
       }
       current = next;
     }
