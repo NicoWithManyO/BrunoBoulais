@@ -6,11 +6,24 @@
 {% block heading %}Témoignages{% endblock %}
 
 {% block header_actions %}
-    <a href="{% url 'gestion:temoignages_page' %}" class="btn-sm btn-ghost">✎ En-tête de la page</a>
     <a href="{% url 'gestion:temoignage_ajouter' %}" class="btn-sm btn-primary">+ Nouveau témoignage</a>
 {% endblock %}
 
 {% block content %}
+
+<details class="panel mb-6">
+    <summary class="cursor-pointer font-display text-base text-brown select-none">
+        ✎ En-tête de la page publique
+        <span class="ml-2 text-xs text-slate-soft font-sans">surtitre · titre · introduction</span>
+    </summary>
+    <form method="post" class="gform mt-4 max-w-2xl">
+        {% csrf_token %}
+        {% include "gestion/_form.html" with form=page_form %}
+        <div class="mt-4">
+            <button type="submit" class="btn-sm btn-primary">Enregistrer l'en-tête</button>
+        </div>
+    </form>
+</details>
 
 <form method="get" class="flex items-end gap-3 mb-6 gform">
     <div>

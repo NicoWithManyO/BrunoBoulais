@@ -117,6 +117,12 @@ def dashboard(request):
 
 @gestion_required
 def actualites_liste(request):
+    page_form = ActualitesPageForm(request.POST or None, instance=ActualitesPage.get_solo())
+    if request.method == "POST" and page_form.is_valid():
+        page_form.save()
+        messages.success(request, "En-tête de la page mis à jour.")
+        return redirect("gestion:actualites_liste")
+
     qs = Actualite.objects.all()
     type_filter = request.GET.get("type")
     statut_filter = request.GET.get("statut")
@@ -130,6 +136,7 @@ def actualites_liste(request):
         "statut_filter": statut_filter,
         "type_choices": Actualite.TYPE_CHOICES,
         "statut_choices": Actualite.STATUT_CHOICES,
+        "page_form": page_form,
     })
 
 
@@ -156,41 +163,6 @@ def actualite_form(request, pk=None):
     })
 
 
-def _make_page_header_view(form_cls, model_cls, *, label, page_url_name, list_url_name):
-    """Build a singleton header-editor view (eyebrow / titre / intro).
-
-    Used by /gestion/actualites/page/ and /gestion/temoignages/page/.
-    """
-    @gestion_required
-    def view(request):
-        obj = model_cls.get_solo()
-        form = form_cls(request.POST or None, instance=obj)
-        if request.method == "POST" and form.is_valid():
-            form.save()
-            messages.success(request, f"En-tête « {label} » mis à jour.")
-            return redirect(page_url_name)
-        return render(request, "gestion/_page_header_form.html", {
-            "form": form,
-            "label": label,
-            "list_url_name": list_url_name,
-        })
-    return view
-
-
-actualites_page_form = _make_page_header_view(
-    ActualitesPageForm, ActualitesPage,
-    label="Actualités & dédicaces",
-    page_url_name="gestion:actualites_page",
-    list_url_name="gestion:actualites_liste",
-)
-temoignages_page_form = _make_page_header_view(
-    TemoignagesPageForm, TemoignagesPage,
-    label="Témoignages",
-    page_url_name="gestion:temoignages_page",
-    list_url_name="gestion:temoignages_liste",
-)
-
-
 @gestion_required
 def actualite_supprimer(request, pk):
     obj = get_object_or_404(Actualite, pk=pk)
@@ -211,6 +183,12 @@ def actualite_supprimer(request, pk):
 
 @gestion_required
 def temoignages_liste(request):
+    page_form = TemoignagesPageForm(request.POST or None, instance=TemoignagesPage.get_solo())
+    if request.method == "POST" and page_form.is_valid():
+        page_form.save()
+        messages.success(request, "En-tête de la page mis à jour.")
+        return redirect("gestion:temoignages_liste")
+
     qs = Temoignage.objects.all()
     statut_filter = request.GET.get("statut")
     if statut_filter:
@@ -219,6 +197,7 @@ def temoignages_liste(request):
         "temoignages": qs,
         "statut_filter": statut_filter,
         "statut_choices": Temoignage.STATUT_CHOICES,
+        "page_form": page_form,
     })
 
 
