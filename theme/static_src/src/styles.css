@@ -3,9 +3,6 @@
 /* Scan all templates and Python sources for class names */
 @source "../../../**/*.{html,py,js}";
 
-/* Alpine.js — masque les éléments x-cloak tant qu'Alpine n'a pas initialisé */
-[x-cloak] { display: none !important; }
-
 /* Menu mobile pure-CSS : la checkbox #menu-toggle pilote l'affichage du drawer.
    Animation : backdrop fade + panel slide. On utilise visibility + opacity + transform
    au lieu de display:none pour que les transitions CSS s'animent. */
@@ -34,6 +31,14 @@
 }
 .menu-toggle:checked ~ .mobile-menu .mobile-menu-panel {
   transform: translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-menu,
+  .mobile-menu-backdrop,
+  .mobile-menu-panel {
+    transition: none !important;
+  }
 }
 
 /* =========================================================================
@@ -374,12 +379,16 @@
   .field-input,
   .field-textarea,
   .field-select,
-  .pform input[type="text"],
-  .pform input[type="email"],
-  .pform input[type="tel"],
-  .pform input[type="url"],
-  .pform input[type="number"],
+  .pform input[type="text"]:not(.hp-field),
+  .pform input[type="email"]:not(.hp-field),
+  .pform input[type="tel"]:not(.hp-field),
+  .pform input[type="url"]:not(.hp-field),
+  .pform input[type="number"]:not(.hp-field),
+  .pform input[type="search"]:not(.hp-field),
   .pform input[type="password"],
+  .pform input[type="date"],
+  .pform input[type="time"],
+  .pform input[type="datetime-local"],
   .pform select,
   .pform textarea {
     @apply block w-full px-4 py-3 font-serif text-base;
@@ -642,7 +651,8 @@
     list-style: none;
     padding: 0;
   }
-  .gform input[type="checkbox"] {
+  .gform input[type="checkbox"],
+  .gform input[type="radio"] {
     @apply mr-2 align-middle;
     width: auto;
     accent-color: var(--color-terracotta);
@@ -653,6 +663,50 @@
   .gform .form-check label {
     @apply mt-0 mb-0 normal-case tracking-normal text-sm;
     color: var(--color-ink);
+  }
+
+  /* Input fichier : conteneur stylé + bouton natif rehabillé via ::file-selector-button.
+     S'applique à la fois aux formulaires gestion (.gform) et publics (.pform). */
+  .gform input[type="file"],
+  .pform input[type="file"] {
+    @apply block w-full font-sans text-sm;
+    background: #fffdf7;
+    border: 1px solid var(--color-mist);
+    color: var(--color-ink);
+    border-radius: 2px;
+    cursor: pointer;
+    padding: 0;
+  }
+  .pform input[type="file"] {
+    background: #ffffff;
+  }
+  .gform input[type="file"]::file-selector-button,
+  .pform input[type="file"]::file-selector-button {
+    @apply px-4 py-2 mr-3 font-sans text-sm font-medium;
+    background: var(--color-sand);
+    color: var(--color-brown);
+    border: none;
+    border-right: 1px solid var(--color-mist);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .gform input[type="file"]::file-selector-button:hover,
+  .pform input[type="file"]::file-selector-button:hover {
+    background: var(--color-mist-light);
+    color: var(--color-brown);
+  }
+  .gform input[type="file"]:focus,
+  .pform input[type="file"]:focus {
+    outline: none;
+    border-color: var(--color-terracotta);
+  }
+
+  /* Checkbox/radio public : RGPD, opt-in newsletter, etc. */
+  .pform input[type="checkbox"]:not(.hp-field),
+  .pform input[type="radio"] {
+    @apply mr-2 align-middle;
+    width: auto;
+    accent-color: var(--color-terracotta);
   }
 
   /* Mini rich-text editor — bold/italic toolbar above a contenteditable */
