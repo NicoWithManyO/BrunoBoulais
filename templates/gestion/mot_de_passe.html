@@ -1,0 +1,23 @@
+{% extends "gestion/_layout.html" %}
+
+{% block title %}Mot de passe · Gestion{% endblock %}
+{% block crumb %}Mon compte{% endblock %}
+{% block heading %}Changer mon mot de passe{% endblock %}
+
+{% block content %}
+<form method="post" class="gform max-w-md">
+    {% csrf_token %}
+
+    <div class="panel">
+        <p class="text-xs text-slate-soft mb-4">
+            Saisissez votre mot de passe actuel, puis le nouveau deux fois pour confirmation.
+        </p>
+        {% include "gestion/_form.html" %}
+    </div>
+
+    <div class="mt-6 flex items-center gap-3">
+        <button type="submit" class="btn btn-primary">Mettre à jour</button>
+        <a href="{% url 'gestion:dashboard' %}" class="btn-link">Annuler</a>
+    </div>
+</form>
+{% endblock %}

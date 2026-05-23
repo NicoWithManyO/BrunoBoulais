@@ -7,7 +7,7 @@ from apps.livre.models import Livre
 from apps.personnes.models import Personne
 from apps.temoignages.models import Temoignage
 
-from .models import Page
+from .models import Accueil, Page
 
 
 def _get_livre():
@@ -18,10 +18,16 @@ def home(request):
     livre = _get_livre()
     temoignages = Temoignage.objects.filter(statut=Temoignage.STATUT_PUBLIE, mis_en_avant=True)[:6]
     actualites = Actualite.objects.filter(statut=Actualite.STATUT_PUBLIE)[:3]
+    accueil = Accueil.get_solo()
     return render(
         request,
         "pages/home.html",
-        {"livre": livre, "temoignages": temoignages, "actualites": actualites},
+        {
+            "livre": livre,
+            "temoignages": temoignages,
+            "actualites": actualites,
+            "accueil": accueil,
+        },
     )
 
 

@@ -1,0 +1,52 @@
+{% extends "gestion/_layout.html" %}
+
+{% block title %}{{ label }} · Gestion{% endblock %}
+{% block crumb %}Contenus{% endblock %}
+{% block heading %}{{ label }}{% endblock %}
+
+{% block header_actions %}
+    <a href="{% url public_url %}" target="_blank" class="btn-sm btn-ghost">↗ Voir sur le site</a>
+{% endblock %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data" class="gform max-w-3xl">
+    {% csrf_token %}
+
+    <div class="panel">
+        <h2 class="font-display text-lg text-brown mb-1">Identité</h2>
+        <p class="text-xs text-slate-soft mb-4">Nom affiché, sous-titre et année de naissance.</p>
+        {% for field in form %}
+            {% if field.name == 'nom' or field.name == 'sous_titre' or field.name == 'annee_naissance' %}
+                {% include "gestion/_form_field.html" %}
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <div class="panel mt-6">
+        <h2 class="font-display text-lg text-brown mb-1">Biographie</h2>
+        <p class="text-xs text-slate-soft mb-4">La bio courte apparaît dans les vignettes ; la biographie longue est affichée sur la page dédiée (HTML autorisé).</p>
+        {% for field in form %}
+            {% if field.name == 'bio_courte' or field.name == 'bio_longue' %}
+                {% include "gestion/_form_field.html" %}
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <div class="panel mt-6">
+        <h2 class="font-display text-lg text-brown mb-1">Portrait</h2>
+        {% for field in form %}
+            {% if field.name == 'portrait' %}
+                {% include "gestion/_form_field.html" %}
+            {% endif %}
+        {% endfor %}
+        {% if instance.portrait %}
+        <p class="text-xs text-slate-soft mt-2">Portrait actuel :</p>
+        <img src="{{ instance.portrait.url }}" alt="" class="mt-1 max-h-48 rounded-sm border border-mist/40">
+        {% endif %}
+    </div>
+
+    <div class="mt-6 flex items-center gap-3">
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+    </div>
+</form>
+{% endblock %}

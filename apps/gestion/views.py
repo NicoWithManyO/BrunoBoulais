@@ -3,6 +3,7 @@ from functools import wraps
 
 from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -30,16 +31,19 @@ from apps.actualites.models import Actualite
 from apps.contact.models import Message
 from apps.galerie.models import Media
 from apps.livre.models import Livre
-from apps.pages.models import Page
+from apps.pages.models import Accueil, Page
 from apps.parametres.models import Parametres
+from apps.personnes.models import Personne
 from apps.temoignages.models import Temoignage
 
 from .forms import (
+    AccueilForm,
     ActualiteForm,
     LienAchatFormSet,
     LivreForm,
     MediaForm,
     ParametresForm,
+    PersonneForm,
     TemoignageForm,
 )
 
@@ -261,19 +265,44 @@ def message_detail(request, pk):
     return render(request, "gestion/messages/detail.html", {"msg": msg})
 
 
-# ---- Pages (stub — vraie édition par blocs = étape 6) -----------------------
+# ---- Page d'accueil (singleton) ---------------------------------------------
 
 @gestion_required
-def pages_liste(request):
-    return render(request, "gestion/pages/list.html", {
-        "pages": Page.objects.all(),
+def accueil_form(request):
+    obj = Accueil.get_solo()
+    form = AccueilForm(request.POST or None, request.FILES or None, instance=obj)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Page d'accueil mise à jour.")
+        return redirect("gestion:accueil")
+    return render(request, "gestion/accueil/form.html", {"form": form, "instance": obj})
+
+
+# ---- Personnes (Jacques Bertin, Bruno Boulais) ------------------------------
+
+PERSONNE_LABELS = {
+    Personne.ROLE_SUJET: ("Jacques Bertin", "pages:bertin", "gestion:personne_bertin"),
+    Personne.ROLE_AUTEUR: ("Bruno Boulais (l'auteur)", "pages:auteur", "gestion:personne_auteur"),
+}
+
+
+@gestion_required
+def personne_form(request, role):
+    if role not in PERSONNE_LABELS:
+        raise Http404
+    obj, _ = Personne.objects.get_or_create(role=role, defaults={"nom": PERSONNE_LABELS[role][0]})
+    form = PersonneForm(request.POST or None, request.FILES or None, instance=obj)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, f"« {obj.nom} » mis à jour.")
+        return redirect(PERSONNE_LABELS[role][2])
+    label, public_url, _ = PERSONNE_LABELS[role]
+    return render(request, "gestion/personnes/form.html", {
+        "form": form,
+        "instance": obj,
+        "label": label,
+        "public_url": public_url,
     })
-
-
-@gestion_required
-def page_editer(request, slug):
-    page = get_object_or_404(Page, slug=slug)
-    return render(request, "gestion/pages/editer.html", {"page": page})
 
 
 # ---- Livre (singleton + liens d'achat) --------------------------------------

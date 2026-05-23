@@ -1,0 +1,16 @@
+{% extends "gestion/_layout.html" %}
+
+{% block title %}Mot de passe mis à jour · Gestion{% endblock %}
+{% block crumb %}Mon compte{% endblock %}
+{% block heading %}Mot de passe mis à jour{% endblock %}
+
+{% block content %}
+<div class="panel max-w-md">
+    <p class="text-ink/85">
+        Votre mot de passe a bien été changé. Il sera demandé à votre prochaine connexion.
+    </p>
+    <div class="mt-6 flex items-center gap-3">
+        <a href="{% url 'gestion:dashboard' %}" class="btn btn-primary">Retour au tableau de bord</a>
+    </div>
+</div>
+{% endblock %}

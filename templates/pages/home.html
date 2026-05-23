@@ -9,16 +9,16 @@
         <div class="lg:col-span-7">
             <p class="eyebrow">Un livre · Éditions du Petit Pavé</p>
             <h1 class="title-display mt-6 text-5xl md:text-6xl lg:text-7xl text-balance">
-                Dans les pas de<br>
+                {% if accueil.hero_titre %}{{ accueil.hero_titre|safe }}{% else %}Dans les pas de<br>
                 <em class="not-italic text-terracotta">Jacques Bertin</em>,<br>
-                le géant discret<br>de la chanson.
+                le géant discret<br>de la chanson.{% endif %}
             </h1>
 
             <p class="mt-8 font-serif text-lg lg:text-xl text-ink/85 max-w-[55ch] leading-relaxed">
-                Bruno Boulais consacre un livre&nbsp;à <em>Jacques Bertin</em>, poète et chanteur
+                {% if accueil.hero_pitch %}{{ accueil.hero_pitch|safe }}{% else %}Bruno Boulais consacre un livre&nbsp;à <em>Jacques Bertin</em>, poète et chanteur
                 à l’œuvre monumentale, longtemps tenu à l’écart des projecteurs. Une porte
                 d’entrée vers ses chansons, ses poèmes, ses écrits — discrets comme&nbsp;lui,
-                puissants comme une braise.
+                puissants comme une braise.{% endif %}
             </p>
 
             <div class="mt-10 flex flex-wrap items-center gap-4">
@@ -33,6 +33,10 @@
 
         <div class="lg:col-span-5 flex justify-center lg:justify-end">
             <figure class="book-cover">
+                {% if accueil.hero_image %}
+                <img src="{{ accueil.hero_image.url }}" alt="« {{ BOOK_TITLE }} »"
+                     class="w-[260px] md:w-[300px] aspect-[2/3] object-cover">
+                {% else %}
                 {# Placeholder en attendant la vraie couverture #}
                 <div class="w-[260px] md:w-[300px] aspect-[2/3] bg-gradient-to-br from-sand to-sand-dark grid place-items-center text-brown">
                     <div class="text-center px-8">
@@ -43,6 +47,7 @@
                         <p class="mt-10 font-sans text-[0.65rem] tracking-widest uppercase opacity-70">Éditions du Petit Pavé</p>
                     </div>
                 </div>
+                {% endif %}
             </figure>
         </div>
 
@@ -52,9 +57,9 @@
 {# =========================  PULL QUOTE  ========================= #}
 <section class="container-page py-12">
     <p class="pull-quote">
-        Ses chansons ne séduisent pas, elles touchent. Ses poèmes ne décorent pas, ils dévoilent.
+        {% if accueil.pull_quote_texte %}{{ accueil.pull_quote_texte|safe }}{% else %}Ses chansons ne séduisent pas, elles touchent. Ses poèmes ne décorent pas, ils dévoilent.{% endif %}
     </p>
-    <p class="ornament mt-4"><span class="font-sans text-xs uppercase tracking-widest">Bruno Boulais</span></p>
+    <p class="ornament mt-4"><span class="font-sans text-xs uppercase tracking-widest">{{ accueil.pull_quote_auteur|default:"Bruno Boulais" }}</span></p>
 </section>
 
 {# =========================  ACTUS / DÉDICACES  ========================= #}
@@ -65,22 +70,31 @@
             <p class="eyebrow">Prochaines rencontres</p>
             <h2 class="mt-4 text-balance">Dédicaces &amp; actualités</h2>
             <p class="mt-4 text-ink/75 max-w-sm">
-                Bruno parcourt la France, des librairies aux créperies, pour porter ce livre&nbsp;
-                à la rencontre de ses lecteurs.
+                {% if accueil.dedicaces_intro %}{{ accueil.dedicaces_intro|safe }}{% else %}Bruno parcourt la France, des librairies aux créperies, pour porter ce livre&nbsp;
+                à la rencontre de ses lecteurs.{% endif %}
             </p>
             <a href="{% url 'actualites:liste' %}" class="btn-link mt-6">Toutes les actualités →</a>
         </div>
 
         <div class="lg:col-span-8 grid sm:grid-cols-2 gap-6">
-            {# Placeholders — remplacés par {% for actualite in actualites %} #}
-            {% for i in "abc" %}
+            {% for actualite in actualites %}
             <article class="card-edito">
-                <p class="font-sans text-xs uppercase tracking-widest text-terracotta-deep">25 avril 2026 · Pouillon (40)</p>
-                <h3 class="mt-3 text-2xl">Dédicace à l’Intermarché de Pouillon</h3>
-                <p class="mt-3 text-sm text-ink/75 leading-relaxed">
-                    Rencontre avec l’auteur, échanges autour du livre et signature des exemplaires de 10h à 17h.
+                <p class="font-sans text-xs uppercase tracking-widest text-terracotta-deep">
+                    {% if actualite.date_evenement %}{{ actualite.date_evenement|date:"j F Y" }}{% else %}{{ actualite.date_publication|date:"j F Y" }}{% endif %}{% if actualite.ville %} · {{ actualite.ville }}{% endif %}
                 </p>
+                <h3 class="mt-3 text-2xl">
+                    <a href="{{ actualite.get_absolute_url }}" class="no-underline hover:text-terracotta">
+                        {{ actualite.titre }}
+                    </a>
+                </h3>
+                {% if actualite.chapo %}
+                <p class="mt-3 text-sm text-ink/75 leading-relaxed">{{ actualite.chapo }}</p>
+                {% endif %}
             </article>
+            {% empty %}
+            <p class="sm:col-span-2 font-serif italic text-ink/70">
+                Aucune actualité publiée pour le moment.
+            </p>
             {% endfor %}
         </div>
 
@@ -88,20 +102,23 @@
 </section>
 
 {# =========================  TÉMOIGNAGES  ========================= #}
+{% if temoignages %}
 <section class="container-page py-24">
     <div class="text-center">
         <p class="eyebrow justify-center">Ils ont lu le livre</p>
         <h2 class="mt-4">Quelques mots de lecteurs</h2>
+        {% if accueil.temoignages_intro %}
+        <p class="mt-4 text-ink/75 max-w-xl mx-auto">{{ accueil.temoignages_intro|safe }}</p>
+        {% endif %}
     </div>
 
     <div class="mt-14 grid md:grid-cols-3 gap-8">
-        {% for i in "abc" %}
+        {% for t in temoignages|slice:":3" %}
         <figure class="border-l-2 border-terracotta pl-6">
             <blockquote class="border-0 p-0 m-0 text-lg leading-snug">
-                « J’ai dévoré ton bouquin ! Un récit fluide, à la découverte de Jacques Bertin dans son
-                exigence de vérité et de sincérité. »
+                « {{ t.texte }} »
             </blockquote>
-            <figcaption class="mt-4">Dominique Lefèvre</figcaption>
+            <figcaption class="mt-4">{{ t.auteur }}</figcaption>
         </figure>
         {% endfor %}
     </div>
@@ -110,5 +127,6 @@
         <a href="{% url 'temoignages:liste' %}" class="btn btn-ghost">Lire tous les témoignages</a>
     </div>
 </section>
+{% endif %}
 
 {% endblock %}

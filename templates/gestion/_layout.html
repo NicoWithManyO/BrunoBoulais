@@ -36,13 +36,21 @@
             </a>
 
             <div class="pt-4 pb-1 px-3 text-[10px] uppercase tracking-widest text-slate-soft">Contenus</div>
-            <a href="{% url 'gestion:pages_liste' %}"
-               class="gnav {% if 'page' in sec %}is-active{% endif %}">
-                <span class="gnav-ico">▤</span> Pages éditoriales
+            <a href="{% url 'gestion:accueil' %}"
+               class="gnav {% if sec == 'accueil' %}is-active{% endif %}">
+                <span class="gnav-ico">▤</span> Page d'accueil
             </a>
             <a href="{% url 'gestion:livre' %}"
                class="gnav {% if sec == 'livre' %}is-active{% endif %}">
                 <span class="gnav-ico">▢</span> Le livre
+            </a>
+            <a href="{% url 'gestion:personne_bertin' %}"
+               class="gnav {% if sec == 'personne_bertin' %}is-active{% endif %}">
+                <span class="gnav-ico">♪</span> Jacques Bertin
+            </a>
+            <a href="{% url 'gestion:personne_auteur' %}"
+               class="gnav {% if sec == 'personne_auteur' %}is-active{% endif %}">
+                <span class="gnav-ico">✎</span> L'auteur
             </a>
             <a href="{% url 'gestion:actualites_liste' %}"
                class="gnav {% if 'actualite' in sec %}is-active{% endif %}">
@@ -77,6 +85,7 @@
         <div class="border-t border-mist/40 px-4 py-4 text-xs">
             <div class="px-2 py-1 text-slate-soft truncate">{{ request.user.email|default:request.user.username }}</div>
             <a href="{% url 'pages:home' %}" class="gnav-foot">↗ Voir le site</a>
+            <a href="{% url 'gestion:password_change' %}" class="gnav-foot">🔑 Changer mon mot de passe</a>
             <form method="post" action="{% url 'gestion:logout' %}" class="mt-1">
                 {% csrf_token %}
                 <button type="submit" class="gnav-foot w-full text-left">⏻ Déconnexion</button>

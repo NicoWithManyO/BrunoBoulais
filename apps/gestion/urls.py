@@ -1,5 +1,10 @@
-from django.contrib.auth.views import LoginView, LogoutView
-from django.urls import path
+from django.contrib.auth.views import (
+    LoginView,
+    LogoutView,
+    PasswordChangeDoneView,
+    PasswordChangeView,
+)
+from django.urls import path, reverse_lazy
 
 from . import views
 
@@ -8,6 +13,19 @@ app_name = "gestion"
 urlpatterns = [
     path("connexion/", LoginView.as_view(template_name="gestion/login.html"), name="login"),
     path("deconnexion/", LogoutView.as_view(), name="logout"),
+    path(
+        "mot-de-passe/",
+        PasswordChangeView.as_view(
+            template_name="gestion/mot_de_passe.html",
+            success_url=reverse_lazy("gestion:password_change_done"),
+        ),
+        name="password_change",
+    ),
+    path(
+        "mot-de-passe/ok/",
+        PasswordChangeDoneView.as_view(template_name="gestion/mot_de_passe_ok.html"),
+        name="password_change_done",
+    ),
     path("", views.dashboard, name="dashboard"),
     # Actualités
     path("actualites/", views.actualites_liste, name="actualites_liste"),
@@ -27,9 +45,17 @@ urlpatterns = [
     # Messages
     path("messages/", views.messages_liste, name="messages_liste"),
     path("messages/<int:pk>/", views.message_detail, name="message_detail"),
-    # Pages
-    path("pages/", views.pages_liste, name="pages_liste"),
-    path("pages/<slug:slug>/", views.page_editer, name="page_editer"),
+    # Page d'accueil (singleton)
+    path("accueil/", views.accueil_form, name="accueil"),
+    # Personnes (Jacques Bertin & Bruno Boulais)
+    path(
+        "jacques-bertin/", views.personne_form,
+        {"role": "sujet"}, name="personne_bertin",
+    ),
+    path(
+        "l-auteur/", views.personne_form,
+        {"role": "auteur"}, name="personne_auteur",
+    ),
     # Livre
     path("livre/", views.livre_form, name="livre"),
     # Paramètres

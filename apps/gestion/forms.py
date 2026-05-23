@@ -5,7 +5,9 @@ from django.forms import inlineformset_factory
 from apps.actualites.models import Actualite
 from apps.galerie.models import Media
 from apps.livre.models import LienAchat, Livre
+from apps.pages.models import Accueil
 from apps.parametres.models import Parametres
+from apps.personnes.models import Personne
 from apps.temoignages.models import Temoignage
 
 
@@ -88,4 +90,36 @@ class ParametresForm(forms.ModelForm):
         ]
         widgets = {
             "texte_pied_de_page": forms.Textarea(attrs={"rows": 3}),
+        }
+
+
+class PersonneForm(forms.ModelForm):
+    class Meta:
+        model = Personne
+        fields = [
+            "nom", "sous_titre", "annee_naissance",
+            "bio_courte", "bio_longue", "portrait",
+        ]
+        widgets = {
+            "bio_courte": forms.Textarea(attrs={"rows": 2}),
+            "bio_longue": forms.Textarea(attrs={"rows": 12}),
+        }
+
+
+class AccueilForm(forms.ModelForm):
+    class Meta:
+        model = Accueil
+        fields = [
+            "hero_titre", "hero_pitch", "hero_image",
+            "pull_quote_texte", "pull_quote_auteur",
+            "dedicaces_intro", "temoignages_intro",
+            "seo_title", "seo_description", "og_image",
+        ]
+        widgets = {
+            "hero_titre": forms.Textarea(attrs={"rows": 3}),
+            "hero_pitch": forms.Textarea(attrs={"rows": 5}),
+            "pull_quote_texte": forms.Textarea(attrs={"rows": 3}),
+            "dedicaces_intro": forms.Textarea(attrs={"rows": 3}),
+            "temoignages_intro": forms.Textarea(attrs={"rows": 3}),
+            "seo_description": forms.Textarea(attrs={"rows": 2}),
         }
