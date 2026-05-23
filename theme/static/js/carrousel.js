@@ -1,8 +1,7 @@
-/* Autoplay fade carrousel. Pause sources are coalesced via a counter:
-   hover, focus, tab-hidden, and explicit dot interaction each push/pop
-   the count; autoplay only runs when the count is 0. Honors
-   prefers-reduced-motion at decision time (re-read live, so OS toggle
-   takes effect without reload). */
+/* Autoplay fade carrousel. canAutoplay() composes four pause sources
+   (hover, focus, tab-hidden, prefers-reduced-motion) — handlers update
+   state and call start()/stop(); start() is a no-op when any source
+   asks to pause. */
 (function () {
   "use strict";
 
@@ -24,7 +23,8 @@
     const interval = clampInterval(carrousel.dataset.interval);
     let current = 0;
     let timer = null;
-    let pauseCount = 0;
+    let hovered = false;
+    let focused = false;
 
     function show(next) {
       next = ((next % slides.length) + slides.length) % slides.length;
@@ -43,7 +43,7 @@
     }
 
     function canAutoplay() {
-      return pauseCount === 0 && !reduceMotionMql.matches && !document.hidden;
+      return !hovered && !focused && !document.hidden && !reduceMotionMql.matches;
     }
 
     function start() {
@@ -52,46 +52,23 @@
     }
 
     function stop() {
-      if (timer) {
-        window.clearInterval(timer);
-        timer = null;
-      }
+      if (!timer) return;
+      window.clearInterval(timer);
+      timer = null;
     }
 
-    function pause() { pauseCount += 1; stop(); }
-    function resume() {
-      if (pauseCount > 0) pauseCount -= 1;
-      start();
-    }
+    function sync() { stop(); start(); }
 
     dots.forEach((dot, idx) => {
-      dot.addEventListener("click", () => {
-        show(idx);
-        // Restart the interval timer from this slide; respects current
-        // pause state (no-op if hovered/focused/hidden).
-        stop();
-        start();
-      });
+      dot.addEventListener("click", () => { show(idx); sync(); });
     });
 
-    carrousel.addEventListener("mouseenter", pause);
-    carrousel.addEventListener("mouseleave", resume);
-    carrousel.addEventListener("focusin", pause);
-    carrousel.addEventListener("focusout", resume);
-
-    // Tab visibility is global, not a hover/focus interaction — toggle the
-    // timer directly without touching pauseCount.
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) stop(); else start();
-    });
-
-    // Live-reread of the OS reduce-motion preference: re-evaluate
-    // autoplay eligibility whenever the system toggles.
-    if (typeof reduceMotionMql.addEventListener === "function") {
-      reduceMotionMql.addEventListener("change", () => {
-        if (reduceMotionMql.matches) stop(); else start();
-      });
-    }
+    carrousel.addEventListener("mouseenter", () => { hovered = true; stop(); });
+    carrousel.addEventListener("mouseleave", () => { hovered = false; start(); });
+    carrousel.addEventListener("focusin",    () => { focused = true; stop(); });
+    carrousel.addEventListener("focusout",   () => { focused = false; start(); });
+    document.addEventListener("visibilitychange", sync);
+    reduceMotionMql.addEventListener("change", sync);
 
     start();
   }

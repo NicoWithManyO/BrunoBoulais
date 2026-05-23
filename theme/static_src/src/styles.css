@@ -442,11 +442,9 @@
 
   /* --- Carrousel d'images (autoplay fade) --- */
   /* Le conteneur `.carrousel` reçoit le sizing depuis `wrapper_class`
-     (largeur / aspect-ratio / shadow / etc.). En mode multi-image, les
-     slides s'empilent en position absolue et fondent via opacité ; en
-     mode single, le slide se comporte comme une image normale (taille
-     naturelle dans la largeur du wrapper). `object-fit: contain` évite
-     le crop des images dont le ratio ne colle pas au wrapper. */
+     (largeur / aspect-ratio / shadow / etc.). Les slides s'empilent en
+     position absolue et fondent via opacité ; `object-fit: contain`
+     évite le crop des images dont le ratio ne colle pas au wrapper. */
   .carrousel {
     position: relative;
     margin: 0;
@@ -475,16 +473,6 @@
     opacity: 1;
     pointer-events: auto;
     z-index: 1;
-  }
-  /* Mode single : pas de stack, image flow naturelle dans le wrapper. */
-  .carrousel--single .carrousel__slide,
-  .carrousel--single > img.carrousel__slide {
-    position: static;
-    width: 100%;
-    height: auto;
-    opacity: 1;
-    pointer-events: auto;
-    object-fit: initial;
   }
   .carrousel__dots {
     position: absolute;

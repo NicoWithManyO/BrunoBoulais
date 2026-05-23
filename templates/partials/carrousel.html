@@ -5,51 +5,37 @@ Arguments attendus (passés via include with ...) :
   - alt_default   : texte utilisé si une image n'a pas d'alt ; sert aussi
                     de descriptif pour le carrousel (préfixé "Carrousel : ")
   - wrapper_class : classes CSS sur le conteneur (sizing, aspect-ratio, shadow…)
-  - interval      : durée d'une slide en ms (60000 par défaut, soit 60 s)
 
-Si 1 image  -> figure simple, pas d'autoplay.
-Si N > 1    -> stack fade autoplay + boutons points.
+Si 1 image  -> figure simple, pas d'autoplay, pas de dots.
+Si N > 1    -> stack fade autoplay 60 s + boutons points.
 
 A11y : suit le pattern WAI-ARIA Carousel (région + slides en role="group" +
-aria-roledescription) — PAS le pattern Tabs (qui exigerait aria-controls
-et tabpanels). L'alt utilisateur reste le nom accessible de chaque <img>.
+aria-roledescription) — PAS le pattern Tabs. L'alt utilisateur reste le nom
+accessible de chaque <img>.
 {% endcomment %}
 {% if images %}
-  {% with images|length as n_images %}
-  {% if n_images == 1 %}
+{% with images|length as n %}
+<figure class="carrousel {{ wrapper_class }}"
+        {% if n > 1 %}data-carrousel role="region" aria-roledescription="carrousel" aria-label="Carrousel : {{ alt_default }}"{% endif %}>
+  <div class="carrousel__stack">
     {% for img in images %}
-    <figure class="carrousel carrousel--single {{ wrapper_class }}">
-      <img src="{{ img.image.url }}" alt="{{ img.alt|default:alt_default }}" class="carrousel__slide is-active">
-    </figure>
+    <div class="carrousel__slide{% if forloop.first %} is-active{% endif %}"
+         {% if n > 1 %}role="group" aria-roledescription="diapositive" aria-label="Image {{ forloop.counter }} sur {{ n }}"{% endif %}>
+      <img src="{{ img.image.url }}" alt="{{ img.alt|default:alt_default }}">
+    </div>
     {% endfor %}
-  {% else %}
-    <figure class="carrousel {{ wrapper_class }}"
-            data-carrousel
-            data-interval="{{ interval|default:60000 }}"
-            role="region"
-            aria-roledescription="carrousel"
-            aria-label="Carrousel : {{ alt_default }}">
-      <div class="carrousel__stack">
-        {% for img in images %}
-        <div class="carrousel__slide{% if forloop.first %} is-active{% endif %}"
-             role="group"
-             aria-roledescription="diapositive"
-             aria-label="Image {{ forloop.counter }} sur {{ n_images }}">
-          <img src="{{ img.image.url }}"
-               alt="{{ img.alt|default:alt_default }}">
-        </div>
-        {% endfor %}
-      </div>
-      <div class="carrousel__dots" aria-label="Choisir une image">
-        {% for img in images %}
-        <button type="button"
-                class="carrousel__dot{% if forloop.first %} is-active{% endif %}"
-                data-idx="{{ forloop.counter0 }}"
-                aria-label="Afficher l'image {{ forloop.counter }}"
-                aria-pressed="{% if forloop.first %}true{% else %}false{% endif %}"></button>
-        {% endfor %}
-      </div>
-    </figure>
+  </div>
+  {% if n > 1 %}
+  <div class="carrousel__dots" aria-label="Choisir une image">
+    {% for img in images %}
+    <button type="button"
+            class="carrousel__dot{% if forloop.first %} is-active{% endif %}"
+            data-idx="{{ forloop.counter0 }}"
+            aria-label="Afficher l'image {{ forloop.counter }}"
+            aria-pressed="{% if forloop.first %}true{% else %}false{% endif %}"></button>
+    {% endfor %}
+  </div>
   {% endif %}
-  {% endwith %}
+</figure>
+{% endwith %}
 {% endif %}
