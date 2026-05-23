@@ -415,28 +415,22 @@ def livre_form(request):
 
 # ---- HTMX endpoints: per-row image actions (instant Supprimer + Envoyer) ----
 
-def _htmx_ajouter(request, parent, delete_url_name):
-    """Validate + persist multi-upload, return HTML for HTMX swap=beforeend.
+def _htmx_ajouter(request, parent):
+    """Validate + persist multi-upload.
 
-    Response always carries an OOB swap for #image-upload-errors so the error
-    block clears on success and populates on failure in a single trip.
+    On error: render the #image-upload-errors block.
+    On success: trigger a full HTMX page refresh so the new images appear as
+    proper formset rows, immediately editable. Brief flash but bulletproof.
     """
     files, errors = _validate_new_images(request)
-    err_html = render_to_string(
-        "gestion/_image_upload_errors.html", {"nouvelles_errors": errors}
-    )
     if errors:
-        return HttpResponse(err_html)
-    before_ids = set(parent.images.values_list("pk", flat=True))
+        return HttpResponse(
+            render_to_string("gestion/_image_upload_errors.html", {"nouvelles_errors": errors})
+        )
     _save_new_images(parent, files)
-    rows_html = "".join(
-        render_to_string("gestion/_image_row.html", {
-            "image": img,
-            "delete_url": reverse(delete_url_name, args=[img.pk]),
-        })
-        for img in parent.images.exclude(pk__in=before_ids)
-    )
-    return HttpResponse(rows_html + err_html)
+    response = HttpResponse(status=204)
+    response["HX-Refresh"] = "true"
+    return response
 
 
 def _make_image_supprimer(image_model):
@@ -458,14 +452,14 @@ actualite_image_supprimer = _make_image_supprimer(ActualiteImage)
 @gestion_required
 @require_POST
 def accueil_image_ajouter(request):
-    return _htmx_ajouter(request, Accueil.get_solo(), "gestion:accueil_image_supprimer")
+    return _htmx_ajouter(request, Accueil.get_solo())
 
 
 @gestion_required
 @require_POST
 def livre_image_ajouter(request):
     livre, _ = Livre.objects.get_or_create(pk=1)
-    return _htmx_ajouter(request, livre, "gestion:livre_image_supprimer")
+    return _htmx_ajouter(request, livre)
 
 
 @gestion_required
@@ -474,17 +468,13 @@ def personne_image_ajouter(request, role):
     if role not in PERSONNE_LABELS:
         raise Http404
     obj, _ = Personne.objects.get_or_create(role=role, defaults={"nom": PERSONNE_LABELS[role][0]})
-    return _htmx_ajouter(request, obj, "gestion:personne_image_supprimer")
+    return _htmx_ajouter(request, obj)
 
 
 @gestion_required
 @require_POST
 def actualite_image_ajouter(request, pk):
-    return _htmx_ajouter(
-        request,
-        get_object_or_404(Actualite, pk=pk),
-        "gestion:actualite_image_supprimer",
-    )
+    return _htmx_ajouter(request, get_object_or_404(Actualite, pk=pk))
 
 
 # ---- Paramètres (singleton) -------------------------------------------------

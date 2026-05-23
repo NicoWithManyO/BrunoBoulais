@@ -42,6 +42,7 @@ Accueil, Personne, Livre). Le formulaire parent fournit :
                     <label>Légende</label>{{ f.legende }}
                     {% for field in f.visible_fields %}{% if field.errors %}<div class="errorlist">{{ field.errors }}</div>{% endif %}{% endfor %}
                 </div>
+                {% if f.instance.pk %}
                 <div class="image-row__delete">
                     <button type="button"
                             class="btn-sm btn-danger"
@@ -52,6 +53,7 @@ Accueil, Personne, Livre). Le formulaire parent fournit :
                         Supprimer
                     </button>
                 </div>
+                {% endif %}
             </div>
         {% empty %}
             <p class="font-serif italic text-ink/60">Aucune image pour le moment. Ajoutez-en ci-dessous.</p>
