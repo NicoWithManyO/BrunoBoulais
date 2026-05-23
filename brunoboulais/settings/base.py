@@ -207,3 +207,24 @@ CONTENT_SECURITY_POLICY = {
 
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="contact@brunoboulais.fr")
 CONTACT_EMAIL = env("CONTACT_EMAIL", default="boulaisbruno@free.fr")
+
+# --- Logging -------------------------------------------------------------
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "concise": {"format": "{levelname} {name}: {message}", "style": "{"},
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "concise",
+        },
+    },
+    "root": {"handlers": ["console"], "level": "WARNING"},
+    "loggers": {
+        "django": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        "apps": {"handlers": ["console"], "level": "INFO", "propagate": False},
+    },
+}

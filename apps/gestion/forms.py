@@ -18,14 +18,20 @@ class StripExifMixin:
 
     Subclass ModelForms set `exif_fields = [...]` to opt in. The mixin only
     touches fields that received a fresh upload — existing stored images on
-    edit are left alone.
+    edit are left alone. Override `exif_fields_for(cleaned)` if a field is
+    only an image conditionally (see MediaForm).
     """
 
     exif_fields: list[str] = []
 
+    def exif_fields_for(self, cleaned):
+        return self.exif_fields
+
     def clean(self):
         cleaned = super().clean()
-        for fname in self.exif_fields:
+        if cleaned is None:
+            return cleaned
+        for fname in self.exif_fields_for(cleaned):
             f = cleaned.get(fname)
             if isinstance(f, UploadedFile):
                 cleaned[fname] = strip_exif(f)
@@ -72,21 +78,17 @@ class TemoignageForm(forms.ModelForm):
 
 
 class MediaForm(StripExifMixin, forms.ModelForm):
-    # Only strip EXIF when the upload is actually an image.
     exif_fields = ["fichier"]
 
     class Meta:
         model = Media
         fields = ["fichier", "type", "categorie", "legende", "alt", "position", "publie"]
 
-    def clean(self):
+    def exif_fields_for(self, cleaned):
         # MediaForm holds both images and videos; only strip if type=image.
-        cleaned = forms.ModelForm.clean(self)
         if cleaned.get("type") == Media.TYPE_IMAGE:
-            f = cleaned.get("fichier")
-            if isinstance(f, UploadedFile):
-                cleaned["fichier"] = strip_exif(f)
-        return cleaned
+            return self.exif_fields
+        return []
 
 
 class LivreForm(StripExifMixin, forms.ModelForm):

@@ -76,7 +76,7 @@
             <a href="{% url 'actualites:liste' %}" class="btn-link mt-6">Toutes les actualités →</a>
         </div>
 
-        <div class="lg:col-span-8 grid sm:grid-cols-2 gap-6">
+        <div class="lg:col-span-8 grid {% if actualites|length > 1 %}sm:grid-cols-2{% endif %} gap-6">
             {% for actualite in actualites %}
             <article class="card-edito">
                 <p class="font-sans text-xs uppercase tracking-widest text-terracotta-deep">
@@ -102,7 +102,6 @@
 </section>
 
 {# =========================  TÉMOIGNAGES  ========================= #}
-{% if temoignages %}
 <section class="container-page py-24">
     <div class="text-center">
         <p class="eyebrow justify-center">Ils ont lu le livre</p>
@@ -112,6 +111,7 @@
         {% endif %}
     </div>
 
+    {% if temoignages %}
     <div class="mt-14 grid md:grid-cols-3 gap-8">
         {% for t in temoignages|slice:":3" %}
         <figure class="border-l-2 border-terracotta pl-6">
@@ -122,11 +122,15 @@
         </figure>
         {% endfor %}
     </div>
+    {% else %}
+    <p class="mt-14 text-center font-serif italic text-ink/70">
+        Les premiers retours de lecteurs seront bientôt publiés ici.
+    </p>
+    {% endif %}
 
     <div class="text-center mt-12">
         <a href="{% url 'temoignages:liste' %}" class="btn btn-ghost">Lire tous les témoignages</a>
     </div>
 </section>
-{% endif %}
 
 {% endblock %}

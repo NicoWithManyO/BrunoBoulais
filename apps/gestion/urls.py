@@ -5,25 +5,38 @@ from django.contrib.auth.views import (
     PasswordChangeView,
 )
 from django.urls import path, reverse_lazy
+from django.utils.decorators import method_decorator
 
 from . import views
+from .views import gestion_required
 
 app_name = "gestion"
+
+
+class _GestionPasswordChangeView(PasswordChangeView):
+    template_name = "gestion/mot_de_passe.html"
+    success_url = reverse_lazy("gestion:password_change_done")
+
+
+class _GestionPasswordChangeDoneView(PasswordChangeDoneView):
+    template_name = "gestion/mot_de_passe_ok.html"
+
+
+_GestionPasswordChangeView.dispatch = method_decorator(gestion_required)(
+    _GestionPasswordChangeView.dispatch
+)
+_GestionPasswordChangeDoneView.dispatch = method_decorator(gestion_required)(
+    _GestionPasswordChangeDoneView.dispatch
+)
+
 
 urlpatterns = [
     path("connexion/", LoginView.as_view(template_name="gestion/login.html"), name="login"),
     path("deconnexion/", LogoutView.as_view(), name="logout"),
-    path(
-        "mot-de-passe/",
-        PasswordChangeView.as_view(
-            template_name="gestion/mot_de_passe.html",
-            success_url=reverse_lazy("gestion:password_change_done"),
-        ),
-        name="password_change",
-    ),
+    path("mot-de-passe/", _GestionPasswordChangeView.as_view(), name="password_change"),
     path(
         "mot-de-passe/ok/",
-        PasswordChangeDoneView.as_view(template_name="gestion/mot_de_passe_ok.html"),
+        _GestionPasswordChangeDoneView.as_view(),
         name="password_change_done",
     ),
     path("", views.dashboard, name="dashboard"),
