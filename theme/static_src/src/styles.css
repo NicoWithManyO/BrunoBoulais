@@ -490,20 +490,32 @@
     gap: 0.5rem;
     z-index: 2;
   }
+  /* Bouton: hit area 24×24 (WCAG target-size) transparente,
+     pastille visuelle 8×8 rendue via ::before pour préserver le design. */
   .carrousel__dot {
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .carrousel__dot::before {
+    content: "";
     width: 0.5rem;
     height: 0.5rem;
     border-radius: 9999px;
     background: rgba(255, 255, 255, 0.55);
     border: 1px solid rgba(43, 43, 43, 0.25);
-    padding: 0;
-    cursor: pointer;
     transition: background 200ms ease, transform 200ms ease;
   }
-  .carrousel__dot:hover {
+  .carrousel__dot:hover::before {
     background: rgba(255, 255, 255, 0.85);
   }
-  .carrousel__dot.is-active {
+  .carrousel__dot.is-active::before {
     background: var(--color-terracotta);
     border-color: var(--color-terracotta);
     transform: scale(1.15);
@@ -511,6 +523,7 @@
   .carrousel__dot:focus-visible {
     outline: 2px solid var(--color-terracotta);
     outline-offset: 2px;
+    border-radius: 9999px;
   }
   .carrousel__caption {
     margin-top: 0.75rem;
@@ -536,7 +549,7 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .carrousel__slide { transition: none; }
-    .carrousel__dot { transition: none; }
+    .carrousel__dot::before { transition: none; }
     .carrousel__caption-item { transition: none; }
   }
 

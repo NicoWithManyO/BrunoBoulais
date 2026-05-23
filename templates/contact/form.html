@@ -11,7 +11,10 @@
 
     <form method="post" class="pform mt-12 space-y-6">
         {% csrf_token %}
-        {{ form.website }}
+        <div class="hp-field" aria-hidden="true">
+            <label for="{{ form.website.id_for_label }}">Champ anti-spam (ne pas remplir)</label>
+            {{ form.website }}
+        </div>
 
         <div>
             <label class="field-label" for="{{ form.nom.id_for_label }}">Nom</label>
