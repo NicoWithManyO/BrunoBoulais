@@ -1,9 +1,10 @@
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.signals import pre_delete
 
 from apps.core.fields import RichTextField
-from apps.core.models import TimestampedModel
-from apps.core.uploads import livre_upload_to
+from apps.core.models import OrderedImage, TimestampedModel, delete_image_file
+from apps.core.uploads import livre_image_upload_to
 from apps.core.validators import IMAGE_VALIDATORS
 
 
@@ -28,10 +29,6 @@ class Livre(TimestampedModel):
         "Extrait", blank=True,
         help_text="Extrait choisi du livre."
     )
-    couverture = models.ImageField(
-        "Couverture", upload_to=livre_upload_to, blank=True, null=True,
-        validators=IMAGE_VALIDATORS,
-    )
     isbn = models.CharField("ISBN", max_length=20, blank=True)
     editeur = models.CharField("Éditeur", max_length=100, default="Éditions du Petit Pavé")
     pages = models.PositiveIntegerField("Nombre de pages", null=True, blank=True)
@@ -53,6 +50,25 @@ class Livre(TimestampedModel):
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
+
+    @property
+    def image_principale(self):
+        return self.images.first()
+
+
+class LivreImage(OrderedImage):
+    """A cover/image attached to the Livre singleton (1-N for carousel)."""
+
+    livre = models.ForeignKey(
+        Livre, related_name="images", on_delete=models.CASCADE,
+        verbose_name="Livre",
+    )
+    image = models.ImageField(
+        "Image", upload_to=livre_image_upload_to, validators=IMAGE_VALIDATORS,
+    )
+
+
+pre_delete.connect(delete_image_file, sender=LivreImage)
 
 
 class LienAchat(TimestampedModel):

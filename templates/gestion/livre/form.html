@@ -17,6 +17,8 @@
         {% include "gestion/_form.html" %}
     </div>
 
+    {% include "gestion/_images_carousel.html" with add_label="Ajouter des couvertures / visuels" hint="Réorganisez (champ « Ordre »), changez le texte alternatif, ou cochez « Supprimer ». La première image sert de couverture par défaut." %}
+
     <div class="panel mt-6">
         <h2 class="font-display text-lg text-brown mb-3">Où l'on peut se procurer le livre</h2>
         <p class="text-xs text-slate-soft mb-4">Liens externes (Mondial Relay, éditeur, libraires en ligne, etc.). Laissez les champs vides pour supprimer un lien.</p>

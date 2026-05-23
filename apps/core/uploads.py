@@ -21,12 +21,20 @@ def accueil_upload_to(instance, filename):
     return _slugged("accueil", filename)
 
 
+def accueil_image_upload_to(instance, filename):
+    return _slugged("accueil/images", filename)
+
+
 def og_upload_to(instance, filename):
     return _slugged("og", filename)
 
 
 def livre_upload_to(instance, filename):
     return _slugged("livre", filename)
+
+
+def livre_image_upload_to(instance, filename):
+    return _slugged("livre/images", filename)
 
 
 def actualites_upload_to(instance, filename):
@@ -39,6 +47,10 @@ def actualites_image_upload_to(instance, filename):
 
 def portraits_upload_to(instance, filename):
     return _slugged("portraits", filename)
+
+
+def portraits_image_upload_to(instance, filename):
+    return _slugged("portraits/images", filename)
 
 
 def galerie_upload_to(instance, filename):

@@ -14,16 +14,12 @@
 
     <div class="panel">
         <h2 class="font-display text-lg text-brown mb-1">Hero</h2>
-        <p class="text-xs text-slate-soft mb-4">Le grand bloc en haut de la page d'accueil — titre, pitch et image (optionnelle).</p>
+        <p class="text-xs text-slate-soft mb-4">Le grand bloc en haut de la page d'accueil — titre et pitch (les images du hero se gèrent plus bas).</p>
         {% for field in form %}
-            {% if field.name == 'hero_titre' or field.name == 'hero_pitch' or field.name == 'hero_image' %}
+            {% if field.name == 'hero_titre' or field.name == 'hero_pitch' %}
                 {% include "gestion/_form_field.html" %}
             {% endif %}
         {% endfor %}
-        {% if instance.hero_image %}
-        <p class="text-xs text-slate-soft mt-2">Image actuelle :</p>
-        <img src="{{ instance.hero_image.url }}" alt="" class="mt-1 max-h-48 rounded-sm border border-mist/40">
-        {% endif %}
     </div>
 
     <div class="panel mt-6">
@@ -45,6 +41,8 @@
             {% endif %}
         {% endfor %}
     </div>
+
+    {% include "gestion/_images_carousel.html" with add_label="Ajouter des images au hero" hint="Réorganisez (champ « Ordre »), changez le texte alternatif, ou cochez « Supprimer ». La première image s'affiche à droite du titre ; si plusieurs sont définies, elles défilent en carrousel." %}
 
     <div class="panel mt-6">
         <h2 class="font-display text-lg text-brown mb-1">Référencement (SEO)</h2>

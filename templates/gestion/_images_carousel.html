@@ -1,0 +1,61 @@
+{% comment %}
+Block "Images du carrousel" partagé entre tous les éditeurs (Actualité,
+Accueil, Personne, Livre). Le formulaire parent fournit :
+  - image_formset    : inline formset (peut être None en création)
+  - nouvelles_errors : list[str] d'erreurs sur le multi-upload
+  - add_label        : intitulé du panneau "ajouter" (ex. "Ajouter des images")
+  - hint             : phrase d'aide affichée sous le formset existant
+{% endcomment %}
+{% if image_formset %}
+<div class="panel mt-6">
+    <h3 class="font-display text-xl text-brown mb-1">Images du carrousel</h3>
+    <p class="helptext mb-4">{{ hint|default:"Réorganisez (champ « Ordre »), changez le texte alternatif, ou cochez « Supprimer »." }}</p>
+
+    {{ image_formset.management_form }}
+    {% if image_formset.non_form_errors %}
+    <div class="flash flash-error mb-4">{{ image_formset.non_form_errors }}</div>
+    {% endif %}
+
+    <div class="grid gap-4">
+    {% for f in image_formset %}
+        <div class="image-row{% if f.errors %} image-row--error{% endif %}">
+            {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+            {% if f.instance.image %}
+            <div class="image-row__thumb">
+                <img src="{{ f.instance.image.url }}" alt="{{ f.instance.alt }}">
+            </div>
+            {% endif %}
+            <div class="image-row__fields">
+                <label class="!mt-0">Ordre</label>{{ f.position }}
+                <label>Texte alternatif</label>{{ f.alt }}
+                {% if f.image.errors %}<div class="errorlist">{{ f.image.errors }}</div>{% endif %}
+                {% if f.position.errors %}<div class="errorlist">{{ f.position.errors }}</div>{% endif %}
+            </div>
+            <div class="image-row__delete">
+                {% if f.DELETE %}
+                <label class="form-check !mt-0">
+                    {{ f.DELETE }}
+                    <span>Supprimer</span>
+                </label>
+                {% endif %}
+            </div>
+        </div>
+    {% empty %}
+        <p class="font-serif italic text-ink/60">Aucune image pour le moment. Ajoutez-en ci-dessous.</p>
+    {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div class="panel mt-6">
+    <h3 class="font-display text-xl text-brown mb-1">{{ add_label|default:"Ajouter des images" }}</h3>
+    {% if nouvelles_errors %}
+    <ul class="errorlist mb-2">{% for e in nouvelles_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+    {% endif %}
+    <label for="id_nouvelles_images">Sélectionner les fichiers</label>
+    <input type="file" name="nouvelles_images" id="id_nouvelles_images" multiple accept="image/*">
+    <span class="helptext">Plusieurs fichiers d'un coup (Ctrl/Cmd+clic). Formats : JPG, PNG, WEBP, AVIF. Taille max 8 Mo par image.</span>
+    {% if not image_formset %}
+    <p class="helptext mt-3 italic">Astuce : enregistrez d'abord la fiche si vous préférez ajouter les images plus tard, une par une.</p>
+    {% endif %}
+</div>

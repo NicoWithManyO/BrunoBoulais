@@ -1,8 +1,9 @@
 from django.db import models
+from django.db.models.signals import pre_delete
 
 from apps.core.fields import RichTextField
-from apps.core.models import TimestampedModel
-from apps.core.uploads import portraits_upload_to
+from apps.core.models import OrderedImage, TimestampedModel, delete_image_file
+from apps.core.uploads import portraits_image_upload_to
 from apps.core.validators import IMAGE_VALIDATORS
 
 
@@ -31,10 +32,6 @@ class Personne(TimestampedModel):
         "Biographie", blank=True,
         help_text="Texte riche : gras, italique, sauts de ligne."
     )
-    portrait = models.ImageField(
-        "Portrait", upload_to=portraits_upload_to, blank=True, null=True,
-        validators=IMAGE_VALIDATORS,
-    )
 
     class Meta:
         verbose_name = "Personne"
@@ -42,3 +39,22 @@ class Personne(TimestampedModel):
 
     def __str__(self):
         return self.nom
+
+    @property
+    def image_principale(self):
+        return self.images.first()
+
+
+class PersonneImage(OrderedImage):
+    """A portrait image attached to a Personne (1-N for carousel)."""
+
+    personne = models.ForeignKey(
+        Personne, related_name="images", on_delete=models.CASCADE,
+        verbose_name="Personne",
+    )
+    image = models.ImageField(
+        "Image", upload_to=portraits_image_upload_to, validators=IMAGE_VALIDATORS,
+    )
+
+
+pre_delete.connect(delete_image_file, sender=PersonneImage)

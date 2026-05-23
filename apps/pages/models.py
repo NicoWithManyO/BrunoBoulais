@@ -1,11 +1,12 @@
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.signals import pre_delete
 from django.urls import reverse
 
 from apps.core.fields import RichTextField
-from apps.core.models import SeoMixin, TimestampedModel
-from apps.core.uploads import accueil_upload_to
+from apps.core.models import OrderedImage, SeoMixin, TimestampedModel, delete_image_file
+from apps.core.uploads import accueil_image_upload_to
 from apps.core.validators import IMAGE_VALIDATORS
 
 CACHE_KEY_ACCUEIL = "pages_accueil"
@@ -87,17 +88,6 @@ class Accueil(TimestampedModel, SeoMixin):
         blank=True,
         help_text="Paragraphe d'introduction sous le titre.",
     )
-    hero_image = models.ImageField(
-        "Image du hero",
-        upload_to=accueil_upload_to,
-        blank=True,
-        null=True,
-        validators=IMAGE_VALIDATORS,
-        help_text=(
-            "Optionnelle. Si renseignée, remplace la couverture-placeholder à droite du titre."
-        ),
-    )
-
     pull_quote_texte = RichTextField(
         "Citation centrale",
         blank=True,
@@ -144,3 +134,27 @@ class Accueil(TimestampedModel, SeoMixin):
             obj, _ = cls.objects.get_or_create(pk=1)
             cache.set(CACHE_KEY_ACCUEIL, obj, 300)
         return obj
+
+    @property
+    def image_principale(self):
+        return self.images.first()
+
+
+class AccueilImage(OrderedImage):
+    """An image attached to the Accueil singleton (1-N for hero carousel).
+
+    The cached Accueil instance holds no image data — `accueil.images.all()`
+    always queries the DB lazily — so changes here don't need to bust the
+    Accueil cache.
+    """
+
+    accueil = models.ForeignKey(
+        Accueil, related_name="images", on_delete=models.CASCADE,
+        verbose_name="Page d'accueil",
+    )
+    image = models.ImageField(
+        "Image", upload_to=accueil_image_upload_to, validators=IMAGE_VALIDATORS,
+    )
+
+
+pre_delete.connect(delete_image_file, sender=AccueilImage)

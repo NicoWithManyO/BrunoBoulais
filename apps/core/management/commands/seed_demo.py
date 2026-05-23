@@ -11,10 +11,10 @@ from django.utils import timezone
 from PIL import Image, ImageDraw, ImageFont
 
 from apps.actualites.models import Actualite, ActualiteImage
-from apps.livre.models import LienAchat, Livre
-from apps.pages.models import Accueil
+from apps.livre.models import LienAchat, Livre, LivreImage
+from apps.pages.models import Accueil, AccueilImage
 from apps.parametres.models import Parametres
-from apps.personnes.models import Personne
+from apps.personnes.models import Personne, PersonneImage
 from apps.temoignages.models import Temoignage
 
 
@@ -107,6 +107,13 @@ class Command(BaseCommand):
         livre.prix_euros = 18
         livre.isbn = "978-2-84712-XXX-X"
         livre.save()
+        if not livre.images.exists():
+            LivreImage.objects.create(
+                livre=livre,
+                position=0,
+                alt="Couverture de placeholder",
+                image=_placeholder_jpeg("Couverture", 0, f"seed-livre-{livre.pk}.jpg", size=(800, 1200)),
+            )
         return livre
 
     def _seed_liens_achat(self, livre):
@@ -138,7 +145,7 @@ class Command(BaseCommand):
     # --- Personnes -----------------------------------------------------
 
     def _seed_personnes(self):
-        Personne.objects.update_or_create(
+        sujet, _ = Personne.objects.update_or_create(
             role=Personne.ROLE_SUJET,
             defaults={
                 "nom": "Jacques Bertin",
@@ -162,7 +169,7 @@ class Command(BaseCommand):
                 ),
             },
         )
-        Personne.objects.update_or_create(
+        auteur, _ = Personne.objects.update_or_create(
             role=Personne.ROLE_AUTEUR,
             defaults={
                 "nom": "Bruno Boulais",
@@ -184,6 +191,14 @@ class Command(BaseCommand):
                 ),
             },
         )
+        for person, label in ((sujet, "Portrait Jacques Bertin"), (auteur, "Portrait Bruno Boulais")):
+            if not person.images.exists():
+                PersonneImage.objects.create(
+                    personne=person,
+                    position=0,
+                    alt=label,
+                    image=_placeholder_jpeg(label, 0, f"seed-personne-{person.pk}.jpg", size=(800, 1000)),
+                )
 
     # --- Actualités ----------------------------------------------------
 
@@ -365,3 +380,10 @@ class Command(BaseCommand):
         )
         accueil.temoignages_intro = ""
         accueil.save()
+        if not accueil.images.exists():
+            AccueilImage.objects.create(
+                accueil=accueil,
+                position=0,
+                alt="Hero placeholder",
+                image=_placeholder_jpeg("Hero accueil", 0, f"seed-accueil-{accueil.pk}.jpg", size=(800, 1200)),
+            )

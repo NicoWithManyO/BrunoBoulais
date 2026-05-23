@@ -35,23 +35,57 @@ from apps.contact.models import Message
 from apps.core.images import strip_exif
 from apps.core.validators import IMAGE_VALIDATORS
 from apps.galerie.models import Media
-from apps.livre.models import Livre
-from apps.pages.models import Accueil, Page
+from apps.livre.models import Livre, LivreImage
+from apps.pages.models import Accueil, AccueilImage, Page
 from apps.parametres.models import Parametres
-from apps.personnes.models import Personne
+from apps.personnes.models import Personne, PersonneImage
 from apps.temoignages.models import Temoignage
 
 from .forms import (
     AccueilForm,
+    AccueilImageFormSet,
     ActualiteForm,
     ActualiteImageFormSet,
     LienAchatFormSet,
     LivreForm,
+    LivreImageFormSet,
     MediaForm,
     ParametresForm,
     PersonneForm,
+    PersonneImageFormSet,
     TemoignageForm,
 )
+
+
+# ---- Helpers for multi-image upload field shared across editors -------------
+
+def _validate_new_images(request):
+    """Validate files dropped into the shared `nouvelles_images` field.
+
+    Returns (files, errors) — caller persists the files post-parent-save.
+    """
+    files = request.FILES.getlist("nouvelles_images") if request.method == "POST" else []
+    errors = []
+    for f in files:
+        for validator in IMAGE_VALIDATORS:
+            try:
+                validator(f)
+            except ValidationError as e:
+                errors.extend(e.messages)
+    return files, errors
+
+
+def _save_new_images(image_model, files, **fk):
+    """Create one image row per file at the next available `position`."""
+    if not files:
+        return
+    max_pos = image_model.objects.filter(**fk).aggregate(Max("position"))["position__max"] or 0
+    for i, f in enumerate(files, start=1):
+        image_model.objects.create(
+            image=strip_exif(f),
+            position=max_pos + i,
+            **fk,
+        )
 
 
 # ---- Dashboard ---------------------------------------------------------------
@@ -103,29 +137,14 @@ def actualite_form(request, pk=None):
         ActualiteImageFormSet(request.POST or None, request.FILES or None, instance=instance)
         if instance is not None else None
     )
-
-    nouvelles_files = request.FILES.getlist("nouvelles_images") if request.method == "POST" else []
-    nouvelles_errors = []
-    for f in nouvelles_files:
-        for validator in IMAGE_VALIDATORS:
-            try:
-                validator(f)
-            except ValidationError as e:
-                nouvelles_errors.extend(e.messages)
+    nouvelles_files, nouvelles_errors = _validate_new_images(request)
 
     formset_ok = image_formset is None or image_formset.is_valid()
     if request.method == "POST" and form.is_valid() and formset_ok and not nouvelles_errors:
         obj = form.save()
         if image_formset is not None:
             image_formset.save()
-        if nouvelles_files:
-            max_pos = obj.images.aggregate(Max("position"))["position__max"] or 0
-            for i, f in enumerate(nouvelles_files, start=1):
-                ActualiteImage.objects.create(
-                    actualite=obj,
-                    image=strip_exif(f),
-                    position=max_pos + i,
-                )
+        _save_new_images(ActualiteImage, nouvelles_files, actualite=obj)
         messages.success(request, f"Actualité « {obj.titre} » enregistrée.")
         return redirect("gestion:actualites_liste")
     return render(request, "gestion/actualites/form.html", {
@@ -303,11 +322,21 @@ def message_detail(request, pk):
 def accueil_form(request):
     obj = Accueil.get_solo()
     form = AccueilForm(request.POST or None, request.FILES or None, instance=obj)
-    if request.method == "POST" and form.is_valid():
+    image_formset = AccueilImageFormSet(request.POST or None, request.FILES or None, instance=obj)
+    nouvelles_files, nouvelles_errors = _validate_new_images(request)
+
+    if request.method == "POST" and form.is_valid() and image_formset.is_valid() and not nouvelles_errors:
         form.save()
+        image_formset.save()
+        _save_new_images(AccueilImage, nouvelles_files, accueil=obj)
         messages.success(request, "Page d'accueil mise à jour.")
         return redirect("gestion:accueil")
-    return render(request, "gestion/accueil/form.html", {"form": form, "instance": obj})
+    return render(request, "gestion/accueil/form.html", {
+        "form": form,
+        "image_formset": image_formset,
+        "nouvelles_errors": nouvelles_errors,
+        "instance": obj,
+    })
 
 
 # ---- Personnes (Jacques Bertin, Bruno Boulais) ------------------------------
@@ -324,13 +353,20 @@ def personne_form(request, role):
         raise Http404
     obj, _ = Personne.objects.get_or_create(role=role, defaults={"nom": PERSONNE_LABELS[role][0]})
     form = PersonneForm(request.POST or None, request.FILES or None, instance=obj)
-    if request.method == "POST" and form.is_valid():
+    image_formset = PersonneImageFormSet(request.POST or None, request.FILES or None, instance=obj)
+    nouvelles_files, nouvelles_errors = _validate_new_images(request)
+
+    if request.method == "POST" and form.is_valid() and image_formset.is_valid() and not nouvelles_errors:
         form.save()
+        image_formset.save()
+        _save_new_images(PersonneImage, nouvelles_files, personne=obj)
         messages.success(request, f"« {obj.nom} » mis à jour.")
         return redirect(PERSONNE_LABELS[role][2])
     label, public_url, _ = PERSONNE_LABELS[role]
     return render(request, "gestion/personnes/form.html", {
         "form": form,
+        "image_formset": image_formset,
+        "nouvelles_errors": nouvelles_errors,
         "instance": obj,
         "label": label,
         "public_url": public_url,
@@ -344,14 +380,25 @@ def livre_form(request):
     livre, _ = Livre.objects.get_or_create(pk=1)
     form = LivreForm(request.POST or None, request.FILES or None, instance=livre)
     formset = LienAchatFormSet(request.POST or None, instance=livre)
-    if request.method == "POST" and form.is_valid() and formset.is_valid():
+    image_formset = LivreImageFormSet(request.POST or None, request.FILES or None, instance=livre)
+    nouvelles_files, nouvelles_errors = _validate_new_images(request)
+
+    if (
+        request.method == "POST"
+        and form.is_valid() and formset.is_valid() and image_formset.is_valid()
+        and not nouvelles_errors
+    ):
         form.save()
         formset.save()
+        image_formset.save()
+        _save_new_images(LivreImage, nouvelles_files, livre=livre)
         messages.success(request, "Livre enregistré.")
         return redirect("gestion:livre")
     return render(request, "gestion/livre/form.html", {
         "form": form,
         "formset": formset,
+        "image_formset": image_formset,
+        "nouvelles_errors": nouvelles_errors,
         "livre": livre,
     })
 

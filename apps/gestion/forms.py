@@ -6,10 +6,10 @@ from django.forms import inlineformset_factory
 from apps.actualites.models import Actualite, ActualiteImage
 from apps.core.images import strip_exif
 from apps.galerie.models import Media
-from apps.livre.models import LienAchat, Livre
-from apps.pages.models import Accueil
+from apps.livre.models import LienAchat, Livre, LivreImage
+from apps.pages.models import Accueil, AccueilImage
 from apps.parametres.models import Parametres
-from apps.personnes.models import Personne
+from apps.personnes.models import Personne, PersonneImage
 from apps.temoignages.models import Temoignage
 
 
@@ -100,14 +100,12 @@ class MediaForm(StripExifMixin, forms.ModelForm):
         return []
 
 
-class LivreForm(StripExifMixin, forms.ModelForm):
-    exif_fields = ["couverture"]
-
+class LivreForm(forms.ModelForm):
     class Meta:
         model = Livre
         fields = [
             "titre", "sous_titre", "pitch_court", "pitch_long",
-            "sommaire", "extrait", "couverture",
+            "sommaire", "extrait",
             "isbn", "editeur", "pages", "prix_euros",
         ]
         widgets = {
@@ -124,6 +122,22 @@ LienAchatFormSet = inlineformset_factory(
 )
 
 
+class _LivreImageForm(StripExifMixin, forms.ModelForm):
+    exif_fields = ["image"]
+
+    class Meta:
+        model = LivreImage
+        fields = ["image", "alt", "position"]
+
+
+LivreImageFormSet = inlineformset_factory(
+    Livre, LivreImage,
+    form=_LivreImageForm,
+    extra=0,
+    can_delete=True,
+)
+
+
 class ParametresForm(forms.ModelForm):
     class Meta:
         model = Parametres
@@ -135,27 +149,41 @@ class ParametresForm(forms.ModelForm):
         ]
 
 
-class PersonneForm(StripExifMixin, forms.ModelForm):
-    exif_fields = ["portrait"]
-
+class PersonneForm(forms.ModelForm):
     class Meta:
         model = Personne
         fields = [
             "nom", "sous_titre", "annee_naissance",
-            "bio_courte", "bio_longue", "portrait",
+            "bio_courte", "bio_longue",
         ]
         widgets = {
             "bio_courte": forms.Textarea(attrs={"rows": 2}),
         }
 
 
+class _PersonneImageForm(StripExifMixin, forms.ModelForm):
+    exif_fields = ["image"]
+
+    class Meta:
+        model = PersonneImage
+        fields = ["image", "alt", "position"]
+
+
+PersonneImageFormSet = inlineformset_factory(
+    Personne, PersonneImage,
+    form=_PersonneImageForm,
+    extra=0,
+    can_delete=True,
+)
+
+
 class AccueilForm(StripExifMixin, forms.ModelForm):
-    exif_fields = ["hero_image", "og_image"]
+    exif_fields = ["og_image"]
 
     class Meta:
         model = Accueil
         fields = [
-            "hero_titre", "hero_pitch", "hero_image",
+            "hero_titre", "hero_pitch",
             "pull_quote_texte", "pull_quote_auteur",
             "dedicaces_intro", "temoignages_intro",
             "seo_title", "seo_description", "og_image",
@@ -163,3 +191,19 @@ class AccueilForm(StripExifMixin, forms.ModelForm):
         widgets = {
             "seo_description": forms.Textarea(attrs={"rows": 2}),
         }
+
+
+class _AccueilImageForm(StripExifMixin, forms.ModelForm):
+    exif_fields = ["image"]
+
+    class Meta:
+        model = AccueilImage
+        fields = ["image", "alt", "position"]
+
+
+AccueilImageFormSet = inlineformset_factory(
+    Accueil, AccueilImage,
+    form=_AccueilImageForm,
+    extra=0,
+    can_delete=True,
+)
