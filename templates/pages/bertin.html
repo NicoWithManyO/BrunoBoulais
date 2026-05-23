@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% load richtext seo_tags %}
 
-{% block extra_head %}{% person_jsonld personne "sujet" %}{% endblock %}
+{% block extra_head %}
+{% person_jsonld personne "sujet" %}
+{% with personne.images.first as hero_img %}{% if hero_img %}<link rel="preload" as="image" href="{{ hero_img.image.url }}" fetchpriority="high">{% endif %}{% endwith %}
+{% endblock %}
 
 {% block content %}
 
@@ -12,7 +15,7 @@
         <figure>
             {% with personne.images.all as portraits %}
             {% if portraits %}
-                {% include "partials/carrousel.html" with images=portraits alt_default="Portrait de "|add:personne.nom wrapper_class="w-full max-w-md" media_class="aspect-[4/5] shadow-xl border border-mist/40" delai_s=personne.delai_rotation_s only %}
+                {% include "partials/carrousel.html" with images=portraits alt_default="Portrait de "|add:personne.nom wrapper_class="w-full max-w-md" media_class="aspect-[4/5] shadow-xl border border-mist/40" delai_s=personne.delai_rotation_s eager_first=True only %}
             {% else %}
                 <div class="w-full max-w-md aspect-[4/5] bg-gradient-to-br from-mist-light to-mist grid place-items-center">
                     <span class="font-display italic text-7xl text-brown/60">JB</span>

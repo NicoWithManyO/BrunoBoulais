@@ -71,7 +71,7 @@
                 </video>
             {% else %}
                 <a href="{{ m.fichier.url }}" target="_blank" rel="noopener" class="no-underline">
-                    <img src="{{ m.fichier.url }}" alt="{{ m.alt|default:m.legende }}" loading="lazy">
+                    <img src="{{ m.fichier.url }}" alt="{{ m.alt|default:m.legende }}" loading="lazy" decoding="async">
                 </a>
             {% endif %}
             {% if m.legende %}<figcaption>{{ m.legende }}</figcaption>{% endif %}

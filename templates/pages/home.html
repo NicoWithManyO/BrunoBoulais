@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% load richtext seo_tags %}
 
-{% block extra_head %}{% website_jsonld %}{% endblock %}
+{% block extra_head %}
+{% website_jsonld %}
+{% with accueil.images.first as hero_img %}{% if hero_img %}<link rel="preload" as="image" href="{{ hero_img.image.url }}" fetchpriority="high">{% endif %}{% endwith %}
+{% endblock %}
 
 {% block content %}
 
@@ -38,7 +41,7 @@
             <figure class="book-cover">
                 {% with accueil.images.all as accueil_images %}
                 {% if accueil_images %}
-                    {% include "partials/carrousel.html" with images=accueil_images alt_default=BOOK_TITLE wrapper_class="w-[260px] md:w-[300px]" media_class="aspect-[2/3] shadow-2xl" delai_s=accueil.delai_rotation_s only %}
+                    {% include "partials/carrousel.html" with images=accueil_images alt_default=BOOK_TITLE wrapper_class="w-[260px] md:w-[300px]" media_class="aspect-[2/3] shadow-2xl" delai_s=accueil.delai_rotation_s eager_first=True only %}
                 {% else %}
                 {# Placeholder en attendant la vraie couverture #}
                 <div class="w-[260px] md:w-[300px] aspect-[2/3] bg-gradient-to-br from-sand to-sand-dark grid place-items-center text-brown">

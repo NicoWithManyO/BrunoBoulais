@@ -35,6 +35,7 @@
             {% if a_thumb %}
             <a href="{{ a.get_absolute_url }}" class="block no-underline -m-6 mb-0 overflow-hidden">
                 <img src="{{ a_thumb.image.url }}" alt="{{ a_thumb.alt|default:a.titre }}"
+                     loading="lazy" decoding="async"
                      class="w-full aspect-[4/3] object-cover transition-transform duration-500 hover:scale-105">
             </a>
             {% endif %}

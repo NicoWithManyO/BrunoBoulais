@@ -11,6 +11,9 @@ Arguments attendus (passés via include with ...) :
   - delai_s       : délai de rotation en secondes (0 = pas de rotation,
                     on reste sur l'image d'ordre 1). Si non fourni, le JS
                     applique son défaut (8 s).
+  - eager_first   : si True, la 1re image est marquée fetchpriority=high
+                    et chargée en eager (cas LCP : hero accueil, portraits
+                    above-the-fold). Sinon toutes les images sont lazy.
 
 Si 1 image OU delai_s=0 -> figure statique, pas d'autoplay, pas de dots.
 Sinon                   -> stack fade autoplay + boutons points.
@@ -31,7 +34,9 @@ accessible de chaque <img>.
       {% for img in images %}
       <div class="carrousel__slide{% if forloop.first %} is-active{% endif %}"
            {% if n > 1 and delai_s %}role="group" aria-roledescription="diapositive" aria-label="Image {{ forloop.counter }} sur {{ n }}"{% endif %}>
-        <img src="{{ img.image.url }}" alt="{{ img.alt|default:alt_default }}">
+        <img src="{{ img.image.url }}" alt="{{ img.alt|default:alt_default }}"
+             decoding="async"
+             {% if eager_first and forloop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %}>
       </div>
       {% endfor %}
     </div>
