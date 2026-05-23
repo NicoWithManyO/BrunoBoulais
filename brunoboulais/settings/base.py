@@ -165,6 +165,11 @@ STATICFILES_FINDERS = [
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Upload size caps — protect the server from oversized files. The per-image
+# 8 Mo limit is also enforced at the field level via `validate_image_size`.
+FILE_UPLOAD_MAX_MEMORY_SIZE = 8 * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {

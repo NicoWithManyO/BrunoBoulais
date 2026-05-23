@@ -1,6 +1,8 @@
 from django.db import models
 
 from apps.core.models import TimestampedModel
+from apps.core.uploads import portraits_upload_to
+from apps.core.validators import IMAGE_VALIDATORS
 
 
 class Personne(TimestampedModel):
@@ -28,7 +30,10 @@ class Personne(TimestampedModel):
         "Biographie", blank=True,
         help_text="Texte riche (HTML autorisé)."
     )
-    portrait = models.ImageField("Portrait", upload_to="portraits/", blank=True, null=True)
+    portrait = models.ImageField(
+        "Portrait", upload_to=portraits_upload_to, blank=True, null=True,
+        validators=IMAGE_VALIDATORS,
+    )
 
     class Meta:
         verbose_name = "Personne"

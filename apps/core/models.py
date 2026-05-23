@@ -1,5 +1,8 @@
 from django.db import models
 
+from apps.core.uploads import og_upload_to
+from apps.core.validators import IMAGE_VALIDATORS
+
 
 class TimestampedModel(models.Model):
     """Base abstract model with created/updated timestamps."""
@@ -23,7 +26,8 @@ class SeoMixin(models.Model):
         help_text="Description affichée par Google (~150 caractères)."
     )
     og_image = models.ImageField(
-        "Image de partage", upload_to="og/", blank=True, null=True,
+        "Image de partage", upload_to=og_upload_to, blank=True, null=True,
+        validators=IMAGE_VALIDATORS,
         help_text="Image affichée lors d'un partage sur les réseaux sociaux."
     )
 

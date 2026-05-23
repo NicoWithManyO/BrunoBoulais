@@ -1,14 +1,35 @@
 """ModelForms used by the custom /gestion/ admin interface."""
 from django import forms
+from django.core.files.uploadedfile import UploadedFile
 from django.forms import inlineformset_factory
 
 from apps.actualites.models import Actualite
+from apps.core.images import strip_exif
 from apps.galerie.models import Media
 from apps.livre.models import LienAchat, Livre
 from apps.pages.models import Accueil
 from apps.parametres.models import Parametres
 from apps.personnes.models import Personne
 from apps.temoignages.models import Temoignage
+
+
+class StripExifMixin:
+    """Re-encodes any newly-uploaded image fields without their EXIF metadata.
+
+    Subclass ModelForms set `exif_fields = [...]` to opt in. The mixin only
+    touches fields that received a fresh upload — existing stored images on
+    edit are left alone.
+    """
+
+    exif_fields: list[str] = []
+
+    def clean(self):
+        cleaned = super().clean()
+        for fname in self.exif_fields:
+            f = cleaned.get(fname)
+            if isinstance(f, UploadedFile):
+                cleaned[fname] = strip_exif(f)
+        return cleaned
 
 
 class _DateInput(forms.DateInput):
@@ -19,7 +40,9 @@ class _TimeInput(forms.TimeInput):
     input_type = "time"
 
 
-class ActualiteForm(forms.ModelForm):
+class ActualiteForm(StripExifMixin, forms.ModelForm):
+    exif_fields = ["image"]
+
     class Meta:
         model = Actualite
         fields = [
@@ -48,13 +71,27 @@ class TemoignageForm(forms.ModelForm):
         }
 
 
-class MediaForm(forms.ModelForm):
+class MediaForm(StripExifMixin, forms.ModelForm):
+    # Only strip EXIF when the upload is actually an image.
+    exif_fields = ["fichier"]
+
     class Meta:
         model = Media
         fields = ["fichier", "type", "categorie", "legende", "alt", "position", "publie"]
 
+    def clean(self):
+        # MediaForm holds both images and videos; only strip if type=image.
+        cleaned = forms.ModelForm.clean(self)
+        if cleaned.get("type") == Media.TYPE_IMAGE:
+            f = cleaned.get("fichier")
+            if isinstance(f, UploadedFile):
+                cleaned["fichier"] = strip_exif(f)
+        return cleaned
 
-class LivreForm(forms.ModelForm):
+
+class LivreForm(StripExifMixin, forms.ModelForm):
+    exif_fields = ["couverture"]
+
     class Meta:
         model = Livre
         fields = [
@@ -93,7 +130,9 @@ class ParametresForm(forms.ModelForm):
         }
 
 
-class PersonneForm(forms.ModelForm):
+class PersonneForm(StripExifMixin, forms.ModelForm):
+    exif_fields = ["portrait"]
+
     class Meta:
         model = Personne
         fields = [
@@ -106,7 +145,9 @@ class PersonneForm(forms.ModelForm):
         }
 
 
-class AccueilForm(forms.ModelForm):
+class AccueilForm(StripExifMixin, forms.ModelForm):
+    exif_fields = ["hero_image", "og_image"]
+
     class Meta:
         model = Accueil
         fields = [

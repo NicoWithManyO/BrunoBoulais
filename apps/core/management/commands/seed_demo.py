@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from apps.actualites.models import Actualite
 from apps.livre.models import LienAchat, Livre
+from apps.pages.models import Accueil
 from apps.parametres.models import Parametres
 from apps.personnes.models import Personne
 from apps.temoignages.models import Temoignage
@@ -26,6 +27,7 @@ class Command(BaseCommand):
         self._seed_actualites()
         self._seed_temoignages()
         self._seed_parametres()
+        self._seed_accueil()
 
         self.stdout.write(self.style.SUCCESS("Done."))
 
@@ -291,3 +293,30 @@ class Command(BaseCommand):
 
     def _seed_parametres(self):
         Parametres.get_solo()
+
+    # --- Page d'accueil (singleton) -----------------------------------
+
+    def _seed_accueil(self):
+        accueil = Accueil.get_solo()
+        accueil.hero_titre = (
+            "Dans les pas de<br>\n"
+            "<em class=\"not-italic text-terracotta\">Jacques Bertin</em>,<br>\n"
+            "le géant discret<br>de la chanson."
+        )
+        accueil.hero_pitch = (
+            "Bruno Boulais consacre un livre&nbsp;à <em>Jacques Bertin</em>, poète et chanteur "
+            "à l’œuvre monumentale, longtemps tenu à l’écart des projecteurs. Une porte "
+            "d’entrée vers ses chansons, ses poèmes, ses écrits — discrets comme&nbsp;lui, "
+            "puissants comme une braise."
+        )
+        accueil.pull_quote_texte = (
+            "Ses chansons ne séduisent pas, elles touchent. "
+            "Ses poèmes ne décorent pas, ils dévoilent."
+        )
+        accueil.pull_quote_auteur = "Bruno Boulais"
+        accueil.dedicaces_intro = (
+            "Bruno parcourt la France, des librairies aux créperies, pour porter ce livre&nbsp;"
+            "à la rencontre de ses lecteurs."
+        )
+        accueil.temoignages_intro = ""
+        accueil.save()

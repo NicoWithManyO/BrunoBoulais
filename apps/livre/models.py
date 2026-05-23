@@ -2,6 +2,8 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from apps.core.models import TimestampedModel
+from apps.core.uploads import livre_upload_to
+from apps.core.validators import IMAGE_VALIDATORS
 
 
 class Livre(TimestampedModel):
@@ -25,7 +27,10 @@ class Livre(TimestampedModel):
         "Extrait", blank=True,
         help_text="Extrait choisi du livre (HTML autorisé)."
     )
-    couverture = models.ImageField("Couverture", upload_to="livre/", blank=True, null=True)
+    couverture = models.ImageField(
+        "Couverture", upload_to=livre_upload_to, blank=True, null=True,
+        validators=IMAGE_VALIDATORS,
+    )
     isbn = models.CharField("ISBN", max_length=20, blank=True)
     editeur = models.CharField("Éditeur", max_length=100, default="Éditions du Petit Pavé")
     pages = models.PositiveIntegerField("Nombre de pages", null=True, blank=True)

@@ -4,6 +4,8 @@ from django.db import models
 from django.urls import reverse
 
 from apps.core.models import SeoMixin, TimestampedModel
+from apps.core.uploads import accueil_upload_to
+from apps.core.validators import IMAGE_VALIDATORS
 
 CACHE_KEY_ACCUEIL = "pages_accueil"
 
@@ -88,9 +90,10 @@ class Accueil(TimestampedModel, SeoMixin):
     )
     hero_image = models.ImageField(
         "Image du hero",
-        upload_to="accueil/",
+        upload_to=accueil_upload_to,
         blank=True,
         null=True,
+        validators=IMAGE_VALIDATORS,
         help_text=(
             "Optionnelle. Si renseignée, remplace la couverture-placeholder à droite du titre."
         ),

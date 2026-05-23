@@ -4,6 +4,8 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 from apps.core.models import SeoMixin, TimestampedModel
+from apps.core.uploads import actualites_upload_to
+from apps.core.validators import IMAGE_VALIDATORS
 
 
 class Actualite(TimestampedModel, SeoMixin):
@@ -47,7 +49,10 @@ class Actualite(TimestampedModel, SeoMixin):
         help_text="Phrase d'accroche affichée dans les listes."
     )
     contenu = models.TextField("Contenu", blank=True, help_text="HTML autorisé.")
-    image = models.ImageField("Image", upload_to="actualites/", blank=True, null=True)
+    image = models.ImageField(
+        "Image", upload_to=actualites_upload_to, blank=True, null=True,
+        validators=IMAGE_VALIDATORS,
+    )
 
     date_publication = models.DateTimeField("Date de publication", default=timezone.now)
 
