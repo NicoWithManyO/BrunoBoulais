@@ -3,62 +3,43 @@
 (function () {
     "use strict";
 
-    function syncToInput(editor, input) {
-        input.value = editor.innerHTML;
-    }
-
-    function setupKeyboardShortcuts(editor, sync) {
-        editor.addEventListener("keydown", function (e) {
-            // Ctrl/Cmd + B / I as fallback (browsers usually map these natively)
-            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
-                if (e.key === "b" || e.key === "B") { document.execCommand("bold"); e.preventDefault(); sync(); }
-                else if (e.key === "i" || e.key === "I") { document.execCommand("italic"); e.preventDefault(); sync(); }
-            }
-        });
-    }
-
     function init(root) {
         var editor = root.querySelector("[data-richtext-editor]");
         var input = root.querySelector("[data-richtext-input]");
         var toolbar = root.querySelector(".richtext__toolbar");
         if (!editor || !input || !toolbar) return;
 
-        var mode = root.dataset.mode || "block";
-        var sync = function () { syncToInput(editor, input); };
+        var inline = root.dataset.mode === "inline";
+        var sync = function () { input.value = editor.innerHTML; };
 
         editor.addEventListener("input", sync);
         editor.addEventListener("blur", sync);
 
+        editor.addEventListener("keydown", function (e) {
+            if (inline && e.key === "Enter") {
+                e.preventDefault();
+                document.execCommand("insertLineBreak");
+                sync();
+            }
+        });
+
         toolbar.addEventListener("mousedown", function (e) {
-            // mousedown (not click) so the editor doesn't lose focus before execCommand
+            // mousedown (not click) so the editor doesn't lose focus before execCommand.
             var btn = e.target.closest("button[data-cmd]");
             if (!btn) return;
             e.preventDefault();
+            editor.focus();
             document.execCommand(btn.dataset.cmd);
             sync();
         });
 
-        setupKeyboardShortcuts(editor, sync);
-
-        if (mode === "inline") {
-            // Single-paragraph: Enter inserts <br>, Shift+Enter does the same.
-            editor.addEventListener("keydown", function (e) {
-                if (e.key === "Enter") {
-                    e.preventDefault();
-                    document.execCommand("insertLineBreak");
-                    sync();
-                }
-            });
-        }
-
-        // Belt-and-braces: sync once more right before the form submits.
+        // Catch Enter-to-submit and similar paths where blur never fires.
         var form = root.closest("form");
         if (form) form.addEventListener("submit", sync);
     }
 
     function initAll() {
-        // Tell browsers (once) to use <p> on Enter instead of <div>.
-        try { document.execCommand("defaultParagraphSeparator", false, "p"); } catch (e) { /* IE/old */ }
+        try { document.execCommand("defaultParagraphSeparator", false, "p"); } catch (e) { /* old browsers */ }
         document.querySelectorAll("[data-richtext]").forEach(init);
     }
 

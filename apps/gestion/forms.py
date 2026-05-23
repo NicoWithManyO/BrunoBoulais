@@ -29,8 +29,6 @@ class StripExifMixin:
 
     def clean(self):
         cleaned = super().clean()
-        if cleaned is None:
-            return cleaned
         for fname in self.exif_fields_for(cleaned):
             f = cleaned.get(fname)
             if isinstance(f, UploadedFile):
