@@ -5,6 +5,8 @@ from io import BytesIO
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from PIL import Image, ImageOps, UnidentifiedImageError
 
+from apps.core.validators import MAX_IMAGE_SIZE_BYTES
+
 logger = logging.getLogger(__name__)
 
 _PIL_FORMAT_BY_EXT = {
@@ -54,6 +56,18 @@ def strip_exif(uploaded_file):
             buf = BytesIO()
             target.save(buf, **save_kwargs)
             buf.seek(0)
+
+        # validate_image_size only saw the original upload. If re-encoding
+        # at q=92 + progressive grew the file past the validator limit
+        # (rare but possible with already-aggressive sources), keep the
+        # original — it has EXIF but at least respects the storage budget.
+        if buf.getbuffer().nbytes > MAX_IMAGE_SIZE_BYTES:
+            logger.warning(
+                "strip_exif: re-encoded %r grew past %d bytes, keeping original",
+                name, MAX_IMAGE_SIZE_BYTES,
+            )
+            uploaded_file.seek(0)
+            return uploaded_file
 
         return InMemoryUploadedFile(
             file=buf,
