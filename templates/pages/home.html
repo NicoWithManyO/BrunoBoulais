@@ -1,5 +1,7 @@
 {% extends "base.html" %}
-{% load richtext %}
+{% load richtext seo_tags %}
+
+{% block extra_head %}{% website_jsonld %}{% endblock %}
 
 {% block content %}
 

@@ -1,6 +1,8 @@
 from django.shortcuts import redirect, render
 from django.urls import reverse
 
+from apps.core.seo import seo
+
 from .forms import ContactForm
 
 
@@ -12,8 +14,26 @@ def contact(request):
             return redirect(reverse("contact:merci"))
     else:
         form = ContactForm()
-    return render(request, "contact/form.html", {"form": form})
+    return render(
+        request,
+        "contact/form.html",
+        {
+            "form": form,
+            **seo(
+                request,
+                title="Contact & commande dédicacée · Bruno Boulais",
+                description=(
+                    "Commander le livre avec une dédicace personnalisée ou écrire"
+                    " à Bruno Boulais."
+                ),
+            ),
+        },
+    )
 
 
 def merci(request):
-    return render(request, "contact/merci.html", {})
+    return render(
+        request,
+        "contact/merci.html",
+        seo(request, title="Message envoyé · Bruno Boulais"),
+    )

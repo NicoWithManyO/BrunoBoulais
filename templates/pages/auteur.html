@@ -1,8 +1,7 @@
 {% extends "base.html" %}
-{% load richtext %}
+{% load richtext seo_tags %}
 
-{% block title %}Bruno Boulais, l’auteur — {{ SITE_NAME }}{% endblock %}
-{% block description %}Bruno Boulais, auteur installé près de Dax : présentation, parcours et engagement littéraire.{% endblock %}
+{% block extra_head %}{% person_jsonld personne "auteur" %}{% endblock %}
 
 {% block content %}
 

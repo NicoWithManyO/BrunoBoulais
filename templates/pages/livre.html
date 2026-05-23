@@ -1,8 +1,7 @@
 {% extends "base.html" %}
-{% load richtext %}
+{% load richtext seo_tags %}
 
-{% block title %}Le livre — {{ BOOK_TITLE }}{% endblock %}
-{% block description %}{% if livre.pitch_court %}{{ livre.pitch_court }}{% else %}Présentation détaillée du livre « {{ BOOK_TITLE }} » de Bruno Boulais.{% endif %}{% endblock %}
+{% block extra_head %}{% book_jsonld livre %}{% endblock %}
 
 {% block content %}
 

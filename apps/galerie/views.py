@@ -1,5 +1,7 @@
 from django.shortcuts import render
 
+from apps.core.seo import seo
+
 from .models import Media
 
 
@@ -15,5 +17,13 @@ def galerie(request):
             "medias": qs,
             "categorie_active": categorie,
             "categories": Media.CATEGORIE_CHOICES,
+            **seo(
+                request,
+                title="Galerie photos · Bruno Boulais",
+                description=(
+                    "Photos de Jacques Bertin sur scène, des dédicaces de Bruno"
+                    " Boulais et des éditions du livre."
+                ),
+            ),
         },
     )

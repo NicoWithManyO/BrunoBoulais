@@ -1,8 +1,7 @@
 {% extends "base.html" %}
-{% load richtext %}
+{% load richtext seo_tags %}
 
-{% block title %}Jacques Bertin — {{ SITE_NAME }}{% endblock %}
-{% block description %}Jacques Bertin, chanteur-poète : biographie, discographie, citations et galerie.{% endblock %}
+{% block extra_head %}{% person_jsonld personne "sujet" %}{% endblock %}
 
 {% block content %}
 

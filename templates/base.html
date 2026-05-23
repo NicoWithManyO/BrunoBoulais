@@ -4,23 +4,37 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>{% block title %}{{ SITE_NAME }} — {{ BOOK_TITLE }}{% endblock %}</title>
-    <meta name="description" content="{% block description %}Site officiel de Bruno Boulais, auteur de « {{ BOOK_TITLE }} ».{% endblock %}">
+    <title>{{ seo_title|default:default_seo_title }}</title>
+    <meta name="description" content="{{ seo_description|default:default_seo_description }}">
+    <link rel="canonical" href="{{ request.build_absolute_uri }}">
 
     {# Open Graph #}
-    <meta property="og:type" content="website">
+    <meta property="og:type" content="{{ seo_og_type|default:'website' }}">
     <meta property="og:locale" content="fr_FR">
-    <meta property="og:title" content="{% block og_title %}{{ self.title }}{% endblock %}">
-    <meta property="og:description" content="{% block og_description %}{{ self.description }}{% endblock %}">
-    {% block og_image %}{% endblock %}
+    <meta property="og:site_name" content="{{ SITE_NAME }}">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:title" content="{{ seo_title|default:default_seo_title }}">
+    <meta property="og:description" content="{{ seo_description|default:default_seo_description }}">
+    <meta property="og:image" content="{{ seo_og_image|default:default_seo_og_image }}">
+
+    {# Twitter Card #}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ seo_title|default:default_seo_title }}">
+    <meta name="twitter:description" content="{{ seo_description|default:default_seo_description }}">
+    <meta name="twitter:image" content="{{ seo_og_image|default:default_seo_og_image }}">
 
     {# Fonts — Fraunces (display), Spectral (serif body), Inter (sans UI) #}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..700,30..100&family=Spectral:ital,wght@0,300;0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-    {# Favicon (placeholder) #}
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><text y='52' font-size='52' font-family='Georgia,serif' fill='%23B8542B'>B</text></svg>">
+    {# Favicons #}
+    <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
+    <link rel="icon" sizes="32x32" href="{% static 'favicon-32.png' %}" type="image/png">
+    <link rel="icon" sizes="16x16" href="{% static 'favicon-16.png' %}" type="image/png">
+    <link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}">
+    <link rel="manifest" href="{% static 'site.webmanifest' %}">
+    <meta name="theme-color" content="#C9622B">
 
     {% tailwind_css %}
 

@@ -1,8 +1,87 @@
 {% extends "base.html" %}
+{% load static %}
 {% block content %}
 <section class="container-prose py-20">
     <p class="eyebrow">Légal</p>
     <h1 class="mt-4">Mentions légales</h1>
-    <p class="mt-8 text-ink/70 italic">À compléter (éditeur du site, hébergeur, RGPD).</p>
+    <p class="mt-3 text-ink/70 italic">Dernière mise à jour&nbsp;: mai&nbsp;2026.</p>
+
+    <article class="prose-soft mt-12 space-y-10">
+
+        <section>
+            <h2 class="text-2xl font-display text-brown">Éditeur du site</h2>
+            <p class="mt-3">
+                Le présent site est édité à titre personnel par&nbsp;:
+            </p>
+            <ul class="mt-3 list-none pl-0 space-y-1 text-ink/85">
+                <li><strong>Bruno Boulais</strong></li>
+                <li>Adresse postale&nbsp;: <em class="text-ink/60">[adresse à compléter]</em></li>
+                <li>Courriel&nbsp;: <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a></li>
+            </ul>
+            <p class="mt-4">
+                Directeur de la publication&nbsp;: <strong>Bruno Boulais</strong>.
+            </p>
+        </section>
+
+        <section>
+            <h2 class="text-2xl font-display text-brown">Hébergement</h2>
+            <p class="mt-3">
+                Ce site est hébergé par&nbsp;: <em class="text-ink/60">[hébergeur à compléter — nom, adresse, téléphone]</em>.
+            </p>
+        </section>
+
+        <section>
+            <h2 class="text-2xl font-display text-brown">Propriété intellectuelle</h2>
+            <p class="mt-3">
+                Sauf mention contraire, l'ensemble des contenus présents sur ce site (textes, photographies,
+                extraits du livre, illustrations) est la propriété de Bruno Boulais ou de ses ayants droit, et
+                est protégé par le droit d'auteur. Toute reproduction, représentation, diffusion ou
+                exploitation, totale ou partielle, sans autorisation écrite préalable est interdite.
+            </p>
+            <p class="mt-3">
+                Les photographies de Jacques Bertin et les pochettes de disques restent la propriété de leurs
+                auteurs respectifs et sont utilisées dans un cadre éditorial à but informatif et non
+                commercial.
+            </p>
+        </section>
+
+        <section>
+            <h2 class="text-2xl font-display text-brown">Données personnelles</h2>
+            <p class="mt-3">
+                Le formulaire de contact présent sur ce site recueille les informations que vous y inscrivez
+                volontairement (nom, courriel, message). Ces données sont utilisées uniquement pour répondre
+                à votre demande et passer commande d'un livre dédicacé le cas échéant. Elles ne sont ni
+                cédées, ni revendues, ni utilisées à des fins de prospection commerciale.
+            </p>
+            <p class="mt-3">
+                Conformément au Règlement Général sur la Protection des Données (RGPD) et à la loi
+                «&nbsp;Informatique et Libertés&nbsp;» modifiée, vous disposez d'un droit d'accès, de
+                rectification, d'effacement et de portabilité de vos données. Pour exercer ces droits,
+                écrivez à <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a>.
+            </p>
+        </section>
+
+        <section>
+            <h2 class="text-2xl font-display text-brown">Cookies</h2>
+            <p class="mt-3">
+                Ce site n'utilise pas de cookies de traçage ni d'outils d'analyse d'audience tiers. Seul un
+                cookie technique de session est posé pendant la durée de votre visite, strictement nécessaire
+                au bon fonctionnement du formulaire de contact (protection anti-CSRF).
+            </p>
+        </section>
+
+        <section>
+            <h2 class="text-2xl font-display text-brown">Crédits</h2>
+            <p class="mt-3">
+                Conception &amp; développement&nbsp;: site sur-mesure réalisé avec Django, Tailwind&nbsp;CSS
+                et les typographies <em>Fraunces</em>, <em>Spectral</em> et <em>Inter</em>.
+            </p>
+            <p class="mt-3">
+                Livre paru aux <a href="https://www.petitpave.fr/" rel="noopener" target="_blank">Éditions du
+                Petit Pavé</a>.
+            </p>
+        </section>
+
+    </article>
 </section>
 {% endblock %}

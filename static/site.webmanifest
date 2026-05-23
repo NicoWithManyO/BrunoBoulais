@@ -1,0 +1,30 @@
+{
+  "name": "Bruno Boulais — auteur",
+  "short_name": "Bruno Boulais",
+  "description": "Site officiel de Bruno Boulais, auteur de « Jacques Bertin, le géant discret de la chanson ».",
+  "lang": "fr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#C9622B",
+  "background_color": "#F5EFE6",
+  "icons": [
+    {
+      "src": "/static/favicon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/favicon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/favicon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
