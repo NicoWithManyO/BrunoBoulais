@@ -1,0 +1,10 @@
+{% comment %}
+OOB swap target for upload errors. Always included in the Envoyer HTMX
+response — empty when no error (clears previous errors), populated when
+the validators rejected the upload.
+{% endcomment %}
+<div id="image-upload-errors" hx-swap-oob="true">
+{% if nouvelles_errors %}
+<ul class="errorlist mt-2">{% for e in nouvelles_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+{% endif %}
+</div>

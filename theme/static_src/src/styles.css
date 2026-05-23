@@ -816,6 +816,9 @@
   .image-row__delete {
     align-self: center;
   }
+  .image-row__readonly {
+    @apply text-sm text-ink/80 italic px-3 py-2 bg-cream/50 border border-mist-light rounded-sm;
+  }
   @media (max-width: 640px) {
     .image-row {
       grid-template-columns: 5rem 1fr;
@@ -826,6 +829,46 @@
     .image-row__thumb { grid-area: thumb; width: 5rem; height: 5rem; }
     .image-row__fields { grid-area: fields; }
     .image-row__delete { grid-area: delete; padding-top: 0.5rem; }
+  }
+
+  /* Per-carousel rotation delay + add-image sub-block inside the carousel panel */
+  .carrousel-settings {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: rgba(232, 220, 196, 0.18);
+    border: 1px solid var(--color-mist-light);
+    border-radius: 2px;
+  }
+  .carrousel-settings label {
+    margin-top: 0 !important;
+    white-space: nowrap;
+  }
+  .carrousel-settings input[type="number"] {
+    max-width: 6rem;
+    margin: 0 !important;
+  }
+  .carrousel-settings .helptext {
+    margin-top: 0;
+  }
+  .carrousel-add__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  .carrousel-add__row input[type="file"] {
+    flex: 1 1 auto;
+    min-width: 16rem;
+    margin: 0 !important;
+  }
+  @media (max-width: 640px) {
+    .carrousel-settings {
+      grid-template-columns: 1fr;
+    }
   }
 
   /* Mini rich-text editor — bold/italic toolbar above a contenteditable */

@@ -5,9 +5,12 @@ Arguments attendus (passés via include with ...) :
   - alt_default   : texte utilisé si une image n'a pas d'alt ; sert aussi
                     de descriptif pour le carrousel (préfixé "Carrousel : ")
   - wrapper_class : classes CSS sur le conteneur (sizing, aspect-ratio, shadow…)
+  - delai_s       : délai de rotation en secondes (0 = pas de rotation,
+                    on reste sur l'image d'ordre 1). Si non fourni, le JS
+                    applique son défaut (8 s).
 
-Si 1 image  -> figure simple, pas d'autoplay, pas de dots.
-Si N > 1    -> stack fade autoplay 60 s + boutons points.
+Si 1 image OU delai_s=0 -> figure statique, pas d'autoplay, pas de dots.
+Sinon                   -> stack fade autoplay + boutons points.
 
 A11y : suit le pattern WAI-ARIA Carousel (région + slides en role="group" +
 aria-roledescription) — PAS le pattern Tabs. L'alt utilisateur reste le nom
@@ -16,16 +19,16 @@ accessible de chaque <img>.
 {% if images %}
 {% with images|length as n %}
 <figure class="carrousel {{ wrapper_class }}"
-        {% if n > 1 %}data-carrousel role="region" aria-roledescription="carrousel" aria-label="Carrousel : {{ alt_default }}"{% endif %}>
+        {% if n > 1 and delai_s %}data-carrousel data-interval="{{ delai_s }}" role="region" aria-roledescription="carrousel" aria-label="Carrousel : {{ alt_default }}"{% endif %}>
   <div class="carrousel__stack">
     {% for img in images %}
     <div class="carrousel__slide{% if forloop.first %} is-active{% endif %}"
-         {% if n > 1 %}role="group" aria-roledescription="diapositive" aria-label="Image {{ forloop.counter }} sur {{ n }}"{% endif %}>
+         {% if n > 1 and delai_s %}role="group" aria-roledescription="diapositive" aria-label="Image {{ forloop.counter }} sur {{ n }}"{% endif %}>
       <img src="{{ img.image.url }}" alt="{{ img.alt|default:alt_default }}">
     </div>
     {% endfor %}
   </div>
-  {% if n > 1 %}
+  {% if n > 1 and delai_s %}
   <div class="carrousel__dots" aria-label="Choisir une image">
     {% for img in images %}
     <button type="button"

@@ -17,7 +17,8 @@
         {% include "gestion/_form.html" %}
     </div>
 
-    {% include "gestion/_images_carousel.html" with add_label="Ajouter des couvertures / visuels" hint="Réorganisez (champ « Ordre »), changez le texte alternatif, ou cochez « Supprimer ». La première image sert de couverture par défaut." %}
+    {% url 'gestion:livre_image_ajouter' as livre_add_url %}
+    {% include "gestion/_images_carousel.html" with add_label="Ajouter des couvertures / visuels" hint="La première image (ordre 1) sert de couverture principale. Si plusieurs sont définies, elles défilent en carrousel selon le délai ci-dessous." add_url=livre_add_url delete_url_name="gestion:livre_image_supprimer" %}
 
     <div class="panel mt-6">
         <h2 class="font-display text-lg text-brown mb-3">Où l'on peut se procurer le livre</h2>

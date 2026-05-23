@@ -72,6 +72,7 @@ class ActualiteForm(forms.ModelForm):
             "lieu", "ville",
             "chapo", "contenu",
             "date_publication",
+            "delai_rotation_s",
         ]
         widgets = {
             "date_evenement": _DateInput(),
@@ -112,6 +113,7 @@ class LivreForm(forms.ModelForm):
             "titre", "sous_titre", "pitch_court", "pitch_long",
             "sommaire", "extrait",
             "isbn", "editeur", "pages", "prix_euros",
+            "delai_rotation_s",
         ]
         widgets = {
             "pitch_court": forms.Textarea(attrs={"rows": 2}),
@@ -147,6 +149,7 @@ class PersonneForm(forms.ModelForm):
         fields = [
             "nom", "sous_titre", "annee_naissance",
             "bio_courte", "bio_longue",
+            "delai_rotation_s",
         ]
         widgets = {
             "bio_courte": forms.Textarea(attrs={"rows": 2}),
@@ -165,6 +168,7 @@ class AccueilForm(StripExifMixin, forms.ModelForm):
             "hero_titre", "hero_pitch",
             "pull_quote_texte", "pull_quote_auteur",
             "dedicaces_intro", "temoignages_intro",
+            "delai_rotation_s",
             "seo_title", "seo_description", "og_image",
         ]
         widgets = {

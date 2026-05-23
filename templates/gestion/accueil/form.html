@@ -42,7 +42,8 @@
         {% endfor %}
     </div>
 
-    {% include "gestion/_images_carousel.html" with add_label="Ajouter des images au hero" hint="Réorganisez (champ « Ordre »), changez le texte alternatif, ou cochez « Supprimer ». La première image s'affiche à droite du titre ; si plusieurs sont définies, elles défilent en carrousel." %}
+    {% url 'gestion:accueil_image_ajouter' as accueil_add_url %}
+    {% include "gestion/_images_carousel.html" with add_label="Ajouter des images au hero" hint="La première image (ordre 1) s'affiche à droite du titre. Si plusieurs sont définies, elles défilent en carrousel selon le délai ci-dessous." add_url=accueil_add_url delete_url_name="gestion:accueil_image_supprimer" %}
 
     <div class="panel mt-6">
         <h2 class="font-display text-lg text-brown mb-1">Référencement (SEO)</h2>

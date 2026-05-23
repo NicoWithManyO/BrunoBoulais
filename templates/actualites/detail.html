@@ -53,7 +53,7 @@
     {% with obj.images.all as obj_images %}
     {% if obj_images %}
     <div class="container-page mb-12">
-      {% include "partials/carrousel.html" with images=obj_images alt_default=obj.titre wrapper_class="w-full aspect-[4/3] shadow-lg" only %}
+      {% include "partials/carrousel.html" with images=obj_images alt_default=obj.titre wrapper_class="w-full aspect-[4/3] shadow-lg" delai_s=obj.delai_rotation_s only %}
     </div>
     {% endif %}
     {% endwith %}

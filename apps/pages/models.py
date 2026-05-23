@@ -5,7 +5,13 @@ from django.db.models.signals import pre_delete
 from django.urls import reverse
 
 from apps.core.fields import RichTextField
-from apps.core.models import OrderedImage, SeoMixin, TimestampedModel, delete_image_file
+from apps.core.models import (
+    CarrouselSettingsMixin,
+    OrderedImage,
+    SeoMixin,
+    TimestampedModel,
+    delete_image_file,
+)
 from apps.core.uploads import accueil_image_upload_to
 from apps.core.validators import IMAGE_VALIDATORS
 
@@ -74,7 +80,7 @@ class ContentBlock(TimestampedModel):
         return f"{self.page.slug} · {self.get_type_display()} #{self.position}"
 
 
-class Accueil(TimestampedModel, SeoMixin):
+class Accueil(TimestampedModel, SeoMixin, CarrouselSettingsMixin):
     """Singleton holding the editable content of the public home page."""
 
     hero_titre = RichTextField(

@@ -3,12 +3,17 @@ from django.db import models
 from django.db.models.signals import pre_delete
 
 from apps.core.fields import RichTextField
-from apps.core.models import OrderedImage, TimestampedModel, delete_image_file
+from apps.core.models import (
+    CarrouselSettingsMixin,
+    OrderedImage,
+    TimestampedModel,
+    delete_image_file,
+)
 from apps.core.uploads import livre_image_upload_to
 from apps.core.validators import IMAGE_VALIDATORS
 
 
-class Livre(TimestampedModel):
+class Livre(TimestampedModel, CarrouselSettingsMixin):
     """Singleton model representing THE book."""
 
     titre = models.CharField("Titre", max_length=200, default="Jacques Bertin, le géant discret de la chanson")

@@ -5,12 +5,18 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 from apps.core.fields import RichTextField
-from apps.core.models import OrderedImage, SeoMixin, TimestampedModel, delete_image_file
+from apps.core.models import (
+    CarrouselSettingsMixin,
+    OrderedImage,
+    SeoMixin,
+    TimestampedModel,
+    delete_image_file,
+)
 from apps.core.uploads import actualites_image_upload_to, actualites_upload_to
 from apps.core.validators import IMAGE_VALIDATORS
 
 
-class Actualite(TimestampedModel, SeoMixin):
+class Actualite(TimestampedModel, SeoMixin, CarrouselSettingsMixin):
     """A dated piece of news (signing, event, press, etc.)."""
 
     TYPE_DEDICACE = "dedicace"

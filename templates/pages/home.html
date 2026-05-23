@@ -38,7 +38,7 @@
             <figure class="book-cover">
                 {% with accueil.images.all as accueil_images %}
                 {% if accueil_images %}
-                    {% include "partials/carrousel.html" with images=accueil_images alt_default=BOOK_TITLE wrapper_class="w-[260px] md:w-[300px] aspect-[2/3] shadow-2xl" only %}
+                    {% include "partials/carrousel.html" with images=accueil_images alt_default=BOOK_TITLE wrapper_class="w-[260px] md:w-[300px] aspect-[2/3] shadow-2xl" delai_s=accueil.delai_rotation_s only %}
                 {% else %}
                 {# Placeholder en attendant la vraie couverture #}
                 <div class="w-[260px] md:w-[300px] aspect-[2/3] bg-gradient-to-br from-sand to-sand-dark grid place-items-center text-brown">

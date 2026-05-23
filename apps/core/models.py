@@ -35,6 +35,19 @@ class SeoMixin(models.Model):
         abstract = True
 
 
+class CarrouselSettingsMixin(models.Model):
+    """Per-carousel rotation settings (one row per parent that owns a carousel)."""
+
+    delai_rotation_s = models.PositiveSmallIntegerField(
+        "Délai entre images (secondes)",
+        default=8,
+        help_text="0 = pas de rotation, l'image d'ordre 1 reste affichée. Sinon délai en secondes entre chaque image.",
+    )
+
+    class Meta:
+        abstract = True
+
+
 class OrderedImage(models.Model):
     """Abstract base for 1-N "gallery / carousel" image attached to a parent.
 

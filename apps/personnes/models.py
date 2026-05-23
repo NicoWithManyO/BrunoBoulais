@@ -2,12 +2,17 @@ from django.db import models
 from django.db.models.signals import pre_delete
 
 from apps.core.fields import RichTextField
-from apps.core.models import OrderedImage, TimestampedModel, delete_image_file
+from apps.core.models import (
+    CarrouselSettingsMixin,
+    OrderedImage,
+    TimestampedModel,
+    delete_image_file,
+)
 from apps.core.uploads import portraits_image_upload_to
 from apps.core.validators import IMAGE_VALIDATORS
 
 
-class Personne(TimestampedModel):
+class Personne(TimestampedModel, CarrouselSettingsMixin):
     """Represents Jacques Bertin or Bruno Boulais."""
 
     ROLE_AUTEUR = "auteur"

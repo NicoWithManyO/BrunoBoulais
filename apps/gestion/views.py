@@ -3,10 +3,12 @@ from functools import wraps
 
 from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 
 def gestion_required(view_func):
@@ -30,15 +32,15 @@ def gestion_required(view_func):
 from django.core.exceptions import ValidationError
 from django.db.models import Max
 
-from apps.actualites.models import Actualite
+from apps.actualites.models import Actualite, ActualiteImage
 from apps.contact.models import Message
 from apps.core.images import strip_exif
 from apps.core.validators import IMAGE_VALIDATORS
 from apps.galerie.models import Media
-from apps.livre.models import Livre
-from apps.pages.models import Accueil, Page
+from apps.livre.models import Livre, LivreImage
+from apps.pages.models import Accueil, AccueilImage, Page
 from apps.parametres.models import Parametres
-from apps.personnes.models import Personne
+from apps.personnes.models import Personne, PersonneImage
 from apps.temoignages.models import Temoignage
 
 from .forms import (
@@ -134,23 +136,20 @@ def actualite_form(request, pk=None):
     instance = get_object_or_404(Actualite, pk=pk) if pk is not None else None
     form = ActualiteForm(request.POST or None, instance=instance)
     image_formset = (
-        ActualiteImageFormSet(request.POST or None, request.FILES or None, instance=instance)
+        ActualiteImageFormSet(request.POST or None, instance=instance)
         if instance is not None else None
     )
-    nouvelles_files, nouvelles_errors = _validate_new_images(request)
 
     formset_ok = image_formset is None or image_formset.is_valid()
-    if request.method == "POST" and form.is_valid() and formset_ok and not nouvelles_errors:
+    if request.method == "POST" and form.is_valid() and formset_ok:
         obj = form.save()
         if image_formset is not None:
             image_formset.save()
-        _save_new_images(obj, nouvelles_files)
         messages.success(request, f"Actualité « {obj.titre} » enregistrée.")
         return redirect("gestion:actualites_liste")
     return render(request, "gestion/actualites/form.html", {
         "form": form,
         "image_formset": image_formset,
-        "nouvelles_errors": nouvelles_errors,
         "instance": instance,
     })
 
@@ -322,19 +321,16 @@ def message_detail(request, pk):
 def accueil_form(request):
     obj = Accueil.get_solo()
     form = AccueilForm(request.POST or None, request.FILES or None, instance=obj)
-    image_formset = AccueilImageFormSet(request.POST or None, request.FILES or None, instance=obj)
-    nouvelles_files, nouvelles_errors = _validate_new_images(request)
+    image_formset = AccueilImageFormSet(request.POST or None, instance=obj)
 
-    if request.method == "POST" and form.is_valid() and image_formset.is_valid() and not nouvelles_errors:
+    if request.method == "POST" and form.is_valid() and image_formset.is_valid():
         form.save()
         image_formset.save()
-        _save_new_images(obj, nouvelles_files)
         messages.success(request, "Page d'accueil mise à jour.")
         return redirect("gestion:accueil")
     return render(request, "gestion/accueil/form.html", {
         "form": form,
         "image_formset": image_formset,
-        "nouvelles_errors": nouvelles_errors,
         "instance": obj,
     })
 
@@ -353,23 +349,21 @@ def personne_form(request, role):
         raise Http404
     obj, _ = Personne.objects.get_or_create(role=role, defaults={"nom": PERSONNE_LABELS[role][0]})
     form = PersonneForm(request.POST or None, request.FILES or None, instance=obj)
-    image_formset = PersonneImageFormSet(request.POST or None, request.FILES or None, instance=obj)
-    nouvelles_files, nouvelles_errors = _validate_new_images(request)
+    image_formset = PersonneImageFormSet(request.POST or None, instance=obj)
 
-    if request.method == "POST" and form.is_valid() and image_formset.is_valid() and not nouvelles_errors:
+    if request.method == "POST" and form.is_valid() and image_formset.is_valid():
         form.save()
         image_formset.save()
-        _save_new_images(obj, nouvelles_files)
         messages.success(request, f"« {obj.nom} » mis à jour.")
         return redirect(PERSONNE_LABELS[role][2])
     label, public_url, _ = PERSONNE_LABELS[role]
     return render(request, "gestion/personnes/form.html", {
         "form": form,
         "image_formset": image_formset,
-        "nouvelles_errors": nouvelles_errors,
         "instance": obj,
         "label": label,
         "public_url": public_url,
+        "role": role,
     })
 
 
@@ -380,27 +374,97 @@ def livre_form(request):
     livre, _ = Livre.objects.get_or_create(pk=1)
     form = LivreForm(request.POST or None, request.FILES or None, instance=livre)
     formset = LienAchatFormSet(request.POST or None, instance=livre)
-    image_formset = LivreImageFormSet(request.POST or None, request.FILES or None, instance=livre)
-    nouvelles_files, nouvelles_errors = _validate_new_images(request)
+    image_formset = LivreImageFormSet(request.POST or None, instance=livre)
 
     if (
         request.method == "POST"
         and form.is_valid() and formset.is_valid() and image_formset.is_valid()
-        and not nouvelles_errors
     ):
         form.save()
         formset.save()
         image_formset.save()
-        _save_new_images(livre, nouvelles_files)
         messages.success(request, "Livre enregistré.")
         return redirect("gestion:livre")
     return render(request, "gestion/livre/form.html", {
         "form": form,
         "formset": formset,
         "image_formset": image_formset,
-        "nouvelles_errors": nouvelles_errors,
         "livre": livre,
     })
+
+
+# ---- HTMX endpoints: per-row image actions (instant Supprimer + Envoyer) ----
+
+def _htmx_ajouter(request, parent, delete_url_name):
+    """Validate + persist multi-upload, return HTML for HTMX swap=beforeend.
+
+    Response always carries an OOB swap for #image-upload-errors so the error
+    block clears on success and populates on failure in a single trip.
+    """
+    files, errors = _validate_new_images(request)
+    err_html = render_to_string(
+        "gestion/_image_upload_errors.html", {"nouvelles_errors": errors}
+    )
+    if errors:
+        return HttpResponse(err_html)
+    before_ids = set(parent.images.values_list("pk", flat=True))
+    _save_new_images(parent, files)
+    rows_html = "".join(
+        render_to_string("gestion/_image_row.html", {
+            "image": img,
+            "delete_url": reverse(delete_url_name, args=[img.pk]),
+        })
+        for img in parent.images.exclude(pk__in=before_ids)
+    )
+    return HttpResponse(rows_html + err_html)
+
+
+def _make_image_supprimer(image_model):
+    """Build a `@require_POST` HTMX endpoint that deletes one image row."""
+    @gestion_required
+    @require_POST
+    def view(request, image_pk):
+        get_object_or_404(image_model, pk=image_pk).delete()
+        return HttpResponse("")
+    return view
+
+
+accueil_image_supprimer = _make_image_supprimer(AccueilImage)
+livre_image_supprimer = _make_image_supprimer(LivreImage)
+personne_image_supprimer = _make_image_supprimer(PersonneImage)
+actualite_image_supprimer = _make_image_supprimer(ActualiteImage)
+
+
+@gestion_required
+@require_POST
+def accueil_image_ajouter(request):
+    return _htmx_ajouter(request, Accueil.get_solo(), "gestion:accueil_image_supprimer")
+
+
+@gestion_required
+@require_POST
+def livre_image_ajouter(request):
+    livre, _ = Livre.objects.get_or_create(pk=1)
+    return _htmx_ajouter(request, livre, "gestion:livre_image_supprimer")
+
+
+@gestion_required
+@require_POST
+def personne_image_ajouter(request, role):
+    if role not in PERSONNE_LABELS:
+        raise Http404
+    obj, _ = Personne.objects.get_or_create(role=role, defaults={"nom": PERSONNE_LABELS[role][0]})
+    return _htmx_ajouter(request, obj, "gestion:personne_image_supprimer")
+
+
+@gestion_required
+@require_POST
+def actualite_image_ajouter(request, pk):
+    return _htmx_ajouter(
+        request,
+        get_object_or_404(Actualite, pk=pk),
+        "gestion:actualite_image_supprimer",
+    )
 
 
 # ---- Paramètres (singleton) -------------------------------------------------

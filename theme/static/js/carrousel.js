@@ -6,13 +6,14 @@
   "use strict";
 
   const MIN_INTERVAL_MS = 2000;
-  const DEFAULT_INTERVAL_MS = 60000;
+  const DEFAULT_INTERVAL_MS = 8000;
   const reduceMotionMql = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   function clampInterval(raw) {
-    const n = Number(raw);
-    if (!Number.isFinite(n) || n <= 0) return DEFAULT_INTERVAL_MS;
-    return Math.max(MIN_INTERVAL_MS, n);
+    // data-interval is expressed in SECONDS (Bruno-friendly unit). Convert to ms.
+    const seconds = Number(raw);
+    if (!Number.isFinite(seconds) || seconds <= 0) return DEFAULT_INTERVAL_MS;
+    return Math.max(MIN_INTERVAL_MS, seconds * 1000);
   }
 
   function setupCarrousel(carrousel) {

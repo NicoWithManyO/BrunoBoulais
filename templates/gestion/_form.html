@@ -4,7 +4,8 @@
 {% endif %}
 
 {% for field in form %}
-    {% if field.is_hidden %}
+    {% if field.name == 'delai_rotation_s' %}{# Rendered inside the carousel panel — skip in the generic loop. #}
+    {% elif field.is_hidden %}
         {{ field }}
     {% elif field.field.widget.input_type == "checkbox" %}
     <div class="form-check">
