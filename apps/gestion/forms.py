@@ -2,6 +2,7 @@
 from django import forms
 from django.core.files.uploadedfile import UploadedFile
 from django.forms import inlineformset_factory
+from django.utils import timezone
 
 from apps.actualites.models import Actualite, ActualiteImage, ActualitesPage
 from apps.core.images import strip_exif
@@ -55,15 +56,62 @@ def _make_image_formset(parent_model, image_model):
     )
 
 
+# HTML5 <input type="date|time|datetime-local"> exchanges values in ISO format,
+# but with LANGUAGE_CODE="fr-fr" Django's default DATE_INPUT_FORMATS expect
+# "%d/%m/%Y" — so values neither render nor parse without these overrides.
 class _DateInput(forms.DateInput):
     input_type = "date"
+    def __init__(self, attrs=None):
+        super().__init__(attrs=attrs, format="%Y-%m-%d")
 
 
 class _TimeInput(forms.TimeInput):
     input_type = "time"
+    def __init__(self, attrs=None):
+        super().__init__(attrs=attrs, format="%H:%M")
+
+
+class _DateTimeLocalInput(forms.DateTimeInput):
+    input_type = "datetime-local"
+    def __init__(self, attrs=None):
+        super().__init__(attrs=attrs, format="%Y-%m-%dT%H:%M")
+
+    def format_value(self, value):
+        # USE_TZ=True stores values in UTC; HTML <input type="datetime-local">
+        # has no timezone, so we must render in TIME_ZONE-local time.
+        if value and hasattr(value, "tzinfo") and value.tzinfo is not None:
+            value = timezone.localtime(value)
+        return super().format_value(value)
+
+
+_HTML5_DATE_FORMATS = ["%Y-%m-%d"]
+_HTML5_TIME_FORMATS = ["%H:%M", "%H:%M:%S"]
+_HTML5_DATETIME_FORMATS = ["%Y-%m-%dT%H:%M", "%Y-%m-%dT%H:%M:%S"]
 
 
 class ActualiteForm(forms.ModelForm):
+    date_evenement = forms.DateField(
+        label="Date de l'événement", required=False,
+        help_text="Pour les dédicaces et événements.",
+        widget=_DateInput(), input_formats=_HTML5_DATE_FORMATS,
+    )
+    heure_debut = forms.TimeField(
+        label="Heure début", required=False, help_text="Facultatif.",
+        widget=_TimeInput(), input_formats=_HTML5_TIME_FORMATS,
+    )
+    heure_fin = forms.TimeField(
+        label="Heure fin", required=False, help_text="Facultatif.",
+        widget=_TimeInput(), input_formats=_HTML5_TIME_FORMATS,
+    )
+    date_publication = forms.DateTimeField(
+        label="Date/heure de publication", required=False,
+        help_text="Si vide, la date d'enregistrement est utilisée.",
+        widget=_DateTimeLocalInput(), input_formats=_HTML5_DATETIME_FORMATS,
+    )
+
+    def clean_date_publication(self):
+        return self.cleaned_data.get("date_publication") or timezone.now()
+
     class Meta:
         model = Actualite
         fields = [
@@ -75,10 +123,6 @@ class ActualiteForm(forms.ModelForm):
             "delai_rotation_s",
         ]
         widgets = {
-            "date_evenement": _DateInput(),
-            "heure_debut": _TimeInput(),
-            "heure_fin": _TimeInput(),
-            "date_publication": forms.DateTimeInput(attrs={"type": "datetime-local"}),
             "chapo": forms.Textarea(attrs={"rows": 2}),
         }
 
