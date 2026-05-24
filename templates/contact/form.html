@@ -23,19 +23,31 @@
             <label class="field-label" for="{{ form.nom.id_for_label }}">Nom</label>
             {{ form.nom }}
         </div>
+        <div>
+            <label class="field-label" for="{{ form.sujet.id_for_label }}">Sujet</label>
+            {{ form.sujet }}
+        </div>
         <div class="grid sm:grid-cols-2 gap-6">
             <div>
                 <label class="field-label" for="{{ form.email.id_for_label }}">Email</label>
                 {{ form.email }}
             </div>
             <div>
-                <label class="field-label" for="{{ form.telephone.id_for_label }}">Téléphone (optionnel)</label>
+                <label class="field-label" for="{{ form.telephone.id_for_label }}">
+                    Téléphone
+                    <span data-telephone-hint class="ml-1 normal-case tracking-normal text-slate-soft">(optionnel)</span>
+                </label>
                 {{ form.telephone }}
+                <p data-telephone-hint-extra class="mt-1 text-xs text-slate-soft" hidden>Pour le suivi du colis.</p>
             </div>
         </div>
-        <div>
-            <label class="field-label" for="{{ form.sujet.id_for_label }}">Sujet</label>
-            {{ form.sujet }}
+        <div data-adresse-wrap hidden>
+            <label class="field-label" for="{{ form.adresse_postale.id_for_label }}">
+                Adresse de destination
+                <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire pour une commande)</span>
+            </label>
+            {{ form.adresse_postale }}
+            <p class="mt-1 text-xs text-slate-soft">Indiquez le nom et l'adresse de destination du colis.</p>
         </div>
         <div>
             <label class="field-label" for="{{ form.contenu.id_for_label }}">Votre message</label>
@@ -49,6 +61,30 @@
         {% endif %}
 
         <button type="submit" class="btn btn-primary">Envoyer le message</button>
+
+        <script>
+        (function () {
+            const sujet = document.getElementById('{{ form.sujet.id_for_label }}');
+            const telInput = document.getElementById('{{ form.telephone.id_for_label }}');
+            const telHint = document.querySelector('[data-telephone-hint]');
+            const telHintExtra = document.querySelector('[data-telephone-hint-extra]');
+            const adrWrap = document.querySelector('[data-adresse-wrap]');
+            const adrInput = document.getElementById('{{ form.adresse_postale.id_for_label }}');
+            if (!sujet || !telInput || !telHint || !telHintExtra || !adrWrap || !adrInput) return;
+            function sync() {
+                const isCommande = sujet.value === 'commande';
+                telInput.required = isCommande;
+                adrInput.required = isCommande;
+                adrWrap.hidden = !isCommande;
+                telHint.textContent = isCommande ? '(obligatoire)' : '(optionnel)';
+                telHint.classList.toggle('text-terracotta-deep', isCommande);
+                telHint.classList.toggle('text-slate-soft', !isCommande);
+                telHintExtra.hidden = !isCommande;
+            }
+            sujet.addEventListener('change', sync);
+            sync();
+        })();
+        </script>
     </form>
 </section>
 {% endblock %}

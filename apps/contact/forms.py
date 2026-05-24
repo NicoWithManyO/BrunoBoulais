@@ -26,10 +26,21 @@ class ContactForm(forms.ModelForm):
 
     class Meta:
         model = Message
-        fields = ["nom", "email", "telephone", "sujet", "contenu"]
+        fields = ["nom", "email", "telephone", "sujet", "adresse_postale", "contenu"]
         widgets = {
             "contenu": forms.Textarea(attrs={"rows": 6}),
+            "adresse_postale": forms.Textarea(attrs={"rows": 3}),
         }
+
+    def clean(self):
+        cleaned = super().clean()
+        sujet = cleaned.get("sujet")
+        if sujet == Message.SUJET_COMMANDE:
+            if not (cleaned.get("telephone") or "").strip():
+                self.add_error("telephone", "Numéro de téléphone requis pour une commande.")
+            if not (cleaned.get("adresse_postale") or "").strip():
+                self.add_error("adresse_postale", "Adresse de destination requise pour une commande.")
+        return cleaned
 
     def save_and_notify(self):
         msg = self.save()
@@ -38,6 +49,7 @@ class ContactForm(forms.ModelForm):
             body=(
                 f"De : {msg.nom} <{msg.email}>\n"
                 f"Téléphone : {msg.telephone or '—'}\n"
+                f"Adresse : {msg.adresse_postale or '—'}\n"
                 f"Sujet : {msg.get_sujet_display()}\n\n"
                 f"{msg.contenu}\n"
             ),
