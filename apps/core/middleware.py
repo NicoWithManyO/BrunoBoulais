@@ -5,6 +5,7 @@ Skips: gestion, statics, non-200, non-GET, non-HTML, obvious bots, DEBUG mode.
 """
 
 import hashlib
+import ipaddress
 
 from django.conf import settings
 from django.core.cache import cache
@@ -17,14 +18,54 @@ _SKIP_PREFIXES = ("/gestion/", "/static/", "/media/", "/__debug__/", "/accounts/
 _SKIP_PATHS = {"/favicon.ico", "/sitemap.xml", "/robots.txt", "/site.webmanifest"}
 _BOT_HINTS = ("bot", "crawl", "spider", "facebookexternalhit", "preview", "monitor", "wget", "curl/")
 
+# Ranges IP Cloudflare (téléchargés 2026-05-25 depuis
+# https://www.cloudflare.com/ips-v4 et /ips-v6). À ré-actualiser
+# ponctuellement — le set évolue très lentement.
+_TRUSTED_PROXY_NETWORKS = tuple(
+    ipaddress.ip_network(n) for n in (
+        # Loopback : Caddy fait reverse_proxy vers gunicorn sur le même VPS.
+        "127.0.0.0/8", "::1/128",
+        # Cloudflare IPv4
+        "173.245.48.0/20", "103.21.244.0/22", "103.22.200.0/22",
+        "103.31.4.0/22", "141.101.64.0/18", "108.162.192.0/18",
+        "190.93.240.0/20", "188.114.96.0/20", "197.234.240.0/22",
+        "198.41.128.0/17", "162.158.0.0/15", "104.16.0.0/13",
+        "104.24.0.0/14", "172.64.0.0/13", "131.0.72.0/22",
+        # Cloudflare IPv6
+        "2400:cb00::/32", "2606:4700::/32", "2803:f800::/32",
+        "2405:b500::/32", "2405:8100::/32", "2a06:98c0::/29",
+        "2c0f:f248::/32",
+    )
+)
+
+
+def _is_trusted_proxy(ip_str: str) -> bool:
+    if not ip_str:
+        return False
+    try:
+        ip = ipaddress.ip_address(ip_str)
+    except ValueError:
+        return False
+    return any(ip in net for net in _TRUSTED_PROXY_NETWORKS)
+
 
 def _client_ip(request) -> str:
-    # CF-Connecting-IP est positionné par Cloudflare et non spoofable
-    # (Cloudflare l'écrase). XFF[0] l'est, donc on ne s'y fie pas.
-    cf_ip = request.META.get("HTTP_CF_CONNECTING_IP", "").strip()
-    if cf_ip:
-        return cf_ip
-    return request.META.get("REMOTE_ADDR", "")
+    """IP réelle du client.
+
+    En prod : Cloudflare → Caddy (loopback) → gunicorn. REMOTE_ADDR vue
+    par gunicorn = 127.0.0.1 (Caddy), donc trusted, donc on lit
+    ``CF-Connecting-IP`` (positionné par Cloudflare et écrasé sur chaque
+    hop CF). Si la requête arrive d'ailleurs (bypass DNS, sonde directe),
+    REMOTE_ADDR n'est pas trusted et on ignore le header pour empêcher
+    le spoof. Suppose que Caddy strip tout CF-Connecting-IP entrant côté
+    public — voir note ops dans le plan sécu.
+    """
+    remote = request.META.get("REMOTE_ADDR", "")
+    if _is_trusted_proxy(remote):
+        cf_ip = request.META.get("HTTP_CF_CONNECTING_IP", "").strip()
+        if cf_ip:
+            return cf_ip
+    return remote
 
 
 def _is_bot(user_agent: str) -> bool:
