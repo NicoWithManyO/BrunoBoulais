@@ -405,7 +405,11 @@
     margin: 0.45rem 0.6rem 0 0;
   }
 
-  /* --- Listes dans le contenu éditorial public --- */
+  /* --- Contenu éditorial public --- */
+  /* Justify the prose container itself so raw text nodes (richtext output
+     that doesn't wrap a single line in <p>) inherit text-align/hyphens. The
+     base `p { text-align: justify }` rule still applies to wrapped content. */
+  .prose { text-align: justify; hyphens: auto; -webkit-hyphens: auto; }
   /* Tailwind preflight removes list-style, so rich-text-authored ul/ol need
      these rules to render bullets/numbers on the public site. Mirrors the
      .richtext__editor rules used by the gestion editor for a WYSIWYG match. */

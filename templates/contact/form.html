@@ -34,11 +34,11 @@
             </div>
             <div>
                 <label class="field-label" for="{{ form.telephone.id_for_label }}">
-                    Téléphone
+                    Téléphone portable
                     <span data-telephone-hint aria-live="polite" class="ml-1 normal-case tracking-normal {% if form.sujet.value == commande_value %}text-terracotta-deep{% else %}text-slate-soft{% endif %}">{% if form.sujet.value == commande_value %}(obligatoire){% else %}(optionnel){% endif %}</span>
                 </label>
+                <p data-telephone-hint-extra class="mb-2 text-xs text-slate-soft"{% if form.sujet.value != commande_value %} hidden{% endif %}>Pour le suivi du colis.</p>
                 {{ form.telephone }}
-                <p data-telephone-hint-extra class="mt-1 text-xs text-slate-soft"{% if form.sujet.value != commande_value %} hidden{% endif %}>Pour le suivi du colis.</p>
             </div>
         </div>
         <div data-adresse-wrap aria-live="polite"{% if form.sujet.value != commande_value %} hidden{% endif %}>
