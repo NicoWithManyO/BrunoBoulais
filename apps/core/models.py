@@ -102,4 +102,3 @@ class VisiteJournaliere(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["date", "ip_hash"], name="visite_unique_par_jour"),
         ]
-        indexes = [models.Index(fields=["date"])]

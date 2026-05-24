@@ -1,5 +1,4 @@
 from django.conf import settings
-from django.core.cache import cache
 from django.db import OperationalError, ProgrammingError
 from django.templatetags.static import static
 
@@ -25,13 +24,10 @@ def site_context(request):
         # on dégrade gracieusement pour ne pas casser 500.html.
         parametres = None
 
-    total_visiteurs = cache.get("total_visiteurs")
-    if total_visiteurs is None:
-        try:
-            total_visiteurs = VisiteJournaliere.objects.count()
-        except (OperationalError, ProgrammingError):
-            total_visiteurs = 0
-        cache.set("total_visiteurs", total_visiteurs, 60)
+    try:
+        total_visiteurs = VisiteJournaliere.objects.count()
+    except (OperationalError, ProgrammingError):
+        total_visiteurs = 0
 
     return {
         "SITE_NAME": SITE_NAME,

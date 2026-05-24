@@ -7,6 +7,7 @@ Skips: gestion, statics, non-200, non-GET, non-HTML, obvious bots, DEBUG mode.
 import hashlib
 
 from django.conf import settings
+from django.core.cache import cache
 from django.db import DatabaseError
 from django.utils import timezone
 
@@ -61,10 +62,17 @@ class VisiteurCompteurMiddleware:
         raw = f"{settings.SECRET_KEY}|{today.isoformat()}|{ip}|{user_agent}"
         ip_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
+        # Évite un SELECT par pageview pour les visiteurs déjà comptés
+        # aujourd'hui sur ce worker. TTL 24 h.
+        seen_key = f"vu:{today.isoformat()}:{ip_hash}"
+        if cache.get(seen_key):
+            return response
+
         try:
             VisiteJournaliere.objects.get_or_create(date=today, ip_hash=ip_hash)
         except DatabaseError:
             # Compteur best-effort, ne jamais casser la réponse.
-            pass
+            return response
 
+        cache.set(seen_key, True, 86400)
         return response
