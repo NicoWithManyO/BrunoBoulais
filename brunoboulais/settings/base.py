@@ -171,8 +171,9 @@ STATICFILES_FINDERS = [
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# Upload size caps — protect the server from oversized files. The per-image
-# 8 Mo limit is also enforced at the field level via `validate_image_size`.
+# Upload size caps — protect the server from oversized files. Per-file caps
+# pour les uploads galerie sont enforced au niveau du champ via
+# `validate_media_size` : 8 Mo image, 50 Mo vidéo. Voir apps/core/validators.py.
 FILE_UPLOAD_MAX_MEMORY_SIZE = 8 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 
