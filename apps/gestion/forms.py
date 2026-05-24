@@ -184,11 +184,23 @@ class LienAchatForm(forms.ModelForm):
     that would otherwise block the whole save. Without this, an editor who
     blanks a row to remove it gets a required-field error and may not
     realize a "Supprimer ce lien" checkbox was needed.
+
+    The url field is rendered as a plain <input type="text"> (not
+    <input type="url">) so the browser's HTML5 validator doesn't reject
+    bare hosts like "www.free.fr" before submit. Django's form URLField
+    already auto-prepends "https://" via assume_scheme.
     """
+
+    url = forms.URLField(
+        label="Lien",
+        max_length=200,
+        assume_scheme="https",
+        widget=forms.TextInput(attrs={"placeholder": "ex. www.editeur.fr"}),
+    )
 
     class Meta:
         model = LienAchat
-        fields = ["libelle", "url", "description", "position"]
+        fields = ["libelle", "url", "type", "description", "position"]
 
     def clean(self):
         super().clean()
@@ -206,7 +218,7 @@ LienAchatFormSet = inlineformset_factory(
     Livre,
     LienAchat,
     form=LienAchatForm,
-    fields=["libelle", "url", "description", "position"],
+    fields=["libelle", "url", "type", "description", "position"],
     extra=0,
     can_delete=True,
 )

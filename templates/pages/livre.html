@@ -121,6 +121,7 @@
 {% endif %}
 
 {# =========================  LIENS D'ACHAT  ========================= #}
+{% if livre.liens_achat.exists %}
 <section class="container-page py-20 border-t border-mist/30">
     <p class="eyebrow">Où se procurer le livre</p>
     <h2 class="mt-4">Commander</h2>
@@ -131,32 +132,22 @@
     </p>
 
     <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        <article class="card-edito">
-            <p class="font-sans text-xs uppercase tracking-widest text-terracotta-deep">
-                Avec dédicace
-            </p>
-            <h3 class="mt-3 text-xl">Directement auprès de Bruno</h3>
-            <p class="mt-3 text-sm text-ink/75 leading-relaxed">
-                Envoi via Mondial Relay, mot personnalisé inscrit en première page.
-            </p>
-            <a href="{% url 'contact:form' %}" class="btn-link mt-5">Faire ma demande →</a>
-        </article>
-
         {% for lien in livre.liens_achat.all %}
         <article class="card-edito">
             <p class="font-sans text-xs uppercase tracking-widest text-slate">
-                Lien externe
+                {{ lien.get_type_display }}
             </p>
             <h3 class="mt-3 text-xl">{{ lien.libelle }}</h3>
             {% if lien.description %}
             <p class="mt-3 text-sm text-ink/75 leading-relaxed">{{ lien.description }}</p>
             {% endif %}
             <a href="{{ lien.url }}" target="_blank" rel="noopener" class="btn-link mt-5">
-                Acheter →
+                {% if lien.type == 'dedicace' %}Commander avec dédicace →{% else %}Acheter →{% endif %}
             </a>
         </article>
         {% endfor %}
     </div>
 </section>
+{% endif %}
 
 {% endblock %}

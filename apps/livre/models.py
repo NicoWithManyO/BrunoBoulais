@@ -75,6 +75,13 @@ pre_delete.connect(delete_image_file, sender=LivreImage)
 class LienAchat(TimestampedModel):
     """External purchase links for the book."""
 
+    TYPE_DEDICACE = "dedicace"
+    TYPE_EXTERNE = "externe"
+    TYPE_CHOICES = [
+        (TYPE_DEDICACE, "Avec dédicace"),
+        (TYPE_EXTERNE, "Lien externe"),
+    ]
+
     livre = models.ForeignKey(
         Livre, related_name="liens_achat", on_delete=models.CASCADE, verbose_name="Livre"
     )
@@ -83,6 +90,10 @@ class LienAchat(TimestampedModel):
     description = models.CharField(
         "Description", max_length=200, blank=True,
         help_text="Optionnelle : ex. 'avec dédicace, envoi Mondial Relay'."
+    )
+    type = models.CharField(
+        "Type de lien", max_length=20, choices=TYPE_CHOICES, default=TYPE_EXTERNE,
+        help_text="Pilote le surtitre affiché sur la carte (« Avec dédicace » ou « Lien externe »).",
     )
     position = models.PositiveIntegerField("Position", default=0)
 
