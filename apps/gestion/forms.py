@@ -1,4 +1,6 @@
 """ModelForms used by the custom /gestion/ admin interface."""
+from pathlib import Path
+
 from django import forms
 from django.core.files.uploadedfile import UploadedFile
 from django.forms import inlineformset_factory
@@ -7,6 +9,7 @@ from django.utils import timezone
 from apps.actualites.models import Actualite, ActualiteImage, ActualitesPage
 from apps.contact.models import ContactPage
 from apps.core.images import strip_exif
+from apps.core.validators import ALLOWED_IMAGE_EXTENSIONS, ALLOWED_VIDEO_EXTENSIONS
 from apps.galerie.models import Media
 from apps.livre.models import LienAchat, Livre, LivreImage
 from apps.pages.models import Accueil, AccueilImage
@@ -170,6 +173,24 @@ class MediaForm(StripExifMixin, forms.ModelForm):
         if cleaned.get("type") == Media.TYPE_IMAGE:
             return self.exif_fields
         return []
+
+    def clean(self):
+        cleaned = super().clean()
+        f = cleaned.get("fichier")
+        type_ = cleaned.get("type")
+        if isinstance(f, UploadedFile) and type_:
+            ext = Path(f.name).suffix.lower().lstrip(".")
+            if type_ == Media.TYPE_IMAGE and ext not in ALLOWED_IMAGE_EXTENSIONS:
+                self.add_error("fichier", (
+                    f"Extension « .{ext} » incompatible avec le type Image. "
+                    f"Attendu : {', '.join(ALLOWED_IMAGE_EXTENSIONS)}."
+                ))
+            elif type_ == Media.TYPE_VIDEO and ext not in ALLOWED_VIDEO_EXTENSIONS:
+                self.add_error("fichier", (
+                    f"Extension « .{ext} » incompatible avec le type Vidéo. "
+                    f"Attendu : {', '.join(ALLOWED_VIDEO_EXTENSIONS)}."
+                ))
+        return cleaned
 
 
 class LivreForm(forms.ModelForm):

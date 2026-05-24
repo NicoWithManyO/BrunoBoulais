@@ -3,6 +3,7 @@ from taggit.managers import TaggableManager
 
 from apps.core.models import TimestampedModel
 from apps.core.uploads import galerie_upload_to
+from apps.core.validators import MEDIA_VALIDATORS
 
 
 class Media(TimestampedModel):
@@ -29,7 +30,7 @@ class Media(TimestampedModel):
     categorie = models.CharField(
         "Catégorie", max_length=20, choices=CATEGORIE_CHOICES, default=CATEGORIE_AUTRE
     )
-    fichier = models.FileField("Fichier", upload_to=galerie_upload_to)
+    fichier = models.FileField("Fichier", upload_to=galerie_upload_to, validators=MEDIA_VALIDATORS)
     legende = models.CharField("Légende", max_length=300, blank=True)
     alt = models.CharField(
         "Texte alternatif", max_length=200, blank=True,

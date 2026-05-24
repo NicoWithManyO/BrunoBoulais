@@ -54,6 +54,12 @@
             {{ form.contenu }}
         </div>
 
+        {% if rate_limited %}
+        <p class="text-terracotta-deep text-sm">
+            Vous avez envoyé plusieurs messages récemment. Merci de patienter une heure avant de réessayer.
+        </p>
+        {% endif %}
+
         {% if form.errors %}
         <ul class="text-terracotta-deep text-sm">
             {% for f in form %}{% if f.name != "website" %}{% for e in f.errors %}<li>{{ f.label }} : {{ e }}</li>{% endfor %}{% endif %}{% endfor %}
