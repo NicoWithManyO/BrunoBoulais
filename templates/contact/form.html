@@ -37,8 +37,8 @@
                     Téléphone portable
                     <span data-telephone-hint aria-live="polite" class="ml-1 normal-case tracking-normal {% if form.sujet.value == commande_value %}text-terracotta-deep{% else %}text-slate-soft{% endif %}">{% if form.sujet.value == commande_value %}(obligatoire){% else %}(optionnel){% endif %}</span>
                 </label>
-                <p data-telephone-hint-extra class="mb-2 text-xs text-slate-soft"{% if form.sujet.value != commande_value %} hidden{% endif %}>Pour le suivi du colis.</p>
                 {{ form.telephone }}
+                <p data-telephone-hint-extra class="mt-1 text-xs text-slate-soft"{% if form.sujet.value != commande_value %} hidden{% endif %}>Pour le suivi du colis.</p>
             </div>
         </div>
         <div data-adresse-wrap aria-live="polite"{% if form.sujet.value != commande_value %} hidden{% endif %}>
@@ -46,8 +46,8 @@
                 Adresse postale de destination
                 <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire pour une commande)</span>
             </label>
-            <p class="mb-2 text-xs text-slate-soft">Indiquez le nom et l'adresse de destination du colis.</p>
             {{ form.adresse_postale }}
+            <p class="mt-1 text-xs text-slate-soft">Indiquez le nom et l'adresse de destination du colis.</p>
         </div>
         <div>
             <label class="field-label" for="{{ form.contenu.id_for_label }}">Votre message</label>
