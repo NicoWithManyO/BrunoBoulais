@@ -23,20 +23,21 @@ def _ratelimit_bucket(request):
     """Bucket de rate-limit : IP client masquée /32 (IPv4) ou /64 (IPv6).
 
     IPv6 est masqué à /64 pour empêcher la rotation des bits bas
-    (un /64 résidentiel donne 2^64 adresses sinon).
+    (un /64 résidentiel donne 2^64 adresses sinon). IPv4-mapped IPv6
+    a déjà été normalisé en IPv4 par ``_client_ip`` (sinon le mask /64
+    sur ``::ffff:x.x.x.x`` retombe sur ``::`` et tous les attaquants
+    partagent un bucket unique).
 
-    Retourne ``None`` si l'IP est absente ou syntaxiquement invalide (cas
-    d'un CF-Connecting-IP spoofé avec une string bidon) — le caller doit
-    fail closed dans ce cas.
+    Retourne ``None`` si l'IP est absente — le caller doit fail closed
+    dans ce cas. La string retournée par ``_client_ip`` est garantie
+    canoniquement parseable (cf docstring), donc pas de try/except ici.
     """
-    ip = _client_ip(request)
-    if not ip:
+    ip_str = _client_ip(request)
+    if not ip_str:
         return None
-    try:
-        mask = 64 if ":" in ip else 32
-        return str(ipaddress.ip_network(f"{ip}/{mask}", strict=False).network_address)
-    except ValueError:
-        return None
+    ip = ipaddress.ip_address(ip_str)
+    mask = 32 if isinstance(ip, ipaddress.IPv4Address) else 64
+    return str(ipaddress.ip_network(f"{ip}/{mask}", strict=False).network_address)
 
 
 def contact(request):

@@ -20,11 +20,15 @@ _BOT_HINTS = ("bot", "crawl", "spider", "facebookexternalhit", "preview", "monit
 
 # Ranges IP Cloudflare (téléchargés 2026-05-25 depuis
 # https://www.cloudflare.com/ips-v4 et /ips-v6). À ré-actualiser
-# ponctuellement — le set évolue très lentement.
+# ponctuellement — le set évolue très lentement. ``strict=False``
+# protège contre un typo avec host bits set (sinon raise à l'import,
+# le process ne boote plus).
 _TRUSTED_PROXY_NETWORKS = tuple(
-    ipaddress.ip_network(n) for n in (
+    ipaddress.ip_network(n, strict=False) for n in (
         # Loopback : Caddy fait reverse_proxy vers gunicorn sur le même VPS.
-        "127.0.0.0/8", "::1/128",
+        # /32 (et pas /8) — seul 127.0.0.1 est le hop Caddy ; un autre
+        # process loopback ne doit pas pouvoir spoofer CF-Connecting-IP.
+        "127.0.0.1/32", "::1/128",
         # Cloudflare IPv4
         "173.245.48.0/20", "103.21.244.0/22", "103.22.200.0/22",
         "103.31.4.0/22", "141.101.64.0/18", "108.162.192.0/18",
@@ -39,6 +43,27 @@ _TRUSTED_PROXY_NETWORKS = tuple(
 )
 
 
+def _normalize_ip(ip_str: str) -> str:
+    """Forme canonique d'une string IP, "" si vide ou invalide.
+
+    Normalise IPv4-mapped IPv6 (``::ffff:a.b.c.d``) en IPv4 (``a.b.c.d``)
+    pour que (a) le check de trust loopback fonctionne sous gunicorn
+    dual-stack (sinon ``::ffff:127.0.0.1`` n'est dans aucun range trusté)
+    et (b) bucket rate-limit + hash compteur ne collapsent pas toutes
+    les IPv4 d'un attaquant dans un bucket unique (le mask /64 sur
+    ``::ffff:x.x.x.x`` retombe systématiquement sur ``::``).
+    """
+    if not ip_str:
+        return ""
+    try:
+        ip = ipaddress.ip_address(ip_str)
+    except ValueError:
+        return ""
+    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
+        ip = ip.ipv4_mapped
+    return str(ip)
+
+
 def _is_trusted_proxy(ip_str: str) -> bool:
     if not ip_str:
         return False
@@ -50,7 +75,7 @@ def _is_trusted_proxy(ip_str: str) -> bool:
 
 
 def _client_ip(request) -> str:
-    """IP réelle du client.
+    """IP réelle du client, normalisée (IPv4-mapped IPv6 → IPv4).
 
     En prod : Cloudflare → Caddy (loopback) → gunicorn. REMOTE_ADDR vue
     par gunicorn = 127.0.0.1 (Caddy), donc trusted, donc on lit
@@ -59,10 +84,16 @@ def _client_ip(request) -> str:
     REMOTE_ADDR n'est pas trusted et on ignore le header pour empêcher
     le spoof. Suppose que Caddy strip tout CF-Connecting-IP entrant côté
     public — voir note ops dans le plan sécu.
+
+    Toute valeur lue (REMOTE_ADDR ou CF-Connecting-IP) passe par
+    ``_normalize_ip`` : invalide / comma-list / junk → traité comme
+    absent et on retombe sur la source précédente. Les callers
+    (``_ratelimit_bucket``, compteur de visites) peuvent supposer que
+    le retour est soit ``""`` soit une string IP canoniquement parseable.
     """
-    remote = request.META.get("REMOTE_ADDR", "")
+    remote = _normalize_ip(request.META.get("REMOTE_ADDR", ""))
     if _is_trusted_proxy(remote):
-        cf_ip = request.META.get("HTTP_CF_CONNECTING_IP", "").strip()
+        cf_ip = _normalize_ip(request.META.get("HTTP_CF_CONNECTING_IP", "").strip())
         if cf_ip:
             return cf_ip
     return remote
