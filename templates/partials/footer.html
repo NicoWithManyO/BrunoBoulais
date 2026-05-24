@@ -1,3 +1,4 @@
+{% load humanize %}
 <footer class="mt-24 border-t border-mist/40 bg-cream-dark/50">
     <div class="container-wide py-14 grid gap-12 lg:grid-cols-3">
 
@@ -39,6 +40,9 @@
     <div class="border-t border-mist/30">
         <div class="container-wide py-5 flex flex-wrap items-center justify-between gap-4 font-sans text-xs text-slate-soft">
             <p>© {% now "Y" %} Bruno Boulais. Tous droits réservés.</p>
+            {% if total_visiteurs %}
+            <p>{{ total_visiteurs|intcomma }} visiteur{{ total_visiteurs|pluralize }}</p>
+            {% endif %}
             <p>
                 <a href="{% url 'pages:mentions' %}" class="text-slate-soft">Mentions légales</a>
             </p>

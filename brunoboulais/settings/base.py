@@ -32,6 +32,7 @@ DJANGO_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.sites",
     "django.contrib.sitemaps",
+    "django.contrib.humanize",
 ]
 
 THIRD_PARTY_APPS = [
@@ -85,6 +86,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "csp.middleware.CSPMiddleware",
+    "apps.core.middleware.VisiteurCompteurMiddleware",
 ]
 
 ROOT_URLCONF = "brunoboulais.urls"

@@ -1,7 +1,9 @@
 from django.conf import settings
+from django.core.cache import cache
 from django.db import OperationalError, ProgrammingError
 from django.templatetags.static import static
 
+from apps.core.models import VisiteJournaliere
 from apps.parametres.models import Parametres
 
 SITE_NAME = "Bruno Boulais — auteur"
@@ -22,6 +24,15 @@ def site_context(request):
         # DB locked / table missing (fresh checkout, backup, migrate) :
         # on dégrade gracieusement pour ne pas casser 500.html.
         parametres = None
+
+    total_visiteurs = cache.get("total_visiteurs")
+    if total_visiteurs is None:
+        try:
+            total_visiteurs = VisiteJournaliere.objects.count()
+        except (OperationalError, ProgrammingError):
+            total_visiteurs = 0
+        cache.set("total_visiteurs", total_visiteurs, 60)
+
     return {
         "SITE_NAME": SITE_NAME,
         "BOOK_TITLE": BOOK_TITLE,
@@ -30,4 +41,5 @@ def site_context(request):
         "default_seo_description": DEFAULT_SEO_DESCRIPTION,
         "default_seo_og_image": default_og_image,
         "parametres": parametres,
+        "total_visiteurs": total_visiteurs,
     }

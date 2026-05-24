@@ -86,3 +86,20 @@ def delete_image_file(sender, instance, **kwargs):
     """pre_delete handler that removes the underlying file from storage."""
     if getattr(instance, "image", None):
         instance.image.delete(save=False)
+
+
+class VisiteJournaliere(models.Model):
+    """One row per unique (date, ip_hash) — feeds the footer visitor counter.
+
+    The hash rotates daily (salt = SECRET_KEY + date) so the same visitor across
+    different days produces different hashes ; no IP is ever stored in clear.
+    """
+
+    date = models.DateField()
+    ip_hash = models.CharField(max_length=64)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["date", "ip_hash"], name="visite_unique_par_jour"),
+        ]
+        indexes = [models.Index(fields=["date"])]
