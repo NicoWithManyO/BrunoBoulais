@@ -35,13 +35,13 @@
             <div>
                 <label class="field-label" for="{{ form.telephone.id_for_label }}">
                     Téléphone
-                    <span data-telephone-hint class="ml-1 normal-case tracking-normal text-slate-soft">(optionnel)</span>
+                    <span data-telephone-hint aria-live="polite" class="ml-1 normal-case tracking-normal {% if form.sujet.value == commande_value %}text-terracotta-deep{% else %}text-slate-soft{% endif %}">{% if form.sujet.value == commande_value %}(obligatoire){% else %}(optionnel){% endif %}</span>
                 </label>
                 {{ form.telephone }}
-                <p data-telephone-hint-extra class="mt-1 text-xs text-slate-soft" hidden>Pour le suivi du colis.</p>
+                <p data-telephone-hint-extra class="mt-1 text-xs text-slate-soft"{% if form.sujet.value != commande_value %} hidden{% endif %}>Pour le suivi du colis.</p>
             </div>
         </div>
-        <div data-adresse-wrap hidden>
+        <div data-adresse-wrap aria-live="polite"{% if form.sujet.value != commande_value %} hidden{% endif %}>
             <label class="field-label" for="{{ form.adresse_postale.id_for_label }}">
                 Adresse postale de destination
                 <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire pour une commande)</span>
@@ -56,7 +56,8 @@
 
         {% if form.errors %}
         <ul class="text-terracotta-deep text-sm">
-            {% for f in form %}{% for e in f.errors %}<li>{{ f.label }} : {{ e }}</li>{% endfor %}{% endfor %}
+            {% for f in form %}{% if f.name != "website" %}{% for e in f.errors %}<li>{{ f.label }} : {{ e }}</li>{% endfor %}{% endif %}{% endfor %}
+            {% if form.non_field_errors %}{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}{% endif %}
         </ul>
         {% endif %}
 
@@ -71,8 +72,9 @@
             const adrWrap = document.querySelector('[data-adresse-wrap]');
             const adrInput = document.getElementById('{{ form.adresse_postale.id_for_label }}');
             if (!sujet || !telInput || !telHint || !telHintExtra || !adrWrap || !adrInput) return;
+            const COMMANDE = '{{ commande_value|escapejs }}';
             function sync() {
-                const isCommande = sujet.value === 'commande';
+                const isCommande = sujet.value === COMMANDE;
                 telInput.required = isCommande;
                 adrInput.required = isCommande;
                 adrWrap.hidden = !isCommande;
