@@ -43,11 +43,11 @@
         </div>
         <div data-adresse-wrap hidden>
             <label class="field-label" for="{{ form.adresse_postale.id_for_label }}">
-                Adresse de destination
+                Adresse postale de destination
                 <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire pour une commande)</span>
             </label>
+            <p class="mb-2 text-xs text-slate-soft">Indiquez le nom et l'adresse de destination du colis.</p>
             {{ form.adresse_postale }}
-            <p class="mt-1 text-xs text-slate-soft">Indiquez le nom et l'adresse de destination du colis.</p>
         </div>
         <div>
             <label class="field-label" for="{{ form.contenu.id_for_label }}">Votre message</label>

@@ -60,7 +60,7 @@ class Message(TimestampedModel):
     nom = models.CharField("Nom", max_length=120)
     email = models.EmailField("Email")
     telephone = models.CharField("Téléphone", max_length=30, blank=True)
-    adresse_postale = models.TextField("Adresse de destination", blank=True)
+    adresse_postale = models.TextField("Adresse postale de destination", blank=True)
     sujet = models.CharField("Sujet", max_length=20, choices=SUJET_CHOICES, default=SUJET_COMMANDE)
     contenu = models.TextField("Message")
     lu = models.BooleanField("Lu", default=False)
