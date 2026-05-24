@@ -17,18 +17,21 @@
         {% include "gestion/_form.html" %}
     </div>
 
-    {% url 'gestion:livre_image_ajouter' as livre_add_url %}
-    {% include "gestion/_images_carousel.html" with add_label="Ajouter des couvertures / visuels" hint="La première image (ordre 1) sert de couverture principale. Si plusieurs sont définies, elles défilent en carrousel selon le délai ci-dessous." add_url=livre_add_url delete_url_name="gestion:livre_image_supprimer" %}
+    {% include "gestion/_images_carousel.html" with add_label="Ajouter des couvertures / visuels" hint="La première image (ordre 1) sert de couverture principale. Si plusieurs sont définies, elles défilent en carrousel selon le délai ci-dessous." delete_url_name="gestion:livre_image_supprimer" %}
 
     <div class="panel mt-6">
         <h2 class="font-display text-lg text-brown mb-3">Où l'on peut se procurer le livre</h2>
-        <p class="text-xs text-slate-soft mb-4">Liens externes (Mondial Relay, éditeur, libraires en ligne, etc.). Laissez les champs vides pour supprimer un lien.</p>
+        <p class="text-xs text-slate-soft mb-4">Liens externes (Mondial Relay, éditeur, libraires en ligne, etc.). Pour retirer une entrée existante : cochez « Supprimer ce lien » ou videz simplement les champs Libellé et URL.</p>
 
         {{ formset.management_form }}
+        {% if formset.non_form_errors %}
+        <div class="flash flash-error mb-4">{{ formset.non_form_errors }}</div>
+        {% endif %}
+        <div id="liens-list">
         {% for sub in formset %}
         <div class="border border-mist-light p-4 mb-3 rounded-sm">
             {% for field in sub %}
-                {% if field.is_hidden %}{{ field }}
+                {% if field.is_hidden %}{{ field }}{% if field.errors %}<div class="errorlist">{{ field.errors }}</div>{% endif %}
                 {% elif field.name == 'DELETE' %}
                 <div class="form-check">
                     {{ field }}
@@ -45,7 +48,54 @@
             {% endfor %}
         </div>
         {% endfor %}
+        </div>
+
+        <template id="lien-empty-form">
+        <div class="border border-mist-light p-4 mb-3 rounded-sm">
+            {% for field in formset.empty_form %}
+                {% if field.is_hidden %}{{ field }}
+                {% elif field.name == 'DELETE' %}{# Skip: new rows are cancelled by leaving them empty, no checkbox needed. #}
+                {% else %}
+                <div class="mb-1">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<span class="helptext">{{ field.help_text|safe }}</span>{% endif %}
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        </template>
+
+        <button type="button" class="btn-sm btn-ghost" id="add-lien-btn">+ Ajouter un lien</button>
     </div>
+
+    <script>
+    (function () {
+        const btn = document.getElementById('add-lien-btn');
+        const list = document.getElementById('liens-list');
+        const tpl = document.getElementById('lien-empty-form');
+        const totalInput = document.getElementById('id_{{ formset.prefix }}-TOTAL_FORMS');
+        if (!btn || !list || !tpl || !totalInput) return;
+        btn.addEventListener('click', () => {
+            const idx = parseInt(totalInput.value, 10);
+            // Scan existing rows BEFORE appending to find the highest position;
+            // the model default is 0 so new rows would otherwise all collide at the top.
+            let maxPos = 0;
+            list.querySelectorAll('input[name$="-position"]').forEach((input) => {
+                const v = parseInt(input.value, 10);
+                if (!isNaN(v) && v > maxPos) maxPos = v;
+            });
+            const html = tpl.innerHTML.replaceAll('__prefix__', idx);
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = html;
+            const newRow = wrapper.firstElementChild;
+            const posInput = newRow.querySelector('input[name$="-position"]');
+            if (posInput) posInput.value = maxPos + 10;
+            list.appendChild(newRow);
+            totalInput.value = idx + 1;
+        });
+    })();
+    </script>
 
     <div class="mt-6 flex items-center gap-3">
         <button type="submit" class="btn btn-primary">Enregistrer</button>

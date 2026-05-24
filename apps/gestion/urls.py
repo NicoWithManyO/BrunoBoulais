@@ -58,13 +58,9 @@ urlpatterns = [
     path("livre/", views.livre_form, name="livre"),
     # Paramètres
     path("parametres/", views.parametres_form, name="parametres"),
-    # HTMX endpoints: per-row image actions ----------------------------------
-    path("accueil/images/ajouter/", views.accueil_image_ajouter, name="accueil_image_ajouter"),
+    # HTMX endpoints: per-row image delete -----------------------------------
     path("accueil/images/<int:image_pk>/supprimer/", views.accueil_image_supprimer, name="accueil_image_supprimer"),
-    path("livre/images/ajouter/", views.livre_image_ajouter, name="livre_image_ajouter"),
     path("livre/images/<int:image_pk>/supprimer/", views.livre_image_supprimer, name="livre_image_supprimer"),
-    path("personnes/<str:role>/images/ajouter/", views.personne_image_ajouter, name="personne_image_ajouter"),
     path("personnes/images/<int:image_pk>/supprimer/", views.personne_image_supprimer, name="personne_image_supprimer"),
-    path("actualites/<int:pk>/images/ajouter/", views.actualite_image_ajouter, name="actualite_image_ajouter"),
     path("actualites/images/<int:image_pk>/supprimer/", views.actualite_image_supprimer, name="actualite_image_supprimer"),
 ]

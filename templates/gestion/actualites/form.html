@@ -16,8 +16,7 @@
         {% include "gestion/_form.html" %}
     </div>
 
-    {% if instance %}{% url 'gestion:actualite_image_ajouter' instance.pk as actualite_add_url %}{% endif %}
-    {% include "gestion/_images_carousel.html" with add_label="Ajouter de nouvelles images" hint="L'image de plus petit ordre est utilisée en miniature dans la liste publique. Si plusieurs sont définies, elles défilent en carrousel sur la page détail selon le délai ci-dessous." add_url=actualite_add_url delete_url_name="gestion:actualite_image_supprimer" %}
+    {% include "gestion/_images_carousel.html" with add_label="Ajouter de nouvelles images" hint="L'image de plus petit ordre est utilisée en miniature dans la liste publique. Si plusieurs sont définies, elles défilent en carrousel sur la page détail selon le délai ci-dessous." delete_url_name="gestion:actualite_image_supprimer" %}
 
     <div class="mt-6 flex items-center gap-3">
         <button type="submit" class="btn btn-primary">{% if instance %}Enregistrer{% else %}Créer l'actualité{% endif %}</button>

@@ -176,11 +176,38 @@ class LivreForm(forms.ModelForm):
         }
 
 
+class LienAchatForm(forms.ModelForm):
+    """ModelForm for purchase links with one-touch deletion of emptied rows.
+
+    Existing rows whose libellé AND url have both been cleared are treated as
+    a delete intent: we set DELETE=True and drop the required-field errors
+    that would otherwise block the whole save. Without this, an editor who
+    blanks a row to remove it gets a required-field error and may not
+    realize a "Supprimer ce lien" checkbox was needed.
+    """
+
+    class Meta:
+        model = LienAchat
+        fields = ["libelle", "url", "description", "position"]
+
+    def clean(self):
+        super().clean()
+        if (
+            self.instance.pk
+            and not (self.cleaned_data.get("libelle") or "").strip()
+            and not (self.cleaned_data.get("url") or "").strip()
+        ):
+            self._errors = {}
+            self.cleaned_data["DELETE"] = True
+        return self.cleaned_data
+
+
 LienAchatFormSet = inlineformset_factory(
     Livre,
     LienAchat,
+    form=LienAchatForm,
     fields=["libelle", "url", "description", "position"],
-    extra=1,
+    extra=0,
     can_delete=True,
 )
 

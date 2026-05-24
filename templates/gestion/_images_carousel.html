@@ -5,8 +5,8 @@ Accueil, Personne, Livre). Le formulaire parent fournit :
   - image_formset     : inline formset (peut être None en création)
   - add_label         : intitulé du sous-bloc "ajouter" (ex. "Ajouter des images")
   - hint              : phrase d'aide affichée sous le titre
-  - add_url           : URL HTMX pour POST l'upload (ex. {% url 'gestion:accueil_image_ajouter' %})
   - delete_url_name   : nom d'URL HTMX pour supprimer une image (ex. "gestion:accueil_image_supprimer")
+  - nouvelles_errors  : (optionnel) liste d'erreurs sur les fichiers uploadés
 {% endcomment %}
 <div class="panel mt-6">
     <h3 class="font-display text-xl text-brown mb-1">Carrousel d'images</h3>
@@ -30,7 +30,7 @@ Accueil, Personne, Livre). Le formulaire parent fournit :
         <div id="image-list" class="grid gap-4">
         {% for f in image_formset %}
             <div class="image-row{% if f.errors %} image-row--error{% endif %}" id="image-row-{{ f.instance.pk }}">
-                {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+                {% for hidden in f.hidden_fields %}{{ hidden }}{% if hidden.errors %}<div class="errorlist">{{ hidden.errors }}</div>{% endif %}{% endfor %}
                 {% if f.instance.image %}
                 <div class="image-row__thumb">
                     <img src="{{ f.instance.image.url }}" alt="{{ f.instance.alt }}">
@@ -65,23 +65,10 @@ Accueil, Personne, Livre). Le formulaire parent fournit :
         <h4 class="font-display text-base text-brown mb-2">{{ add_label|default:"Ajouter des images" }}</h4>
         <div class="carrousel-add__row">
             <input type="file" name="nouvelles_images" id="id_nouvelles_images" multiple accept="image/*">
-            {% if image_formset and add_url %}
-            <button type="button"
-                    class="btn-sm btn-primary"
-                    hx-post="{{ add_url }}"
-                    hx-include="#id_nouvelles_images"
-                    hx-target="#image-list"
-                    hx-swap="beforeend"
-                    hx-encoding="multipart/form-data"
-                    hx-on::after-request="document.getElementById('id_nouvelles_images').value = ''">
-                Envoyer
-            </button>
-            {% endif %}
         </div>
-        <div id="image-upload-errors" hx-swap-oob="true"></div>
-        <span class="helptext">Plusieurs fichiers d'un coup (Ctrl/Cmd+clic). Formats : JPG, PNG, WEBP, AVIF. Taille max 8 Mo par image.</span>
-        {% if not image_formset %}
-        <p class="helptext mt-3 italic">Astuce : enregistrez d'abord la fiche, puis ajoutez les images.</p>
+        {% if nouvelles_errors %}
+        <ul class="errorlist mt-2">{% for e in nouvelles_errors %}<li>{{ e }}</li>{% endfor %}</ul>
         {% endif %}
+        <span class="helptext">Plusieurs fichiers d'un coup (Ctrl/Cmd+clic). Formats : JPG, PNG, WEBP, AVIF. Taille max 8 Mo par image. Les fichiers sont uploadés en cliquant <strong>Enregistrer</strong> en bas de page.</span>
     </div>
 </div>

@@ -32,8 +32,7 @@
         {% endfor %}
     </div>
 
-    {% url 'gestion:personne_image_ajouter' role=role as personne_add_url %}
-    {% include "gestion/_images_carousel.html" with add_label="Ajouter des portraits" hint="La première image (ordre 1) sert de portrait principal. Si plusieurs sont définies, elles défilent en carrousel selon le délai ci-dessous." add_url=personne_add_url delete_url_name="gestion:personne_image_supprimer" %}
+    {% include "gestion/_images_carousel.html" with add_label="Ajouter des portraits" hint="La première image (ordre 1) sert de portrait principal. Si plusieurs sont définies, elles défilent en carrousel selon le délai ci-dessous." delete_url_name="gestion:personne_image_supprimer" %}
 
     <div class="mt-6 flex items-center gap-3">
         <button type="submit" class="btn btn-primary">Enregistrer</button>
