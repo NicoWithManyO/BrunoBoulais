@@ -7,8 +7,6 @@ def robots_txt(request):
     sitemap_url = request.build_absolute_uri(reverse("sitemap"))
     lines = [
         "User-agent: *",
-        "Disallow: /admin/",
-        "Disallow: /accounts/",
         "Disallow: /gestion/",
         "Disallow: /media/",
         "",

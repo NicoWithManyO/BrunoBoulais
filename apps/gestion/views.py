@@ -12,12 +12,7 @@ from django.views.decorators.http import require_POST
 
 
 def gestion_required(view_func):
-    """Require an authenticated staff user; redirect to /gestion/connexion/ otherwise.
-
-    Pure `@gestion_required` is unsafe here because allauth signup at /accounts/signup/
-    is open — anyone could self-register. We gate on `is_staff` so only users
-    explicitly elevated by a superuser can reach the backoffice.
-    """
+    """Require an authenticated staff user; redirect to /gestion/connexion/ otherwise."""
     check = user_passes_test(
         lambda u: u.is_authenticated and u.is_staff,
         login_url="/gestion/connexion/",
@@ -360,6 +355,9 @@ def message_detail(request, pk):
         return redirect("gestion:messages_liste")
 
     # Lecture d'un message : marquage auto comme lu.
+    # Mute-on-GET assumé : la seule mutation possible via CSRF est de basculer
+    # `lu=True` (idempotent, sans perte de donnée). Le gain UX justifie la
+    # dérogation au principe « GET safe ».
     if not msg.lu:
         msg.lu = True
         msg.save(update_fields=["lu"])

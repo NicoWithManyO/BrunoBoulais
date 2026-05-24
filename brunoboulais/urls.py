@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.conf.urls.static import static
-from django.contrib import admin
 from django.contrib.sitemaps.views import sitemap
 from django.urls import include, path
 
@@ -8,8 +7,6 @@ from apps.core.sitemaps import sitemaps
 from apps.core.views import robots_txt
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("accounts/", include("allauth.urls")),
     path("gestion/", include("apps.gestion.urls")),
     path("contact/", include("apps.contact.urls")),
     path("actualites/", include("apps.actualites.urls")),
