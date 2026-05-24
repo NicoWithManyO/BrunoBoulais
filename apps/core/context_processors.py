@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.templatetags.static import static
 
+from apps.parametres.models import Parametres
+
 SITE_NAME = "Bruno Boulais — auteur"
 BOOK_TITLE = "Jacques Bertin, le géant discret de la chanson"
 DEFAULT_SEO_TITLE = f"{SITE_NAME} — {BOOK_TITLE}"
@@ -20,4 +22,5 @@ def site_context(request):
         "default_seo_title": DEFAULT_SEO_TITLE,
         "default_seo_description": DEFAULT_SEO_DESCRIPTION,
         "default_seo_og_image": default_og_image,
+        "parametres": Parametres.get_solo(),
     }
