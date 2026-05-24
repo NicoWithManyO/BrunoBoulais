@@ -3,7 +3,7 @@ import logging
 
 from django.shortcuts import redirect, render
 from django.urls import reverse
-from django_ratelimit.core import is_ratelimited
+from django_ratelimit.core import get_usage
 
 from apps.core.middleware import _client_ip
 from apps.core.seo import seo
@@ -40,13 +40,45 @@ def _ratelimit_bucket(request):
     return str(ipaddress.ip_network(f"{ip}/{mask}", strict=False).network_address)
 
 
+def _bucket_usage(request, bucket, *, increment):
+    """Wrapper get_usage avec config view-spécifique (5/h, group).
+
+    ``increment=False`` lit le compteur sans bump (gating pré-save).
+    ``increment=True`` bump (post-save success, ou honeypot trip).
+
+    Retourne le dict {count, limit, should_limit, time_left} ou ``None``
+    si le rate-limit est désactivé / non applicable. Le caller compare
+    ``count >= limit`` (NB : ``should_limit = count > limit`` côté
+    django-ratelimit, donc pas utilisable avec le pattern check-then-bump
+    sans off-by-one).
+    """
+    return get_usage(
+        request=request,
+        group="contact:contact",
+        key=lambda g, r: bucket,
+        rate="5/h",
+        method="POST",
+        increment=increment,
+    )
+
+
 def contact(request):
     rate_limited = False
     if request.method == "POST":
         form = ContactForm(request.POST)
-        # Le rate-limit n'est consommé QUE si le form est valide — un user qui
-        # se rate sur ses champs ne brûle pas son quota. Si le bucket IP est
-        # introuvable (IP vide / spoof bidon), on bloque par défaut.
+        # Honeypot trip = bot. On burn le bucket (pénaliser) puis on
+        # redirect /merci/ pour ne pas révéler qu'on a détecté le piège
+        # (anti-fingerprint). Check sur request.POST brut pour éviter de
+        # déclencher form.full_clean() avant la décision.
+        if (request.POST.get("website") or "").strip():
+            bucket = _ratelimit_bucket(request)
+            if bucket is not None:
+                _bucket_usage(request, bucket, increment=True)
+            return redirect(reverse("contact:merci"))
+        # Vraie validation : champs requis, cohérence commande, etc. Le
+        # quota n'est PAS consommé sur erreur de validation (typo user)
+        # ni sur fail save (DB/email transitoire) — uniquement sur
+        # succès complet (bump après save_and_notify).
         if form.is_valid():
             bucket = _ratelimit_bucket(request)
             if bucket is None:
@@ -56,16 +88,12 @@ def contact(request):
                 )
                 rate_limited = True
             else:
-                rate_limited = is_ratelimited(
-                    request=request,
-                    group="contact:contact",
-                    key=lambda g, r: bucket,
-                    rate="5/h",
-                    method="POST",
-                    increment=True,
-                )
-                if not rate_limited:
+                usage = _bucket_usage(request, bucket, increment=False)
+                if usage is not None and usage["count"] >= usage["limit"]:
+                    rate_limited = True
+                else:
                     form.save_and_notify()
+                    _bucket_usage(request, bucket, increment=True)
                     return redirect(reverse("contact:merci"))
     else:
         form = ContactForm()
