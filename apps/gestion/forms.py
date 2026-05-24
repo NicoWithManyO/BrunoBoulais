@@ -5,6 +5,7 @@ from django.forms import inlineformset_factory
 from django.utils import timezone
 
 from apps.actualites.models import Actualite, ActualiteImage, ActualitesPage
+from apps.contact.models import ContactPage
 from apps.core.images import strip_exif
 from apps.galerie.models import Media
 from apps.livre.models import LienAchat, Livre, LivreImage
@@ -145,6 +146,12 @@ class TemoignageForm(forms.ModelForm):
 class TemoignagesPageForm(forms.ModelForm):
     class Meta:
         model = TemoignagesPage
+        fields = ["eyebrow", "titre", "intro"]
+
+
+class ContactPageForm(forms.ModelForm):
+    class Meta:
+        model = ContactPage
         fields = ["eyebrow", "titre", "intro"]
 
 

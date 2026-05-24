@@ -43,6 +43,8 @@ urlpatterns = [
     # Messages
     path("messages/", views.messages_liste, name="messages_liste"),
     path("messages/<int:pk>/", views.message_detail, name="message_detail"),
+    # Page /contact/ (singleton — en-tête éditable)
+    path("contact/", views.contact_page_form, name="contact_page"),
     # Page d'accueil (singleton)
     path("accueil/", views.accueil_form, name="accueil"),
     # Personnes (Jacques Bertin & Bruno Boulais)

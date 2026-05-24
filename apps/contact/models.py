@@ -1,6 +1,43 @@
+from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.db import models
 
+from apps.core.fields import RichTextField
 from apps.core.models import TimestampedModel
+
+CACHE_KEY_CONTACT_PAGE = "contact_page"
+
+
+class ContactPage(TimestampedModel):
+    """Singleton holding the editable header of the public /contact/ page."""
+
+    eyebrow = models.CharField("Surtitre", max_length=80, blank=True)
+    titre = models.CharField("Titre", max_length=120, blank=True)
+    intro = RichTextField("Texte d'introduction", blank=True)
+
+    class Meta:
+        verbose_name = "En-tête /contact/"
+        verbose_name_plural = "En-tête /contact/"
+
+    def __str__(self):
+        return "En-tête /contact/"
+
+    def clean(self):
+        if not self.pk and ContactPage.objects.exists():
+            raise ValidationError("Un seul en-tête peut exister (singleton).")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+        cache.delete(CACHE_KEY_CONTACT_PAGE)
+
+    @classmethod
+    def get_solo(cls):
+        obj = cache.get(CACHE_KEY_CONTACT_PAGE)
+        if obj is None:
+            obj, _ = cls.objects.get_or_create(pk=1)
+            cache.set(CACHE_KEY_CONTACT_PAGE, obj, 300)
+        return obj
 
 
 class Message(TimestampedModel):

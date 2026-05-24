@@ -1,0 +1,25 @@
+{% extends "gestion/_layout.html" %}
+
+{% block title %}Page /contact/ · Gestion{% endblock %}
+{% block crumb %}Boîte de réception{% endblock %}
+{% block heading %}En-tête de la page /contact/{% endblock %}
+
+{% block header_actions %}
+    <a href="{% url 'contact:form' %}" target="_blank" class="btn-sm btn-ghost">↗ Voir sur le site</a>
+{% endblock %}
+
+{% block content %}
+<form method="post" class="gform max-w-2xl">
+    {% csrf_token %}
+    <div class="panel">
+        <p class="text-xs text-slate-soft mb-4">
+            Surtitre, titre et texte d'introduction affichés en haut de la page publique <code>/contact/</code>.
+            Les champs laissés vides utilisent les valeurs par défaut.
+        </p>
+        {% include "gestion/_form.html" %}
+    </div>
+    <div class="mt-6 flex items-center gap-3">
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+    </div>
+</form>
+{% endblock %}

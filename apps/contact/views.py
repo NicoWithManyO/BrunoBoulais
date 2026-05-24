@@ -4,6 +4,7 @@ from django.urls import reverse
 from apps.core.seo import seo
 
 from .forms import ContactForm
+from .models import ContactPage
 
 
 def contact(request):
@@ -19,6 +20,7 @@ def contact(request):
         "contact/form.html",
         {
             "form": form,
+            "page": ContactPage.get_solo(),
             **seo(
                 request,
                 title="Contact & commande dédicacée · Bruno Boulais",

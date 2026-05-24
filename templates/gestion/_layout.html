@@ -71,6 +71,10 @@
                 <span class="ml-auto inline-flex items-center justify-center min-w-[1.4rem] h-5 px-1.5 text-[10px] bg-terracotta text-cream rounded-full">{{ unread_messages_count }}</span>
                 {% endif %}
             </a>
+            <a href="{% url 'gestion:contact_page' %}"
+               class="gnav {% if sec == 'contact_page' %}is-active{% endif %}">
+                <span class="gnav-ico">✎</span> En-tête /contact/
+            </a>
 
             <div class="pt-4 pb-1 px-3 text-[10px] uppercase tracking-widest text-slate-soft">Site</div>
             <a href="{% url 'gestion:parametres' %}"

@@ -33,7 +33,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import Max
 
 from apps.actualites.models import Actualite, ActualiteImage, ActualitesPage
-from apps.contact.models import Message
+from apps.contact.models import ContactPage, Message
 from apps.core.images import strip_exif
 from apps.core.validators import IMAGE_VALIDATORS
 from apps.galerie.models import Media
@@ -49,6 +49,7 @@ from .forms import (
     ActualiteForm,
     ActualiteImageFormSet,
     ActualitesPageForm,
+    ContactPageForm,
     LienAchatFormSet,
     LivreForm,
     LivreImageFormSet,
@@ -364,6 +365,22 @@ def message_detail(request, pk):
         msg.save(update_fields=["lu"])
 
     return render(request, "gestion/messages/detail.html", {"msg": msg})
+
+
+# ---- Page /contact/ (singleton) ---------------------------------------------
+
+@gestion_required
+def contact_page_form(request):
+    obj = ContactPage.get_solo()
+    form = ContactPageForm(request.POST or None, instance=obj)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Page /contact/ mise à jour.")
+        return redirect("gestion:contact_page")
+    return render(request, "gestion/contact_page/form.html", {
+        "form": form,
+        "instance": obj,
+    })
 
 
 # ---- Page d'accueil (singleton) ---------------------------------------------

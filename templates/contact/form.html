@@ -1,13 +1,16 @@
 {% extends "base.html" %}
+{% load richtext %}
 {% block content %}
 <section class="container-prose py-20">
-    <p class="eyebrow">Écrire à l’auteur</p>
-    <h1 class="mt-4">Contact &amp; commande</h1>
-    <p class="mt-6 text-ink/80 leading-relaxed">
-        Pour commander le livre avec dédicace (envoi via Mondial Relay) ou poser une question,
-        utilisez ce formulaire. Vous pouvez aussi écrire directement à
-        <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a>.
-    </p>
+    <p class="eyebrow">{{ page.eyebrow|default:"Écrire à l’auteur" }}</p>
+    <h1 class="mt-4">{{ page.titre|default:"Contact & commande" }}</h1>
+    <div class="mt-6 text-ink/80 leading-relaxed prose">
+        {% if page.intro %}{{ page.intro|richtext }}{% else %}
+        <p>Pour commander le livre avec dédicace (envoi via Mondial Relay) ou poser une question,
+            utilisez ce formulaire. Vous pouvez aussi écrire directement à
+            <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a>.</p>
+        {% endif %}
+    </div>
 
     <form method="post" class="pform mt-12 space-y-6">
         {% csrf_token %}
