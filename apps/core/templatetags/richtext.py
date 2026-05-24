@@ -14,7 +14,7 @@ register = template.Library()
 # Block mode keeps <p> so paragraphs render. Inline mode strips <p>: useful
 # when the surrounding template already provides the block container (e.g.
 # inside an <h1> or an inline pull-quote).
-_BLOCK_TAGS = frozenset({"p", "br", "strong", "em"})
+_BLOCK_TAGS = frozenset({"p", "br", "strong", "em", "ul", "ol", "li"})
 _INLINE_TAGS = frozenset({"br", "strong", "em"})
 
 

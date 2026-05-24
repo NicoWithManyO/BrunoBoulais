@@ -393,7 +393,9 @@
     color: var(--color-terracotta);
   }
 
-  .drop-cap::first-letter {
+  /* Scope drop-cap to a leading <p> so it doesn't try to dropcap a leading
+     <ul>/<ol>/<h*> (would lift a bullet's first letter, breaking the layout). */
+  .drop-cap > p:first-child::first-letter {
     font-family: var(--font-display);
     font-size: 4.5rem;
     font-weight: 400;
@@ -402,6 +404,17 @@
     line-height: 0.85;
     margin: 0.45rem 0.6rem 0 0;
   }
+
+  /* --- Listes dans le contenu éditorial public --- */
+  /* Tailwind preflight removes list-style, so rich-text-authored ul/ol need
+     these rules to render bullets/numbers on the public site. Mirrors the
+     .richtext__editor rules used by the gestion editor for a WYSIWYG match. */
+  .prose ul,
+  .prose ol { margin: 0.6em 0; padding-left: 1.5rem; max-width: var(--spacing-prose); }
+  .prose ul { list-style: disc; }
+  .prose ol { list-style: decimal; }
+  .prose li { margin: 0.25em 0; }
+  .prose li::marker { color: var(--color-terracotta); }
 
   /* --- Boutons --- */
   .btn {
@@ -1117,6 +1130,11 @@
   }
   .richtext__editor p { margin: 0 0 0.6em 0; }
   .richtext__editor p:last-child { margin-bottom: 0; }
+  .richtext__editor ul,
+  .richtext__editor ol { margin: 0 0 0.6em 0; padding-left: 1.5rem; }
+  .richtext__editor ul { list-style: disc; }
+  .richtext__editor ol { list-style: decimal; }
+  .richtext__editor li { margin: 0.1em 0; }
   .richtext__editor:empty::before {
     content: attr(data-placeholder);
     color: var(--color-slate-soft);

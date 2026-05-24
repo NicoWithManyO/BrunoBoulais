@@ -25,7 +25,11 @@ class Temoignage(TimestampedModel):
         "Source", max_length=200, blank=True,
         help_text="Optionnel : ville, lien, contexte (ex. 'Mairie de Pouillon, Facebook')."
     )
-    texte = RichTextField("Texte")
+    # mode="inline" matches how the value is rendered: as a single quoted
+    # snippet inside <blockquote> on /temoignages/ and home.html (« … »).
+    # Allows <strong>/<em>/<br> only; no <p> or lists. Keeps the editor
+    # honest about the shape of the data.
+    texte = RichTextField("Texte", mode="inline")
     statut = models.CharField("Statut", max_length=20, choices=STATUT_CHOICES, default=STATUT_BROUILLON)
     mis_en_avant = models.BooleanField(
         "Mis en avant", default=False,
