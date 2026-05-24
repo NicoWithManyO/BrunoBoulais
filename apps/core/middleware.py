@@ -5,10 +5,10 @@ Skips: gestion, statics, non-200, non-GET, non-HTML, obvious bots, DEBUG mode.
 """
 
 import hashlib
-from datetime import date as date_cls
 
 from django.conf import settings
 from django.db import DatabaseError
+from django.utils import timezone
 
 from apps.core.models import VisiteJournaliere
 
@@ -18,9 +18,11 @@ _BOT_HINTS = ("bot", "crawl", "spider", "facebookexternalhit", "preview", "monit
 
 
 def _client_ip(request) -> str:
-    xff = request.META.get("HTTP_X_FORWARDED_FOR", "")
-    if xff:
-        return xff.split(",")[0].strip()
+    # CF-Connecting-IP est positionné par Cloudflare et non spoofable
+    # (Cloudflare l'écrase). XFF[0] l'est, donc on ne s'y fie pas.
+    cf_ip = request.META.get("HTTP_CF_CONNECTING_IP", "").strip()
+    if cf_ip:
+        return cf_ip
     return request.META.get("REMOTE_ADDR", "")
 
 
@@ -55,7 +57,7 @@ class VisiteurCompteurMiddleware:
         if not ip:
             return response
 
-        today = date_cls.today()
+        today = timezone.localdate()
         raw = f"{settings.SECRET_KEY}|{today.isoformat()}|{ip}|{user_agent}"
         ip_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
