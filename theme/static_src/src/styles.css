@@ -288,7 +288,12 @@
   h3 { font-size: var(--text-2xl); }
   h4 { font-size: var(--text-xl); }
 
-  p { max-width: var(--spacing-prose); }
+  p {
+    max-width: var(--spacing-prose);
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+  }
 
   a {
     color: var(--color-terracotta-deep);
