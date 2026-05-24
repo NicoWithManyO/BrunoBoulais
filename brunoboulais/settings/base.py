@@ -209,7 +209,7 @@ CONTENT_SECURITY_POLICY = {
 
 # --- Mail ----------------------------------------------------------------
 
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="contact@brunoboulais.fr")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="boulaisbruno@free.fr")
 CONTACT_EMAIL = env("CONTACT_EMAIL", default="boulaisbruno@free.fr")
 
 # --- Logging -------------------------------------------------------------
