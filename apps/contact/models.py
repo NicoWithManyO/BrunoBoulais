@@ -9,18 +9,21 @@ CACHE_KEY_CONTACT_PAGE = "contact_page"
 
 
 class ContactPage(TimestampedModel):
-    """Singleton holding the editable header of the public /contact/ page."""
+    """Singleton holding the editable header of /contact/ AND the post-submit /contact/merci/ page."""
 
     eyebrow = models.CharField("Surtitre", max_length=80, blank=True)
     titre = models.CharField("Titre", max_length=120, blank=True)
     intro = RichTextField("Texte d'introduction", blank=True)
+    merci_eyebrow = models.CharField("Surtitre (page Merci)", max_length=80, blank=True)
+    merci_titre = models.CharField("Titre (page Merci)", max_length=120, blank=True)
+    merci_message = RichTextField("Message de remerciement", mode="inline", blank=True)
 
     class Meta:
-        verbose_name = "En-tête /contact/"
-        verbose_name_plural = "En-tête /contact/"
+        verbose_name = "Page /contact/"
+        verbose_name_plural = "Page /contact/"
 
     def __str__(self):
-        return "En-tête /contact/"
+        return "Page /contact/"
 
     def clean(self):
         if not self.pk and ContactPage.objects.exists():

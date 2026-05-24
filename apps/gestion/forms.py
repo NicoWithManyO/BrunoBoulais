@@ -152,7 +152,10 @@ class TemoignagesPageForm(forms.ModelForm):
 class ContactPageForm(forms.ModelForm):
     class Meta:
         model = ContactPage
-        fields = ["eyebrow", "titre", "intro"]
+        fields = [
+            "eyebrow", "titre", "intro",
+            "merci_eyebrow", "merci_titre", "merci_message",
+        ]
 
 
 class MediaForm(StripExifMixin, forms.ModelForm):

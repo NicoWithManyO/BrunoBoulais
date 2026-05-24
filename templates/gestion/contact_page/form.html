@@ -2,22 +2,50 @@
 
 {% block title %}Page /contact/ · Gestion{% endblock %}
 {% block crumb %}Boîte de réception{% endblock %}
-{% block heading %}En-tête de la page /contact/{% endblock %}
+{% block heading %}Page /contact/{% endblock %}
 
 {% block header_actions %}
-    <a href="{% url 'contact:form' %}" target="_blank" class="btn-sm btn-ghost">↗ Voir sur le site</a>
+    <a href="{% url 'contact:form' %}" target="_blank" class="btn-sm btn-ghost">↗ Voir le formulaire</a>
+    <a href="{% url 'contact:merci' %}" target="_blank" class="btn-sm btn-ghost">↗ Voir page Merci</a>
 {% endblock %}
 
 {% block content %}
 <form method="post" class="gform max-w-2xl">
     {% csrf_token %}
+    {% if form.non_field_errors %}<div class="flash flash-error mb-4">{{ form.non_field_errors }}</div>{% endif %}
+
     <div class="panel">
+        <h2 class="text-sm font-medium uppercase tracking-wider text-slate mb-1">En-tête du formulaire</h2>
         <p class="text-xs text-slate-soft mb-4">
-            Surtitre, titre et texte d'introduction affichés en haut de la page publique <code>/contact/</code>.
+            Affiché en haut de <code>/contact/</code>, au-dessus du formulaire.
             Les champs laissés vides utilisent les valeurs par défaut.
         </p>
-        {% include "gestion/_form.html" %}
+        {% for field in form %}{% if field.name == "eyebrow" or field.name == "titre" or field.name == "intro" %}
+        <div class="mb-1">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<span class="helptext">{{ field.help_text|safe }}</span>{% endif %}
+            {{ field.errors }}
+        </div>
+        {% endif %}{% endfor %}
     </div>
+
+    <div class="panel mt-6">
+        <h2 class="text-sm font-medium uppercase tracking-wider text-slate mb-1">Page « Merci »</h2>
+        <p class="text-xs text-slate-soft mb-4">
+            Affiché après l'envoi d'un message (<code>/contact/merci/</code>).
+            Les champs laissés vides utilisent les valeurs par défaut.
+        </p>
+        {% for field in form %}{% if field.name == "merci_eyebrow" or field.name == "merci_titre" or field.name == "merci_message" %}
+        <div class="mb-1">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<span class="helptext">{{ field.help_text|safe }}</span>{% endif %}
+            {{ field.errors }}
+        </div>
+        {% endif %}{% endfor %}
+    </div>
+
     <div class="mt-6 flex items-center gap-3">
         <button type="submit" class="btn btn-primary">Enregistrer</button>
     </div>

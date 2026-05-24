@@ -37,5 +37,8 @@ def merci(request):
     return render(
         request,
         "contact/merci.html",
-        seo(request, title="Message envoyé · Bruno Boulais"),
+        {
+            "page": ContactPage.get_solo(),
+            **seo(request, title="Message envoyé · Bruno Boulais"),
+        },
     )
