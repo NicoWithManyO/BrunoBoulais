@@ -2,7 +2,7 @@ from django.shortcuts import render
 
 from apps.core.seo import seo
 
-from .models import Chanson
+from .models import Chanson, DiscothequePage
 
 
 def liste(request):
@@ -12,6 +12,7 @@ def liste(request):
         "discotheque/liste.html",
         {
             "chansons": chansons,
+            "page": DiscothequePage.get_solo(),
             **seo(
                 request,
                 title="Discothèque · Bruno Boulais",

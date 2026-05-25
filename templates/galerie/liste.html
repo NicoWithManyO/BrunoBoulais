@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static richtext %}
 
 {% block title %}Galerie — {{ SITE_NAME }}{% endblock %}
 {% block description %}Photos et vidéo autour de Jacques Bertin, du livre, des dédicaces et de l’auteur.{% endblock %}
@@ -126,12 +126,13 @@
 {% block content %}
 
 <section class="container-wide pt-16 lg:pt-24 pb-8">
-    <p class="eyebrow">En images</p>
-    <h1 class="title-display mt-6 text-5xl md:text-6xl">Galerie</h1>
-    <p class="mt-6 font-serif text-lg text-ink/80 max-w-2xl leading-relaxed">
-        Photographies de Jacques Bertin, pochettes de disques, livres, dédicaces de Bruno,
-        rencontres&nbsp;: un album vivant autour du livre et de son sujet.
-    </p>
+    {% if page.eyebrow %}<p class="eyebrow">{{ page.eyebrow }}</p>{% endif %}
+    <h1 class="title-display {% if page.eyebrow %}mt-6 {% endif %}text-5xl md:text-6xl">{{ page.titre|default:"Galerie" }}</h1>
+    {% if page.intro %}
+    <div class="mt-6 font-serif text-lg text-ink/80 max-w-2xl leading-relaxed [&>p+p]:mt-4">
+        {{ page.intro|richtext }}
+    </div>
+    {% endif %}
 </section>
 
 {# Filtres par catégorie #}

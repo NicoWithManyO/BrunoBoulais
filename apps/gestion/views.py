@@ -32,8 +32,8 @@ from apps.carnet.models import Billet
 from apps.contact.models import ContactPage, Message
 from apps.core.images import strip_exif
 from apps.core.validators import IMAGE_VALIDATORS
-from apps.discotheque.models import Chanson
-from apps.galerie.models import Media
+from apps.discotheque.models import Chanson, DiscothequePage
+from apps.galerie.models import GaleriePage, Media
 from apps.livre.models import Livre, LivreImage
 from apps.pages.models import Accueil, AccueilImage, Page
 from apps.parametres.models import Parametres
@@ -49,6 +49,8 @@ from .forms import (
     BilletForm,
     ChansonForm,
     ContactPageForm,
+    DiscothequePageForm,
+    GaleriePageForm,
     LienAchatFormSet,
     LivreForm,
     LivreImageFormSet,
@@ -264,6 +266,14 @@ DISCOTHEQUE_PUBLIE_FILTRES = {"1": True, "0": False}
 
 @gestion_required
 def chansons_liste(request):
+    page_form = DiscothequePageForm(request.POST or None, instance=DiscothequePage.get_solo())
+    if request.method == "POST" and page_form.is_valid():
+        page_form.save()
+        messages.success(request, "En-tête de la page mis à jour.")
+        target = reverse("gestion:chansons_liste")
+        qs_str = request.GET.urlencode()
+        return redirect(f"{target}?{qs_str}" if qs_str else target)
+
     qs = Chanson.objects.all()
     publie_filter = request.GET.get("publie", "")
     if publie_filter in DISCOTHEQUE_PUBLIE_FILTRES:
@@ -271,6 +281,7 @@ def chansons_liste(request):
     return render(request, "gestion/discotheque/list.html", {
         "chansons": qs,
         "publie_filter": publie_filter,
+        "page_form": page_form,
     })
 
 
@@ -363,6 +374,14 @@ def temoignage_supprimer(request, pk):
 
 @gestion_required
 def galerie_liste(request):
+    page_form = GaleriePageForm(request.POST or None, instance=GaleriePage.get_solo())
+    if request.method == "POST" and page_form.is_valid():
+        page_form.save()
+        messages.success(request, "En-tête de la page mis à jour.")
+        target = reverse("gestion:galerie_liste")
+        qs_str = request.GET.urlencode()
+        return redirect(f"{target}?{qs_str}" if qs_str else target)
+
     qs = Media.objects.all()
     categorie_filter = request.GET.get("categorie")
     if categorie_filter:
@@ -371,6 +390,7 @@ def galerie_liste(request):
         "medias": qs,
         "categorie_filter": categorie_filter,
         "categorie_choices": Media.CATEGORIE_CHOICES,
+        "page_form": page_form,
     })
 
 

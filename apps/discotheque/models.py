@@ -1,11 +1,16 @@
 import re
 
+from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Case, IntegerField, Value, When
 
+from apps.core.fields import RichTextField
 from apps.core.models import TimestampedModel
 from apps.core.uploads import discotheque_upload_to
 from apps.core.validators import IMAGE_VALIDATORS
+
+CACHE_KEY_DISCOTHEQUE_PAGE = "discotheque_page"
 
 # Capture l'ID YouTube (11 caractères [A-Za-z0-9_-]) dans les formats d'URL
 # courants : youtu.be/<id>, youtube.com/watch?v=<id>, /embed/<id>, /shorts/<id>.
@@ -63,3 +68,35 @@ class Chanson(TimestampedModel):
     @property
     def youtube_id(self):
         return extract_youtube_id(self.url_youtube)
+
+
+class DiscothequePage(TimestampedModel):
+    """Singleton holding the editable header of the public /discotheque/ page."""
+
+    eyebrow = models.CharField("Surtitre", max_length=80, blank=True)
+    titre = models.CharField("Titre", max_length=120, blank=True)
+    intro = RichTextField("Texte d'introduction", blank=True)
+
+    class Meta:
+        verbose_name = "En-tête /discotheque/"
+        verbose_name_plural = "En-tête /discotheque/"
+
+    def __str__(self):
+        return "En-tête /discotheque/"
+
+    def clean(self):
+        if not self.pk and DiscothequePage.objects.exists():
+            raise ValidationError("Un seul en-tête peut exister (singleton).")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+        cache.delete(CACHE_KEY_DISCOTHEQUE_PAGE)
+
+    @classmethod
+    def get_solo(cls):
+        obj = cache.get(CACHE_KEY_DISCOTHEQUE_PAGE)
+        if obj is None:
+            obj, _ = cls.objects.get_or_create(pk=1)
+            cache.set(CACHE_KEY_DISCOTHEQUE_PAGE, obj, 300)
+        return obj

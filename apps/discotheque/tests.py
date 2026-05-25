@@ -4,7 +4,11 @@ from urllib.error import URLError
 import pytest
 
 from apps.discotheque.models import Chanson, extract_youtube_id
-from apps.discotheque.youtube import download_thumbnail, fetch_oembed
+from apps.discotheque.youtube import (
+    download_thumbnail,
+    fetch_oembed,
+    strip_artist_prefix,
+)
 
 
 class TestExtractYoutubeId:
@@ -84,6 +88,32 @@ def _fake_response(payload):
             return False
 
     return _Resp(payload)
+
+
+class TestStripArtistPrefix:
+    def test_removes_hyphen_separator(self):
+        assert strip_artist_prefix("Jacques Bertin - La balade") == "La balade"
+
+    def test_removes_em_dash_separator(self):
+        assert strip_artist_prefix("Jacques Bertin — La balade") == "La balade"
+
+    def test_removes_pipe_and_extra_spaces(self):
+        assert strip_artist_prefix("  Jacques  Bertin  |  La balade  ") == "La balade"
+
+    def test_is_case_insensitive(self):
+        assert strip_artist_prefix("jacques bertin - foo") == "foo"
+
+    def test_keeps_title_without_prefix(self):
+        assert strip_artist_prefix("La balade du désir") == "La balade du désir"
+
+    def test_keeps_artist_alone_without_separator(self):
+        # Pas de séparateur derrière → on ne touche pas (sans titre derrière,
+        # impossible de deviner ce qui était voulu).
+        assert strip_artist_prefix("Jacques Bertin") == "Jacques Bertin"
+
+    def test_handles_empty(self):
+        assert strip_artist_prefix("") == ""
+        assert strip_artist_prefix(None) is None
 
 
 class TestFetchOembed:

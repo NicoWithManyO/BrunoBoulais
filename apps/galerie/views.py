@@ -2,7 +2,7 @@ from django.shortcuts import render
 
 from apps.core.seo import seo
 
-from .models import Media
+from .models import GaleriePage, Media
 
 
 def galerie(request):
@@ -17,6 +17,7 @@ def galerie(request):
             "medias": qs,
             "categorie_active": categorie,
             "categories": Media.CATEGORIE_CHOICES,
+            "page": GaleriePage.get_solo(),
             **seo(
                 request,
                 title="Galerie photos · Bruno Boulais",

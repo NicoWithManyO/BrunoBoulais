@@ -8,6 +8,7 @@ doit toujours réussir et l'utilisateur peut saisir les champs à la main.
 """
 import json
 import logging
+import re
 from urllib.error import URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -19,6 +20,21 @@ TIMEOUT_SECONDS = 5
 # Cap large pour une miniature YT (les `maxresdefault.jpg` font ~50-300 Ko).
 MAX_THUMBNAIL_BYTES = 5 * 1024 * 1024
 _USER_AGENT = "BrunoBoulais/1.0 (+oembed-autofill)"
+
+# Les titres oEmbed ont quasi-systématiquement la forme
+# « Jacques Bertin - <Titre> » (ou « – », « — », « : », « | »). On retire le
+# préfixe puisque tout le site parle déjà de Jacques Bertin (cf. UX choisie
+# par Bruno).
+_ARTIST_PREFIX_RE = re.compile(
+    r"^\s*Jacques\s+Bertin\s*[-–—:|]+\s*",
+    re.IGNORECASE,
+)
+
+
+def strip_artist_prefix(title):
+    if not title:
+        return title
+    return _ARTIST_PREFIX_RE.sub("", title).strip()
 
 
 def fetch_oembed(url_youtube):
@@ -33,7 +49,7 @@ def fetch_oembed(url_youtube):
     except (URLError, OSError, ValueError) as exc:
         logger.info("oEmbed YouTube indisponible pour %s (%s)", url_youtube, exc)
         return None
-    title = (data.get("title") or "").strip() or None
+    title = strip_artist_prefix((data.get("title") or "").strip()) or None
     thumbnail = (data.get("thumbnail_url") or "").strip() or None
     if not title and not thumbnail:
         return None

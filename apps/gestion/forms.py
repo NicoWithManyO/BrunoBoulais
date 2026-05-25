@@ -12,9 +12,9 @@ from apps.carnet.models import Billet
 from apps.contact.models import ContactPage
 from apps.core.images import strip_exif
 from apps.core.validators import ALLOWED_IMAGE_EXTENSIONS, ALLOWED_VIDEO_EXTENSIONS
-from apps.discotheque.models import Chanson
+from apps.discotheque.models import Chanson, DiscothequePage
 from apps.discotheque.youtube import download_thumbnail, fetch_oembed
-from apps.galerie.models import Media
+from apps.galerie.models import GaleriePage, Media
 from apps.livre.models import LienAchat, Livre, LivreImage
 from apps.pages.models import Accueil, AccueilImage
 from apps.parametres.models import Parametres
@@ -215,6 +215,18 @@ class TemoignageForm(forms.ModelForm):
 class TemoignagesPageForm(forms.ModelForm):
     class Meta:
         model = TemoignagesPage
+        fields = ["eyebrow", "titre", "intro"]
+
+
+class GaleriePageForm(forms.ModelForm):
+    class Meta:
+        model = GaleriePage
+        fields = ["eyebrow", "titre", "intro"]
+
+
+class DiscothequePageForm(forms.ModelForm):
+    class Meta:
+        model = DiscothequePage
         fields = ["eyebrow", "titre", "intro"]
 
 
