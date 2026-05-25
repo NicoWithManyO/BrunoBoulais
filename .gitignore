@@ -114,3 +114,5 @@ logs/
 # ─── Claude / outils locaux ──────────────────────────────────────────
 .claude/
 CLAUDE.local.md
+to-prod.md
+cr*.md
