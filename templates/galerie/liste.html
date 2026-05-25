@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Galerie — {{ SITE_NAME }}{% endblock %}
 {% block description %}Photos et vidéo autour de Jacques Bertin, du livre, des dédicaces et de l’auteur.{% endblock %}
@@ -21,6 +22,7 @@
         box-shadow: 0 10px 30px -10px rgba(90, 58, 34, 0.25);
     }
     .masonry img, .masonry video { width: 100%; height: auto; display: block; }
+    .masonry a[data-lightbox-trigger] { display: block; cursor: zoom-in; }
     .masonry figcaption {
         padding: 0.5rem 0.75rem 0.75rem;
         margin: 0;
@@ -29,6 +31,92 @@
         letter-spacing: 0.06em;
         text-transform: none;
         color: var(--color-slate-soft);
+    }
+
+    /* Visionneuse plein écran */
+    .lightbox {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        background: rgba(20, 18, 14, 0.94);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+    }
+    .lightbox[hidden] { display: none; }
+    .lightbox__figure {
+        position: relative;
+        margin: 0;
+        padding: 14px;
+        background: #000;
+        max-width: min(1200px, 95vw);
+        max-height: 92vh;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .lightbox__img {
+        display: block;
+        max-width: 100%;
+        max-height: calc(92vh - 90px);
+        margin: 0 auto;
+        object-fit: contain;
+    }
+    .lightbox__caption {
+        margin: 0;
+        text-align: center;
+        color: var(--color-cream);
+        font-family: var(--font-sans);
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+    }
+    .lightbox__caption[hidden] { display: none; }
+    .lightbox__btn {
+        position: absolute;
+        background: rgba(0, 0, 0, 0.55);
+        border: 1px solid rgba(246, 239, 227, 0.35);
+        color: var(--color-cream);
+        width: 2.75rem;
+        height: 2.75rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 1.4rem;
+        line-height: 1;
+        font-family: var(--font-sans);
+        transition: background .2s, border-color .2s;
+    }
+    .lightbox__btn:hover,
+    .lightbox__btn:focus-visible {
+        background: rgba(0, 0, 0, 0.85);
+        border-color: var(--color-cream);
+        outline: none;
+    }
+    .lightbox__btn[hidden] { display: none; }
+    .lightbox__close { top: 1rem; right: 1rem; }
+    .lightbox__prev  { left: 1rem;  top: 50%; transform: translateY(-50%); }
+    .lightbox__next  { right: 1rem; top: 50%; transform: translateY(-50%); }
+    .lightbox__counter {
+        position: absolute;
+        top: 1.25rem;
+        left: 50%;
+        transform: translateX(-50%);
+        color: var(--color-cream);
+        font-family: var(--font-sans);
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        opacity: 0.7;
+        pointer-events: none;
+    }
+    @media (max-width: 640px) {
+        .lightbox { padding: 0.5rem; }
+        .lightbox__figure { padding: 8px; }
+        .lightbox__btn { width: 2.25rem; height: 2.25rem; font-size: 1.2rem; }
+        .lightbox__prev { left: 0.5rem; }
+        .lightbox__next { right: 0.5rem; }
+        .lightbox__close { top: 0.5rem; right: 0.5rem; }
     }
 </style>
 {% endblock %}
@@ -70,7 +158,12 @@
                     <source src="{{ m.fichier.url }}">
                 </video>
             {% else %}
-                <a href="{{ m.fichier.url }}" target="_blank" rel="noopener" class="no-underline">
+                <a href="{{ m.fichier.url }}"
+                   data-lightbox-trigger
+                   data-lightbox-src="{{ m.fichier.url }}"
+                   data-lightbox-caption="{{ m.legende }}"
+                   data-lightbox-alt="{{ m.alt|default:m.legende }}"
+                   target="_blank" rel="noopener" class="no-underline">
                     <img src="{{ m.fichier.url }}" alt="{{ m.alt|default:m.legende }}" loading="lazy" decoding="async">
                 </a>
             {% endif %}
@@ -93,4 +186,20 @@
     {% endif %}
 </section>
 
+{# Visionneuse — affichée à l'ouverture par lightbox.js #}
+<div class="lightbox" data-lightbox-modal hidden role="dialog" aria-modal="true" aria-label="Visionneuse d'image">
+    <span class="lightbox__counter" data-lightbox-counter></span>
+    <button type="button" class="lightbox__btn lightbox__close" data-lightbox-close aria-label="Fermer">×</button>
+    <button type="button" class="lightbox__btn lightbox__prev"  data-lightbox-prev  aria-label="Image précédente">‹</button>
+    <button type="button" class="lightbox__btn lightbox__next"  data-lightbox-next  aria-label="Image suivante">›</button>
+    <figure class="lightbox__figure">
+        <img class="lightbox__img" data-lightbox-img alt="">
+        <figcaption class="lightbox__caption" data-lightbox-caption hidden></figcaption>
+    </figure>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/lightbox.js' %}" defer></script>
 {% endblock %}
