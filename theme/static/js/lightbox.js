@@ -23,6 +23,7 @@
       src: t.dataset.lightboxSrc || t.getAttribute("href") || "",
       caption: t.dataset.lightboxCaption || "",
       alt: t.dataset.lightboxAlt || "",
+      thumb: t.querySelector("img"),
     }));
 
     let currentIndex = 0;
@@ -31,6 +32,15 @@
     function show(idx) {
       currentIndex = ((idx % items.length) + items.length) % items.length;
       const item = items[currentIndex];
+      // Réserve la place finale via aspect-ratio calculé sur la miniature
+      // (déjà chargée à l'écran) : la figure ne se redimensionne pas pendant
+      // le chargement de l'image plein format → la légende ne saute pas.
+      const thumb = item.thumb;
+      if (thumb && thumb.naturalWidth && thumb.naturalHeight) {
+        imgEl.style.aspectRatio = thumb.naturalWidth + " / " + thumb.naturalHeight;
+      } else {
+        imgEl.style.aspectRatio = "";
+      }
       imgEl.src = item.src;
       imgEl.alt = item.alt;
       captionEl.textContent = item.caption;
