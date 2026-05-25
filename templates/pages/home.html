@@ -82,7 +82,7 @@
         {% endif %}
 
         {# Colonne droite : cards d'actualités / dédicaces #}
-        <div class="{% if dernier_billet %}lg:pl-12 lg:border-l lg:border-mist/50{% endif %}">
+        <div class="{% if dernier_billet %}lg:pl-12 lg:border-l lg:border-mist/50{% else %}max-w-2xl mx-auto w-full{% endif %}">
             <p class="eyebrow mb-8">Actus &amp; dédicaces</p>
             <div class="space-y-6">
                 {% for actualite in actualites %}
