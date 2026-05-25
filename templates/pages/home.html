@@ -87,9 +87,16 @@
             <div class="space-y-6">
                 {% for actualite in actualites %}
                 <article class="card-edito">
-                    <p class="font-sans text-xs uppercase tracking-widest text-terracotta-deep">
-                        {% if actualite.date_evenement %}{{ actualite.date_evenement|date:"j F Y" }}{% else %}{{ actualite.date_publication|date:"j F Y" }}{% endif %}{% if actualite.ville %} · {{ actualite.ville }}{% endif %}
-                    </p>
+                    <div class="flex items-start justify-between gap-3">
+                        <p class="font-sans text-xs uppercase tracking-widest text-terracotta-deep">
+                            {% if actualite.date_evenement %}{{ actualite.date_evenement|date:"j F Y" }}{% else %}{{ actualite.date_publication|date:"j F Y" }}{% endif %}{% if actualite.ville %} · {{ actualite.ville }}{% endif %}
+                        </p>
+                        {% if actualite.date_evenement %}
+                        <span class="tag {% if actualite.est_a_venir %}tag-terra{% else %}tag-slate{% endif %} shrink-0">
+                            {% if actualite.est_a_venir %}À venir{% else %}Passé{% endif %}
+                        </span>
+                        {% endif %}
+                    </div>
                     <h3 class="mt-3 text-2xl">
                         <a href="{{ actualite.get_absolute_url }}" class="no-underline hover:text-terracotta">
                             {{ actualite.titre }}
