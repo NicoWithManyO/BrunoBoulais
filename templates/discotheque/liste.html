@@ -120,6 +120,9 @@
         height: 100%;
         object-fit: cover;
         display: block;
+        /* Zoom léger pour rogner les cadres noirs intégrés
+           dans certaines miniatures YT / covers d'album. */
+        transform: scale(1.15);
     }
     .card-chanson .vignette-placeholder {
         width: 100%;
@@ -129,6 +132,13 @@
         justify-content: center;
         color: var(--color-brown-soft);
         opacity: 0.4;
+    }
+    .card-chanson p {
+        transition: color .25s var(--ease-soft);
+    }
+    .card-chanson:hover p,
+    .card-chanson:focus-visible p {
+        color: var(--color-terracotta);
     }
 </style>
 {% endblock %}
