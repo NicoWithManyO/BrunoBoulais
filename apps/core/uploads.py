@@ -55,3 +55,7 @@ def portraits_image_upload_to(instance, filename):
 
 def galerie_upload_to(instance, filename):
     return _slugged("galerie", filename)
+
+
+def discotheque_upload_to(instance, filename):
+    return _slugged("discotheque", filename)

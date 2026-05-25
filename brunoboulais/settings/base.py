@@ -56,6 +56,7 @@ LOCAL_APPS = [
     "apps.carnet",
     "apps.temoignages",
     "apps.galerie",
+    "apps.discotheque",
     "apps.contact",
     "apps.parametres",
     "apps.gestion",
