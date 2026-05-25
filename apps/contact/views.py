@@ -64,6 +64,7 @@ def _bucket_usage(request, bucket, *, increment):
 
 def contact(request):
     rate_limited = False
+    retry_after = None
     if request.method == "POST":
         form = ContactForm(request.POST)
         # Honeypot trip = bot. On burn le bucket (pénaliser) puis on
@@ -87,17 +88,19 @@ def contact(request):
                     request.path,
                 )
                 rate_limited = True
+                retry_after = 3600
             else:
                 usage = _bucket_usage(request, bucket, increment=False)
                 if usage is not None and usage["count"] >= usage["limit"]:
                     rate_limited = True
+                    retry_after = int(usage["time_left"]) or 3600
                 else:
                     form.save_and_notify()
                     _bucket_usage(request, bucket, increment=True)
                     return redirect(reverse("contact:merci"))
     else:
         form = ContactForm()
-    return render(
+    response = render(
         request,
         "contact/form.html",
         {
@@ -115,6 +118,13 @@ def contact(request):
             ),
         },
     )
+    if rate_limited:
+        # HTTP 429 + Retry-After : non cacheable par les CDN, et bots/scripts
+        # voient l'erreur explicitement (au lieu d'un 200 qui ressemble à un
+        # succès et déclenche un re-submit qui ré-incrémente).
+        response.status_code = 429
+        response["Retry-After"] = str(retry_after)
+    return response
 
 
 def merci(request):
