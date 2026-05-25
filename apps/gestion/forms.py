@@ -193,6 +193,11 @@ class ChansonForm(StripExifMixin, forms.ModelForm):
             return
         needs_title = not obj.titre
         needs_image = not obj.illustration
+        # Si l'utilisateur a explicitement coché « Effacer » dans le widget
+        # ClearableFileInput, respecter cette intention plutôt que de re-télécharger
+        # la miniature YouTube — sans quoi l'effacement serait sans effet.
+        if self.cleaned_data.get("illustration") is False:
+            needs_image = False
         if not (needs_title or needs_image):
             return
         data = fetch_oembed(obj.url_youtube)
