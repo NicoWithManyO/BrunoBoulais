@@ -28,6 +28,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import Max
 
 from apps.actualites.models import Actualite, ActualiteImage, ActualitesPage
+from apps.carnet.models import Billet
 from apps.contact.models import ContactPage, Message
 from apps.core.images import strip_exif
 from apps.core.validators import IMAGE_VALIDATORS
@@ -44,6 +45,7 @@ from .forms import (
     ActualiteForm,
     ActualiteImageFormSet,
     ActualitesPageForm,
+    BilletForm,
     ContactPageForm,
     LienAchatFormSet,
     LivreForm,
@@ -205,6 +207,50 @@ def actualite_supprimer(request, pk):
         "objet": obj,
         "label": "actualité",
         "retour_url": reverse("gestion:actualites_liste"),
+    })
+
+
+# ---- Carnet (billets courts) -------------------------------------------------
+
+@gestion_required
+def billets_liste(request):
+    qs = Billet.objects.all()
+    statut_filter = request.GET.get("statut")
+    if statut_filter:
+        qs = qs.filter(statut=statut_filter)
+    return render(request, "gestion/carnet/list.html", {
+        "billets": qs,
+        "statut_filter": statut_filter,
+        "statut_choices": Billet.STATUT_CHOICES,
+    })
+
+
+@gestion_required
+def billet_form(request, pk=None):
+    instance = get_object_or_404(Billet, pk=pk) if pk is not None else None
+    form = BilletForm(request.POST or None, instance=instance)
+    if request.method == "POST" and form.is_valid():
+        obj = form.save()
+        messages.success(request, f"Billet « {obj.titre} » enregistré.")
+        return redirect("gestion:billet_modifier", pk=obj.pk)
+    return render(request, "gestion/carnet/form.html", {
+        "form": form,
+        "instance": instance,
+    })
+
+
+@gestion_required
+def billet_supprimer(request, pk):
+    obj = get_object_or_404(Billet, pk=pk)
+    if request.method == "POST":
+        titre = obj.titre
+        obj.delete()
+        messages.success(request, f"Billet « {titre} » supprimé.")
+        return redirect("gestion:billets_liste")
+    return render(request, "gestion/confirm_delete.html", {
+        "objet": obj,
+        "label": "billet",
+        "retour_url": reverse("gestion:billets_liste"),
     })
 
 

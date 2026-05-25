@@ -1,0 +1,61 @@
+{% extends "gestion/_layout.html" %}
+{% load richtext %}
+
+{% block title %}Carnet · Gestion{% endblock %}
+{% block crumb %}Contenus{% endblock %}
+{% block heading %}Carnet de news{% endblock %}
+
+{% block header_actions %}
+    <a href="{% url 'gestion:billet_ajouter' %}" class="btn-sm btn-primary">+ Nouveau billet</a>
+{% endblock %}
+
+{% block content %}
+
+<form method="get" class="flex items-end gap-3 mb-6 gform">
+    <div>
+        <label class="!mt-0">Statut</label>
+        <select name="statut">
+            <option value="">Tous</option>
+            {% for val, label in statut_choices %}
+            <option value="{{ val }}" {% if statut_filter == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn-sm btn-ghost mb-[1px]">Filtrer</button>
+    {% if statut_filter %}
+    <a href="{% url 'gestion:billets_liste' %}" class="text-xs text-slate-soft mb-[1px]">Réinitialiser</a>
+    {% endif %}
+</form>
+
+<div class="panel-flat">
+<table class="table-admin">
+    <thead>
+        <tr>
+            <th>Titre</th>
+            <th>Extrait</th>
+            <th>Date de publication</th>
+            <th>Statut</th>
+            <th class="text-right">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for b in billets %}
+        <tr>
+            <td>
+                <a href="{% url 'gestion:billet_modifier' b.pk %}" class="font-medium text-brown no-underline hover:text-terracotta">{{ b.titre }}</a>
+            </td>
+            <td class="text-xs text-slate-soft max-w-md">{{ b.contenu|richtext_plain|truncatechars:120 }}</td>
+            <td class="text-xs">{{ b.date_publication|date:"d/m/Y H:i" }}</td>
+            <td><span class="badge badge-{{ b.statut }}">{{ b.get_statut_display }}</span></td>
+            <td class="text-right whitespace-nowrap">
+                <a href="{% url 'gestion:billet_modifier' b.pk %}" class="btn-sm btn-ghost">Éditer</a>
+                <a href="{% url 'gestion:billet_supprimer' b.pk %}" class="btn-sm btn-danger">Supprimer</a>
+            </td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="5" class="text-center text-slate-soft italic py-12">Aucun billet.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

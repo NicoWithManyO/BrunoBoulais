@@ -7,6 +7,7 @@ from django.forms import inlineformset_factory
 from django.utils import timezone
 
 from apps.actualites.models import Actualite, ActualiteImage, ActualitesPage
+from apps.carnet.models import Billet
 from apps.contact.models import ContactPage
 from apps.core.images import strip_exif
 from apps.core.validators import ALLOWED_IMAGE_EXTENSIONS, ALLOWED_VIDEO_EXTENSIONS
@@ -138,6 +139,21 @@ class ActualitesPageForm(forms.ModelForm):
     class Meta:
         model = ActualitesPage
         fields = ["eyebrow", "titre", "intro"]
+
+
+class BilletForm(forms.ModelForm):
+    date_publication = forms.DateTimeField(
+        label="Date/heure de publication", required=False,
+        help_text="Si vide, la date d'enregistrement est utilisée.",
+        widget=_DateTimeLocalInput(), input_formats=_HTML5_DATETIME_FORMATS,
+    )
+
+    def clean_date_publication(self):
+        return self.cleaned_data.get("date_publication") or timezone.now()
+
+    class Meta:
+        model = Billet
+        fields = ["titre", "statut", "date_publication", "contenu"]
 
 
 class TemoignageForm(forms.ModelForm):

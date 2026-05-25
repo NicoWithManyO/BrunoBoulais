@@ -54,6 +54,10 @@
                class="gnav {% if 'actualite' in sec %}is-active{% endif %}">
                 <span class="gnav-ico">◉</span> Actualités & dédicaces
             </a>
+            <a href="{% url 'gestion:billets_liste' %}"
+               class="gnav {% if 'billet' in sec %}is-active{% endif %}">
+                <span class="gnav-ico">✑</span> Carnet de news
+            </a>
             <a href="{% url 'gestion:temoignages_liste' %}"
                class="gnav {% if 'temoignage' in sec %}is-active{% endif %}">
                 <span class="gnav-ico">❝</span> Témoignages

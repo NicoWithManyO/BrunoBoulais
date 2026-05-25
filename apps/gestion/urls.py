@@ -30,6 +30,11 @@ urlpatterns = [
     path("actualites/ajouter/", views.actualite_form, name="actualite_ajouter"),
     path("actualites/<int:pk>/", views.actualite_form, name="actualite_modifier"),
     path("actualites/<int:pk>/supprimer/", views.actualite_supprimer, name="actualite_supprimer"),
+    # Carnet (billets courts)
+    path("carnet/", views.billets_liste, name="billets_liste"),
+    path("carnet/ajouter/", views.billet_form, name="billet_ajouter"),
+    path("carnet/<int:pk>/", views.billet_form, name="billet_modifier"),
+    path("carnet/<int:pk>/supprimer/", views.billet_supprimer, name="billet_supprimer"),
     # Témoignages
     path("temoignages/", views.temoignages_liste, name="temoignages_liste"),
     path("temoignages/ajouter/", views.temoignage_form, name="temoignage_ajouter"),
