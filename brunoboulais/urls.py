@@ -12,6 +12,7 @@ urlpatterns = [
     path("actualites/", include("apps.actualites.urls")),
     path("temoignages/", include("apps.temoignages.urls")),
     path("galerie/", include("apps.galerie.urls")),
+    path("discotheque/", include("apps.discotheque.urls")),
     path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="sitemap"),
     path("robots.txt", robots_txt, name="robots"),
     path("", include("apps.pages.urls")),

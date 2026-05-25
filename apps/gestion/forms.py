@@ -170,6 +170,12 @@ class ChansonForm(StripExifMixin, forms.ModelForm):
         widgets = {
             "description": forms.Textarea(attrs={"rows": 3}),
         }
+        labels = {
+            "description": "Avis de Bruno",
+        }
+        help_texts = {
+            "description": "Affiché à côté du lecteur quand la chanson est sélectionnée.",
+        }
 
 
 class TemoignageForm(forms.ModelForm):

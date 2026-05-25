@@ -218,6 +218,8 @@ CONTENT_SECURITY_POLICY = {
         "font-src": ("'self'",),
         "img-src": ("'self'", "data:", "blob:"),
         "media-src": ("'self'",),
+        # Embed YouTube (no-cookie) pour la Discothèque.
+        "frame-src": ("https://www.youtube-nocookie.com",),
         "frame-ancestors": ("'none'",),
     }
 }

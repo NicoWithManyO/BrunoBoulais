@@ -33,6 +33,7 @@
             <a href="{% url 'actualites:liste' %}" class="nav-link {% if 'actualites' in request.path %}is-active{% endif %}">Actualités</a>
             <a href="{% url 'temoignages:liste' %}" class="nav-link {% if 'temoignages' in request.path %}is-active{% endif %}">Témoignages</a>
             <a href="{% url 'galerie:liste' %}" class="nav-link {% if 'galerie' in request.path %}is-active{% endif %}">Galerie</a>
+            <a href="{% url 'discotheque:liste' %}" class="nav-link {% if 'discotheque' in request.path %}is-active{% endif %}">Discothèque</a>
         </nav>
 
         <div class="flex items-center gap-3">
@@ -91,6 +92,7 @@
                 <a href="{% url 'actualites:liste' %}" class="nav-link-mobile {% if 'actualites' in request.path %}is-active{% endif %}">Actualités</a>
                 <a href="{% url 'temoignages:liste' %}" class="nav-link-mobile {% if 'temoignages' in request.path %}is-active{% endif %}">Témoignages</a>
                 <a href="{% url 'galerie:liste' %}"    class="nav-link-mobile {% if 'galerie' in request.path %}is-active{% endif %}">Galerie</a>
+                <a href="{% url 'discotheque:liste' %}" class="nav-link-mobile {% if 'discotheque' in request.path %}is-active{% endif %}">Discothèque</a>
             </nav>
 
             <div class="px-6 py-6 border-t border-mist/40">
