@@ -1,6 +1,7 @@
 import ipaddress
 import logging
 
+from django.core.cache import cache
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django_ratelimit.core import get_usage
@@ -62,8 +63,27 @@ def _bucket_usage(request, bucket, *, increment):
     )
 
 
+def _log_ip_unresolved_dedup(request):
+    """Log warning IP indéterminée, dédupliqué 5 min via cache.
+
+    Sans dédup, chaque POST sur ce path part en Sentry/PagerDuty : un
+    attaquant qui force REMOTE_ADDR vide peut spam la pile d'alerting.
+    Clé courte (pas par path) car on a une seule vue concernée.
+    """
+    log_key = "contact:ip-unresolved-logged"
+    if cache.add(log_key, True, 300):
+        # %r (repr) échappe CR/LF dans request.path — Django décode les
+        # %-encoded chars de l'URL, donc %0A devient un newline littéral
+        # qui injecterait une fausse ligne dans la sortie console/SIEM.
+        logger.warning(
+            "Contact: IP client indéterminée, POST bloqué (path=%r)",
+            request.path,
+        )
+
+
 def contact(request):
     rate_limited = False
+    ip_unresolved = False
     retry_after = None
     if request.method == "POST":
         form = ContactForm(request.POST)
@@ -83,12 +103,12 @@ def contact(request):
         if form.is_valid():
             bucket = _ratelimit_bucket(request)
             if bucket is None:
-                logger.error(
-                    "Contact: IP client indéterminée, POST bloqué (path=%s)",
-                    request.path,
-                )
-                rate_limited = True
-                retry_after = 3600
+                # Fail closed : on ne peut pas bucket-er, on bloque. Pas de
+                # Retry-After (attendre ne résout pas une IP absente) et
+                # 503 plutôt que 429 (ce n'est pas une rate limit, c'est
+                # une indisponibilité).
+                _log_ip_unresolved_dedup(request)
+                ip_unresolved = True
             else:
                 usage = _bucket_usage(request, bucket, increment=False)
                 if usage is not None and usage["count"] >= usage["limit"]:
@@ -108,6 +128,7 @@ def contact(request):
             "page": ContactPage.get_solo(),
             "commande_value": Message.SUJET_COMMANDE,
             "rate_limited": rate_limited,
+            "ip_unresolved": ip_unresolved,
             **seo(
                 request,
                 title="Contact & commande dédicacée · Bruno Boulais",
@@ -124,6 +145,13 @@ def contact(request):
         # succès et déclenche un re-submit qui ré-incrémente).
         response.status_code = 429
         response["Retry-After"] = str(retry_after)
+        response["Cache-Control"] = "no-store"
+    elif ip_unresolved:
+        # 503 sans Retry-After (attendre ne résout pas l'IP absente) + no-store
+        # pour empêcher Cloudflare/CDN de cacher l'erreur au edge (RFC 7234 :
+        # 503 est cacheable par heuristique sans Cache-Control explicite).
+        response.status_code = 503
+        response["Cache-Control"] = "no-store"
     return response
 
 

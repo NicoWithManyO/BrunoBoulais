@@ -54,7 +54,12 @@
             {{ form.contenu }}
         </div>
 
-        {% if rate_limited %}
+        {% if ip_unresolved %}
+        <p class="text-terracotta-deep text-sm">
+            Une erreur empêche le traitement de votre message.{% if CONTACT_EMAIL %} Merci de contacter directement
+            <a href="mailto:{{ CONTACT_EMAIL }}" class="underline">{{ CONTACT_EMAIL }}</a>.{% endif %}
+        </p>
+        {% elif rate_limited %}
         <p class="text-terracotta-deep text-sm">
             Vous avez envoyé plusieurs messages récemment. Merci de patienter une heure avant de réessayer.
         </p>
