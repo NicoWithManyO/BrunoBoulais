@@ -1,5 +1,6 @@
 import ipaddress
 import logging
+import math
 
 from django.core.cache import cache
 from django.shortcuts import redirect, render
@@ -70,7 +71,9 @@ def _log_ip_unresolved_dedup(request):
     attaquant qui force REMOTE_ADDR vide peut spam la pile d'alerting.
     Clé courte (pas par path) car on a une seule vue concernée.
     """
-    log_key = "contact:ip-unresolved-logged"
+    # Clé namespacée par module pour éviter une collision si un autre helper
+    # (tests, autre vue) réutilise le préfixe "contact:" dans le futur.
+    log_key = "apps.contact.views:ip-unresolved-logged"
     if cache.add(log_key, True, 300):
         # %r (repr) échappe CR/LF dans request.path — Django décode les
         # %-encoded chars de l'URL, donc %0A devient un newline littéral
@@ -93,7 +96,12 @@ def contact(request):
         # déclencher form.full_clean() avant la décision.
         if (request.POST.get("website") or "").strip():
             bucket = _ratelimit_bucket(request)
-            if bucket is not None:
+            if bucket is None:
+                # Même path forensique que la branche fail-closed : un bot
+                # qui combine honeypot trip + IP strippée doit laisser une
+                # trace (dédupliquée), sinon il passe sous radar.
+                _log_ip_unresolved_dedup(request)
+            else:
                 _bucket_usage(request, bucket, increment=True)
             return redirect(reverse("contact:merci"))
         # Vraie validation : champs requis, cohérence commande, etc. Le
@@ -113,7 +121,13 @@ def contact(request):
                 usage = _bucket_usage(request, bucket, increment=False)
                 if usage is not None and usage["count"] >= usage["limit"]:
                     rate_limited = True
-                    retry_after = int(usage["time_left"]) or 3600
+                    # max(1, ceil(...)) borne Retry-After à ≥ 1s :
+                    # - boundary (time_left=0, requête pile au tick de reset)
+                    #   sans floor donne "Retry-After: 0" = retry immédiat ;
+                    # - sentinel cache-fail de django-ratelimit (time_left=-1
+                    #   quand count=0/limit=0/should_limit=True) donnerait un
+                    #   Retry-After négatif, invalide RFC 7231.
+                    retry_after = max(1, math.ceil(usage["time_left"]))
                 else:
                     form.save_and_notify()
                     _bucket_usage(request, bucket, increment=True)
@@ -139,18 +153,22 @@ def contact(request):
             ),
         },
     )
-    if rate_limited:
+    # Priorité ip_unresolved > rate_limited : fail-closed (503) prime sur
+    # rate-limit (429) si un refactor futur rend les deux flags True en
+    # même temps. Aujourd'hui ils s'excluent par control flow, mais on
+    # cadre la priorité pour ne pas dépendre de cet invariant implicite.
+    if ip_unresolved:
+        # 503 sans Retry-After (attendre ne résout pas l'IP absente) + no-store
+        # pour empêcher Cloudflare/CDN de cacher l'erreur au edge (RFC 7234 :
+        # 503 est cacheable par heuristique sans Cache-Control explicite).
+        response.status_code = 503
+        response["Cache-Control"] = "no-store"
+    elif rate_limited:
         # HTTP 429 + Retry-After : non cacheable par les CDN, et bots/scripts
         # voient l'erreur explicitement (au lieu d'un 200 qui ressemble à un
         # succès et déclenche un re-submit qui ré-incrémente).
         response.status_code = 429
         response["Retry-After"] = str(retry_after)
-        response["Cache-Control"] = "no-store"
-    elif ip_unresolved:
-        # 503 sans Retry-After (attendre ne résout pas l'IP absente) + no-store
-        # pour empêcher Cloudflare/CDN de cacher l'erreur au edge (RFC 7234 :
-        # 503 est cacheable par heuristique sans Cache-Control explicite).
-        response.status_code = 503
         response["Cache-Control"] = "no-store"
     return response
 
