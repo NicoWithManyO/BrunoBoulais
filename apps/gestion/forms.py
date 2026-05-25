@@ -2,6 +2,7 @@
 from pathlib import Path
 
 from django import forms
+from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import UploadedFile
 from django.forms import inlineformset_factory
 from django.utils import timezone
@@ -12,6 +13,7 @@ from apps.contact.models import ContactPage
 from apps.core.images import strip_exif
 from apps.core.validators import ALLOWED_IMAGE_EXTENSIONS, ALLOWED_VIDEO_EXTENSIONS
 from apps.discotheque.models import Chanson
+from apps.discotheque.youtube import download_thumbnail, fetch_oembed
 from apps.galerie.models import Media
 from apps.livre.models import LienAchat, Livre, LivreImage
 from apps.pages.models import Accueil, AccueilImage
@@ -176,6 +178,32 @@ class ChansonForm(StripExifMixin, forms.ModelForm):
         help_texts = {
             "description": "Affiché à côté du lecteur quand la chanson est sélectionnée.",
         }
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        self._autofill_from_youtube(obj)
+        if commit:
+            obj.save()
+        return obj
+
+    def _autofill_from_youtube(self, obj):
+        """Si url_youtube présent et titre/illustration vides, va chercher
+        ces infos via oEmbed (best-effort, n'échoue jamais)."""
+        if not obj.url_youtube:
+            return
+        needs_title = not obj.titre
+        needs_image = not obj.illustration
+        if not (needs_title or needs_image):
+            return
+        data = fetch_oembed(obj.url_youtube)
+        if not data:
+            return
+        if needs_title and data.get("title"):
+            obj.titre = data["title"]
+        if needs_image and data.get("thumbnail_url"):
+            name, content = download_thumbnail(data["thumbnail_url"])
+            if content:
+                obj.illustration.save(name, ContentFile(content), save=False)
 
 
 class TemoignageForm(forms.ModelForm):

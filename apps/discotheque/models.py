@@ -1,6 +1,7 @@
 import re
 
 from django.db import models
+from django.db.models import Case, IntegerField, Value, When
 
 from apps.core.models import TimestampedModel
 from apps.core.uploads import discotheque_upload_to
@@ -42,7 +43,17 @@ class Chanson(TimestampedModel):
     publie = models.BooleanField("Publié", default=True)
 
     class Meta:
-        ordering = ["position", "-created_at"]
+        # Position > 0 prime (ordre manuel ascendant) ; position = 0 (défaut) =
+        # « pas d'ordre choisi » → reléguée derrière, plus récente d'abord.
+        ordering = [
+            Case(
+                When(position=0, then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField(),
+            ),
+            "position",
+            "-created_at",
+        ]
         verbose_name = "Chanson"
         verbose_name_plural = "Chansons"
 

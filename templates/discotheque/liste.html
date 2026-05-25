@@ -18,12 +18,15 @@
     .yt-bar {
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: 1.25rem;
+        justify-content: center;
+        max-width: 56rem;
+        margin: 0 auto;
     }
     .yt-wrap {
         position: relative;
         flex: 0 0 auto;
-        width: 160px;            /* 16/9 → 90px de haut */
+        width: 320px;            /* 16/9 → 180px de haut */
         aspect-ratio: 16 / 9;
         background: #000;
         overflow: hidden;
@@ -65,7 +68,7 @@
     }
     .yt-note[hidden] { display: none; }
     @media (min-width: 768px) {
-        .yt-wrap { width: 200px; }   /* 16/9 → 112px */
+        .yt-wrap { width: 400px; }   /* 16/9 → 225px */
         .yt-now { font-size: 1.125rem; }
         .yt-note { font-size: 0.875rem; }
     }
@@ -87,7 +90,7 @@
         aspect-ratio: 1 / 1;
         background: var(--color-cream-dark);
         overflow: hidden;
-        border-radius: 1rem;
+        border-radius: 0.75rem;
         transition: transform .35s var(--ease-soft), box-shadow .35s var(--ease-soft);
     }
     .card-chanson:hover .vignette,
@@ -147,16 +150,16 @@
 
 <section class="container-wide pb-24">
     {% if chansons %}
-    <ul class="cards-discotheque grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+    <ul class="cards-discotheque grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-4">
         {% for c in chansons %}
             {% if c.youtube_id %}
             <li>
                 <button type="button"
                         class="card-chanson group"
                         data-yt-id="{{ c.youtube_id }}"
-                        data-yt-title="{{ c.titre|default:'Chanson' }}"
+                        data-yt-title="{{ c.titre }}"
                         data-yt-note="{{ c.description }}"
-                        aria-label="Écouter : {{ c.titre|default:'Chanson sans titre' }}">
+                        aria-label="Écouter : {{ c.titre|default:'chanson sans titre' }}">
                     <div class="vignette">
                         {% if c.illustration %}
                             <img src="{{ c.illustration.url }}"
@@ -171,7 +174,7 @@
                             </div>
                         {% endif %}
                     </div>
-                    <p class="mt-3 font-display text-base text-brown leading-tight">
+                    <p class="mt-2 font-display text-sm text-brown leading-tight">
                         {{ c.titre|default:"Sans titre" }}
                     </p>
                 </button>

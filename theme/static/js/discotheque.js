@@ -18,8 +18,11 @@
         var id = card.dataset.ytId;
         if (!id) return;
 
-        var title = card.dataset.ytTitle || "Chanson";
-        player.setAttribute("title", "Lecteur YouTube — " + title);
+        var title = (card.dataset.ytTitle || "").trim();
+        player.setAttribute(
+          "title",
+          title ? "Lecteur YouTube — " + title : "Lecteur YouTube"
+        );
         player.src =
           "https://www.youtube-nocookie.com/embed/" +
           encodeURIComponent(id) +
