@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.http import Http404
 from django.shortcuts import get_object_or_404, render
+from django.utils import timezone
 
 from apps.actualites.models import Actualite
 from apps.carnet.models import Billet
@@ -20,7 +21,11 @@ def home(request):
     livre = _get_livre()
     temoignages = Temoignage.objects.filter(statut=Temoignage.STATUT_PUBLIE, mis_en_avant=True).order_by("?")[:3]
     actualites = Actualite.objects.filter(statut=Actualite.STATUT_PUBLIE)[:3]
-    dernier_billet = Billet.objects.filter(statut=Billet.STATUT_PUBLIE).first()
+    dernier_billet = (
+        Billet.objects
+        .filter(statut=Billet.STATUT_PUBLIE, date_publication__lte=timezone.now())
+        .first()
+    )
     accueil = Accueil.get_solo()
     return render(
         request,
