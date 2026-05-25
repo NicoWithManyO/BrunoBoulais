@@ -1,16 +1,19 @@
 {% load static %}
-<header class="border-b border-mist/40 relative z-40">
+<header class="border-b border-mist/40 relative z-40 overflow-x-clip">
     {# Hamburger state — checkbox doit être sibling du drawer pour que .menu-toggle:checked ~ #mobile-menu fonctionne #}
     <input type="checkbox" id="menu-toggle" class="menu-toggle sr-only" aria-label="Menu de navigation">
 
     <div class="container-wide py-6 lg:py-8 flex items-center justify-between gap-4 lg:gap-8">
 
         <div class="flex items-center gap-4">
-            <a href="{% url 'pages:home' %}" class="group flex items-baseline gap-3 no-underline">
+            <a href="{% url 'pages:home' %}" class="group relative flex items-baseline gap-3 no-underline">
+                {% if request.resolver_match.url_name == 'home' %}
+                <span class="home-hat" aria-hidden="true"></span>
+                {% endif %}
                 <span class="title-display text-2xl lg:text-3xl text-brown leading-none">
                     Bruno&nbsp;Boulais
                 </span>
-                <span class="hidden md:inline font-sans text-xs tracking-[0.22em] uppercase text-slate-soft">
+                <span class="font-sans text-xs tracking-[0.22em] uppercase text-slate-soft">
                     auteur
                 </span>
             </a>

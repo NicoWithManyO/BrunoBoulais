@@ -607,6 +607,57 @@
   .nav-link:hover::after,
   .nav-link.is-active::after { right: 0; }
   .nav-link.is-active { color: var(--color-brown); }
+  /* Chapeau de Bruno à gauche du lien actif, positionné en absolu pour éviter le reflow.
+     Glissement léger depuis la gauche + légère inclinaison à droite à l'apparition. */
+  @keyframes hat-slide-in {
+    from { opacity: 0; transform: translate(-10px, -60%) rotate(12deg); }
+    to   { opacity: 1; transform: translate(0, -60%) rotate(12deg); }
+  }
+  .nav-link.is-active::before {
+    content: "";
+    position: absolute;
+    right: calc(100% - 4px);
+    top: 50%;
+    transform: translateY(-60%) rotate(12deg);
+    width: 32px;
+    height: 22px;
+    background: url("/static/img/chapeau-bruno-nav.png") no-repeat center / contain;
+    pointer-events: none;
+    animation: hat-slide-in 0.45s var(--ease-soft) both;
+  }
+
+  /* Chapeau de Bruno à côté du logo (accueil) — en absolu pour ne pas décaler le titre.
+     Par défaut (mobile / tablette / hamburger) : à droite du bloc, là où il y a de la place.
+     À partir de lg (nav desktop visible) : à gauche, façon "posé devant" le titre. */
+  @keyframes home-hat-slide-in {
+    from { opacity: 0; transform: translate(-10px, -55%) rotate(12deg); }
+    to   { opacity: 1; transform: translate(0, -55%) rotate(12deg); }
+  }
+  .home-hat {
+    display: none;
+    position: absolute;
+    top: 50%;
+    width: 88px;
+    height: 60px;
+    background: url("/static/img/chapeau-bruno-nav.png") no-repeat center / contain;
+    transform: translateY(-55%) rotate(12deg);
+    animation: home-hat-slide-in 0.5s var(--ease-soft) both;
+    pointer-events: none;
+  }
+  /* À partir de sm : assez de place à droite du bloc nom + auteur, à gauche du hamburger */
+  @media (min-width: 640px) {
+    .home-hat {
+      display: block;
+      left: calc(100% + 0.5rem);
+    }
+  }
+  /* À partir de lg : nav desktop visible, on bascule le chapeau à gauche du logo */
+  @media (min-width: 1024px) {
+    .home-hat {
+      left: auto;
+      right: calc(100% - 4px);
+    }
+  }
 
   .nav-link-mobile {
     color: var(--color-ink);
@@ -617,6 +668,15 @@
   }
   .nav-link-mobile:hover,
   .nav-link-mobile.is-active { color: var(--color-terracotta); }
+  .nav-link-mobile.is-active::before {
+    content: "";
+    display: inline-block;
+    width: 30px;
+    height: 20px;
+    margin-right: 0.6rem;
+    vertical-align: -0.1em;
+    background: url("/static/img/chapeau-bruno-nav.png") no-repeat center / contain;
+  }
 
   /* --- Carrousel d'images (autoplay fade) --- */
   /* La figure `.carrousel` reçoit `wrapper_class` (width / max-w / alignement).
