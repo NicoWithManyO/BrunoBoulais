@@ -7,9 +7,7 @@
 
         <div class="flex items-center gap-4">
             <a href="{% url 'pages:home' %}" class="group relative flex items-baseline gap-3 no-underline">
-                {% if request.resolver_match.url_name == 'home' %}
-                <span class="home-hat" aria-hidden="true"></span>
-                {% endif %}
+                <span class="brand-hat" aria-hidden="true"></span>
                 <span class="title-display text-2xl lg:text-3xl text-brown leading-none">
                     Bruno&nbsp;Boulais
                 </span>

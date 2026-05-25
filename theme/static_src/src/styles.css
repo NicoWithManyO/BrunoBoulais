@@ -626,14 +626,10 @@
     animation: hat-slide-in 0.45s var(--ease-soft) both;
   }
 
-  /* Chapeau de Bruno à côté du logo (accueil) — en absolu pour ne pas décaler le titre.
+  /* Chapeau de Bruno à côté du logo — en absolu pour ne pas décaler le titre.
      Par défaut (mobile / tablette / hamburger) : à droite du bloc, là où il y a de la place.
      À partir de lg (nav desktop visible) : à gauche, façon "posé devant" le titre. */
-  @keyframes home-hat-slide-in {
-    from { opacity: 0; transform: translate(-10px, -55%) rotate(12deg); }
-    to   { opacity: 1; transform: translate(0, -55%) rotate(12deg); }
-  }
-  .home-hat {
+  .brand-hat {
     display: none;
     position: absolute;
     top: 50%;
@@ -641,19 +637,18 @@
     height: 60px;
     background: url("/static/img/chapeau-bruno-nav.png") no-repeat center / contain;
     transform: translateY(-55%) rotate(12deg);
-    animation: home-hat-slide-in 0.5s var(--ease-soft) both;
     pointer-events: none;
   }
   /* À partir de sm : assez de place à droite du bloc nom + auteur, à gauche du hamburger */
   @media (min-width: 640px) {
-    .home-hat {
+    .brand-hat {
       display: block;
       left: calc(100% + 0.5rem);
     }
   }
   /* À partir de lg : nav desktop visible, on bascule le chapeau à gauche du logo */
   @media (min-width: 1024px) {
-    .home-hat {
+    .brand-hat {
       left: auto;
       right: calc(100% - 4px);
     }
