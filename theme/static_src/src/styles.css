@@ -589,7 +589,7 @@
 
   /* --- Navigation --- */
   .nav-link {
-    @apply font-sans text-sm tracking-wide;
+    @apply font-sans text-sm tracking-wide whitespace-nowrap;
     color: var(--color-ink);
     text-decoration: none;
     position: relative;
