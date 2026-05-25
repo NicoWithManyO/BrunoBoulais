@@ -18,28 +18,16 @@ _SKIP_PREFIXES = ("/gestion/", "/static/", "/media/", "/__debug__/", "/accounts/
 _SKIP_PATHS = {"/favicon.ico", "/sitemap.xml", "/robots.txt", "/site.webmanifest"}
 _BOT_HINTS = ("bot", "crawl", "spider", "facebookexternalhit", "preview", "monitor", "wget", "curl/")
 
-# Ranges IP Cloudflare (téléchargés 2026-05-25 depuis
-# https://www.cloudflare.com/ips-v4 et /ips-v6). À ré-actualiser
-# ponctuellement — le set évolue très lentement. ``strict=False``
-# protège contre un typo avec host bits set (sinon raise à l'import,
-# le process ne boote plus).
-_TRUSTED_PROXY_NETWORKS = tuple(
-    ipaddress.ip_network(n, strict=False) for n in (
-        # Loopback : Caddy fait reverse_proxy vers gunicorn sur le même VPS.
-        # /32 (et pas /8) — seul 127.0.0.1 est le hop Caddy ; un autre
-        # process loopback ne doit pas pouvoir spoofer CF-Connecting-IP.
-        "127.0.0.1/32", "::1/128",
-        # Cloudflare IPv4
-        "173.245.48.0/20", "103.21.244.0/22", "103.22.200.0/22",
-        "103.31.4.0/22", "141.101.64.0/18", "108.162.192.0/18",
-        "190.93.240.0/20", "188.114.96.0/20", "197.234.240.0/22",
-        "198.41.128.0/17", "162.158.0.0/15", "104.16.0.0/13",
-        "104.24.0.0/14", "172.64.0.0/13", "131.0.72.0/22",
-        # Cloudflare IPv6
-        "2400:cb00::/32", "2606:4700::/32", "2803:f800::/32",
-        "2405:b500::/32", "2405:8100::/32", "2a06:98c0::/29",
-        "2c0f:f248::/32",
-    )
+# En prod : Cloudflare → reverse proxy local → gunicorn. Le reverse
+# proxy tournant sur le même hôte, REMOTE_ADDR vu par gunicorn est
+# toujours loopback. /32 (et pas /8) — seul 127.0.0.1 est le hop
+# attendu ; un autre process loopback ne doit pas pouvoir spoofer
+# CF-Connecting-IP. Si un jour gunicorn change de bind (LAN, public,
+# autre hôte), réintroduire ici les ranges Cloudflare officiels
+# (https://www.cloudflare.com/ips-v4 / -v6).
+_TRUSTED_PROXY_NETWORKS = (
+    ipaddress.ip_network("127.0.0.1/32"),
+    ipaddress.ip_network("::1/128"),
 )
 
 
@@ -77,13 +65,14 @@ def _is_trusted_proxy(ip_str: str) -> bool:
 def _client_ip(request) -> str:
     """IP réelle du client, normalisée (IPv4-mapped IPv6 → IPv4).
 
-    En prod : Cloudflare → Caddy (loopback) → gunicorn. REMOTE_ADDR vue
-    par gunicorn = 127.0.0.1 (Caddy), donc trusted, donc on lit
-    ``CF-Connecting-IP`` (positionné par Cloudflare et écrasé sur chaque
-    hop CF). Si la requête arrive d'ailleurs (bypass DNS, sonde directe),
-    REMOTE_ADDR n'est pas trusted et on ignore le header pour empêcher
-    le spoof. Suppose que Caddy strip tout CF-Connecting-IP entrant côté
-    public — voir note ops dans le plan sécu.
+    En prod : Cloudflare → reverse proxy local → gunicorn. REMOTE_ADDR
+    vu par gunicorn = loopback (le reverse proxy tourne sur le même
+    hôte), donc trusted, donc on lit ``CF-Connecting-IP`` (positionné
+    par Cloudflare et écrasé sur chaque hop CF). Si la requête arrive
+    d'ailleurs (bypass DNS, sonde directe), REMOTE_ADDR n'est pas
+    trusted et on ignore le header pour empêcher le spoof. Suppose que
+    le reverse proxy strip tout CF-Connecting-IP entrant côté public —
+    voir note ops dans le plan sécu.
 
     Toute valeur lue (REMOTE_ADDR ou CF-Connecting-IP) passe par
     ``_normalize_ip`` : invalide / comma-list / junk → traité comme

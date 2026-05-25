@@ -171,9 +171,19 @@ STATICFILES_FINDERS = [
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# Upload size caps — protect the server from oversized files. Per-file caps
-# pour les uploads galerie sont enforced au niveau du champ via
-# `validate_media_size` : 8 Mo image, 50 Mo vidéo. Voir apps/core/validators.py.
+# Upload memory thresholds — seuils mémoire/disque Django, PAS un cap
+# global d'upload. ``DATA_UPLOAD_MAX_MEMORY_SIZE`` ne s'applique qu'aux
+# field parts d'une requête multipart (champs non-file) ; les file parts
+# en sont exempts (cf django/http/multipartparser.py). Le cap dur côté
+# wire doit venir du reverse proxy en prod (nginx ``client_max_body_size``
+# / Caddy ``request_body { max_size }``) — voir « Ops à appliquer côté
+# Bruno » dans le plan sécu.
+#
+# Caps par-fichier enforced côté champ via validators :
+#   - ``validate_image_size`` (apps/core/validators.py) : champs image-only
+#     (livre, actualités, pages, personnes).
+#   - ``validate_media_size`` : ``Media.fichier`` de la galerie, 8 Mo image
+#     / 50 Mo vidéo selon l'extension.
 FILE_UPLOAD_MAX_MEMORY_SIZE = 8 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 
