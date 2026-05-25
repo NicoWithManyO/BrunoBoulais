@@ -1,0 +1,75 @@
+{% extends "gestion/_layout.html" %}
+
+{% block title %}Discothèque · Gestion{% endblock %}
+{% block crumb %}Contenus{% endblock %}
+{% block heading %}Discothèque{% endblock %}
+
+{% block header_actions %}
+    <a href="{% url 'gestion:chanson_ajouter' %}" class="btn-sm btn-primary">+ Nouvelle chanson</a>
+{% endblock %}
+
+{% block content %}
+
+<form method="get" class="flex items-end gap-3 mb-6 gform">
+    <div>
+        <label class="!mt-0">État</label>
+        <select name="publie">
+            <option value="">Toutes</option>
+            <option value="1" {% if publie_filter == "1" %}selected{% endif %}>Publiées</option>
+            <option value="0" {% if publie_filter == "0" %}selected{% endif %}>Brouillons</option>
+        </select>
+    </div>
+    <button type="submit" class="btn-sm btn-ghost mb-[1px]">Filtrer</button>
+    {% if publie_filter %}
+    <a href="{% url 'gestion:chansons_liste' %}" class="text-xs text-slate-soft mb-[1px]">Réinitialiser</a>
+    {% endif %}
+</form>
+
+<div class="panel-flat">
+<table class="table-admin">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Titre</th>
+            <th>Album / année</th>
+            <th>Position</th>
+            <th>État</th>
+            <th class="text-right">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for c in chansons %}
+        <tr>
+            <td class="w-14">
+                {% if c.illustration %}
+                <img src="{{ c.illustration.url }}" alt="" class="w-12 h-12 object-cover rounded">
+                {% else %}
+                <span class="inline-flex items-center justify-center w-12 h-12 bg-sand/30 rounded text-mist">♪</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{% url 'gestion:chanson_modifier' c.pk %}" class="font-medium text-brown no-underline hover:text-terracotta">{{ c.titre|default:c.url_youtube }}</a>
+            </td>
+            <td class="text-xs text-slate-soft">
+                {{ c.album|default:"—" }}{% if c.annee %} · {{ c.annee }}{% endif %}
+            </td>
+            <td class="text-xs">{{ c.position }}</td>
+            <td>
+                {% if c.publie %}
+                <span class="badge badge-publie">Publiée</span>
+                {% else %}
+                <span class="badge badge-brouillon">Brouillon</span>
+                {% endif %}
+            </td>
+            <td class="text-right whitespace-nowrap">
+                <a href="{% url 'gestion:chanson_modifier' c.pk %}" class="btn-sm btn-ghost">Éditer</a>
+                <a href="{% url 'gestion:chanson_supprimer' c.pk %}" class="btn-sm btn-danger">Supprimer</a>
+            </td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="6" class="text-center text-slate-soft italic py-12">Aucune chanson.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

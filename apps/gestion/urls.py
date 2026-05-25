@@ -35,6 +35,11 @@ urlpatterns = [
     path("carnet/ajouter/", views.billet_form, name="billet_ajouter"),
     path("carnet/<int:pk>/", views.billet_form, name="billet_modifier"),
     path("carnet/<int:pk>/supprimer/", views.billet_supprimer, name="billet_supprimer"),
+    # Discothèque (chansons)
+    path("discotheque/", views.chansons_liste, name="chansons_liste"),
+    path("discotheque/ajouter/", views.chanson_form, name="chanson_ajouter"),
+    path("discotheque/<int:pk>/", views.chanson_form, name="chanson_modifier"),
+    path("discotheque/<int:pk>/supprimer/", views.chanson_supprimer, name="chanson_supprimer"),
     # Témoignages
     path("temoignages/", views.temoignages_liste, name="temoignages_liste"),
     path("temoignages/ajouter/", views.temoignage_form, name="temoignage_ajouter"),

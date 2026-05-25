@@ -11,6 +11,7 @@ from apps.carnet.models import Billet
 from apps.contact.models import ContactPage
 from apps.core.images import strip_exif
 from apps.core.validators import ALLOWED_IMAGE_EXTENSIONS, ALLOWED_VIDEO_EXTENSIONS
+from apps.discotheque.models import Chanson
 from apps.galerie.models import Media
 from apps.livre.models import LienAchat, Livre, LivreImage
 from apps.pages.models import Accueil, AccueilImage
@@ -154,6 +155,21 @@ class BilletForm(forms.ModelForm):
     class Meta:
         model = Billet
         fields = ["titre", "statut", "date_publication", "contenu"]
+
+
+class ChansonForm(StripExifMixin, forms.ModelForm):
+    exif_fields = ["illustration"]
+
+    class Meta:
+        model = Chanson
+        fields = [
+            "titre", "url_youtube", "illustration",
+            "description", "album", "annee",
+            "position", "publie",
+        ]
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 3}),
+        }
 
 
 class TemoignageForm(forms.ModelForm):

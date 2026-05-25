@@ -32,6 +32,7 @@ from apps.carnet.models import Billet
 from apps.contact.models import ContactPage, Message
 from apps.core.images import strip_exif
 from apps.core.validators import IMAGE_VALIDATORS
+from apps.discotheque.models import Chanson
 from apps.galerie.models import Media
 from apps.livre.models import Livre, LivreImage
 from apps.pages.models import Accueil, AccueilImage, Page
@@ -46,6 +47,7 @@ from .forms import (
     ActualiteImageFormSet,
     ActualitesPageForm,
     BilletForm,
+    ChansonForm,
     ContactPageForm,
     LienAchatFormSet,
     LivreForm,
@@ -251,6 +253,56 @@ def billet_supprimer(request, pk):
         "objet": obj,
         "label": "billet",
         "retour_url": reverse("gestion:billets_liste"),
+    })
+
+
+# ---- Discothèque (chansons) -------------------------------------------------
+
+# Filtre publié : "1" = publiées, "0" = brouillons, "" = toutes.
+DISCOTHEQUE_PUBLIE_FILTRES = {"1": True, "0": False}
+
+
+@gestion_required
+def chansons_liste(request):
+    qs = Chanson.objects.all()
+    publie_filter = request.GET.get("publie", "")
+    if publie_filter in DISCOTHEQUE_PUBLIE_FILTRES:
+        qs = qs.filter(publie=DISCOTHEQUE_PUBLIE_FILTRES[publie_filter])
+    return render(request, "gestion/discotheque/list.html", {
+        "chansons": qs,
+        "publie_filter": publie_filter,
+    })
+
+
+@gestion_required
+def chanson_form(request, pk=None):
+    instance = get_object_or_404(Chanson, pk=pk) if pk is not None else None
+    form = ChansonForm(request.POST or None, request.FILES or None, instance=instance)
+    if request.method == "POST" and form.is_valid():
+        obj = form.save()
+        messages.success(request, f"Chanson « {obj} » enregistrée.")
+        return redirect("gestion:chanson_modifier", pk=obj.pk)
+    return render(request, "gestion/discotheque/form.html", {
+        "form": form,
+        "instance": instance,
+    })
+
+
+@gestion_required
+def chanson_supprimer(request, pk):
+    obj = get_object_or_404(Chanson, pk=pk)
+    if request.method == "POST":
+        label = str(obj)
+        # Le fichier illustration n'est pas nettoyé par CASCADE ; on le supprime explicitement.
+        if obj.illustration:
+            obj.illustration.delete(save=False)
+        obj.delete()
+        messages.success(request, f"Chanson « {label} » supprimée.")
+        return redirect("gestion:chansons_liste")
+    return render(request, "gestion/confirm_delete.html", {
+        "objet": obj,
+        "label": "chanson",
+        "retour_url": reverse("gestion:chansons_liste"),
     })
 
 
