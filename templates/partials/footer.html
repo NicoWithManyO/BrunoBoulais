@@ -38,18 +38,18 @@
     </div>
 
     <div class="border-t border-mist/30">
-        <div class="container-wide py-5 flex flex-wrap items-center justify-between gap-4 font-sans text-xs text-slate-soft">
-            <p>
-                © {% now "Y" %} Bruno Boulais. Tous droits réservés. ·
+        <div class="container-wide py-5 grid grid-cols-1 sm:grid-cols-3 items-center gap-2 sm:gap-4 font-sans text-xs text-slate-soft text-center sm:text-left">
+            <p>© {% now "Y" %} Bruno Boulais. Tous droits réservés.</p>
+            <p class="sm:text-center">
                 Site réalisé par
                 <a href="https://manyo.dev" target="_blank" rel="noopener" class="text-slate-soft hover:underline">manyO.dev</a>
             </p>
-            {% if total_visiteurs %}
-            <p>{{ total_visiteurs|intcomma }} visiteur{{ total_visiteurs|pluralize }}</p>
-            {% endif %}
-            <p>
+            <div class="sm:text-right flex flex-wrap items-center justify-center sm:justify-end gap-x-3 gap-y-1">
+                {% if total_visiteurs %}
+                <span>{{ total_visiteurs|intcomma }} visiteur{{ total_visiteurs|pluralize }}</span>
+                {% endif %}
                 <a href="{% url 'pages:mentions' %}" class="text-slate-soft">Mentions légales</a>
-            </p>
+            </div>
         </div>
     </div>
 </footer>
