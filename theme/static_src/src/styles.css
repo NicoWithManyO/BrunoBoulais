@@ -1143,6 +1143,27 @@
     content: attr(data-placeholder);
     color: var(--color-slate-soft);
   }
+
+  /* --- Carnet : feuillet papier quadrillé épinglé (home, dernier billet) --- */
+  .carnet-paper {
+    position: relative;
+    background-color: #fbf6ea;
+    isolation: isolate;
+  }
+  .carnet-paper::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image:
+      linear-gradient(to right,  rgba(62, 86, 112, 0.10) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(62, 86, 112, 0.10) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-position: -1px -1px;
+    -webkit-mask-image: linear-gradient(110deg, #000 0%, #000 20%, transparent 80%);
+            mask-image: linear-gradient(110deg, #000 0%, #000 20%, transparent 80%);
+    pointer-events: none;
+  }
 }
 
 /* =========================================================================

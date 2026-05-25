@@ -1,0 +1,45 @@
+{% load richtext %}
+{% comment %}
+Feuillet "Carnet épinglé" — billet unique sur fond papier quadrillé,
+posé en biais comme un feuillet épinglé. À placer dans un conteneur
+(colonne, section…) qui gère le titre et l'espacement.
+Variable attendue : `billet` (instance de apps.carnet.models.Billet).
+{% endcomment %}
+<article class="relative">
+    <div class="carnet-paper border border-mist-light p-8 md:p-10 shadow-lg -rotate-[0.6deg] hover:rotate-0 transition-transform duration-500">
+
+        {# Punaise terracotta — SVG dans le feuillet pour suivre la rotation au hover #}
+        <svg class="absolute -top-5 left-1/2 -translate-x-1/2 z-10" width="36" height="44" viewBox="0 0 36 44" aria-hidden="true">
+            <defs>
+                <radialGradient id="pinHead" cx="34%" cy="28%" r="72%">
+                    <stop offset="0%"   stop-color="#ffe5cc"/>
+                    <stop offset="18%"  stop-color="#f5b285"/>
+                    <stop offset="55%"  stop-color="#B8542B"/>
+                    <stop offset="100%" stop-color="#4d1f08"/>
+                </radialGradient>
+                <linearGradient id="pinNeedle" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%"   stop-color="#4a4a4a"/>
+                    <stop offset="45%"  stop-color="#dcdcdc"/>
+                    <stop offset="100%" stop-color="#3a3a3a"/>
+                </linearGradient>
+            </defs>
+            {# Aiguille métallique inclinée (penche vers la droite-bas) #}
+            <rect x="16.5" y="13" width="2.6" height="25" fill="url(#pinNeedle)" transform="rotate(22, 17.8, 13)"/>
+            {# Tête sphérique #}
+            <circle cx="18" cy="13" r="10" fill="url(#pinHead)"/>
+            {# Reflet spéculaire en haut-gauche #}
+            <ellipse cx="14" cy="9" rx="3" ry="2" fill="#ffffff" opacity="0.5"/>
+        </svg>
+
+        <p class="font-sans text-xs uppercase tracking-widest text-terracotta-deep">
+            {{ billet.date_publication|date:"l j F Y"|capfirst }}
+        </p>
+        <h3 class="mt-4 font-display text-2xl text-brown leading-snug">
+            {{ billet.titre }}
+        </h3>
+        <div class="mt-5 font-serif text-base text-ink/85 leading-relaxed prose">
+            {{ billet.contenu|richtext }}
+        </div>
+        <p class="mt-6 font-sans text-xs text-brown-soft italic">— Bruno</p>
+    </div>
+</article>

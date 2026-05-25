@@ -53,6 +53,7 @@ LOCAL_APPS = [
     "apps.livre",
     "apps.personnes",
     "apps.actualites",
+    "apps.carnet",
     "apps.temoignages",
     "apps.galerie",
     "apps.contact",

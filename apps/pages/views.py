@@ -3,6 +3,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, render
 
 from apps.actualites.models import Actualite
+from apps.carnet.models import Billet
 from apps.core.seo import seo, seo_from_obj
 from apps.livre.models import Livre
 from apps.personnes.models import Personne
@@ -19,6 +20,7 @@ def home(request):
     livre = _get_livre()
     temoignages = Temoignage.objects.filter(statut=Temoignage.STATUT_PUBLIE, mis_en_avant=True).order_by("?")[:3]
     actualites = Actualite.objects.filter(statut=Actualite.STATUT_PUBLIE)[:3]
+    dernier_billet = Billet.objects.filter(statut=Billet.STATUT_PUBLIE).first()
     accueil = Accueil.get_solo()
     return render(
         request,
@@ -27,6 +29,7 @@ def home(request):
             "livre": livre,
             "temoignages": temoignages,
             "actualites": actualites,
+            "dernier_billet": dernier_billet,
             "accueil": accueil,
             **seo_from_obj(request, accueil),
         },
