@@ -8,6 +8,7 @@
   function init() {
     var player = document.getElementById("yt-player");
     if (!player) return;
+    var bar = document.querySelector(".yt-bar");
     var nowLabel = document.getElementById("yt-now");
     var noteLabel = document.getElementById("yt-note");
     var cards = document.querySelectorAll(".card-chanson[data-yt-id]");
@@ -28,6 +29,7 @@
           encodeURIComponent(id) +
           "?autoplay=1&rel=0";
 
+        if (bar) bar.classList.add("is-playing");
         if (nowLabel) nowLabel.textContent = title;
 
         if (noteLabel) {
