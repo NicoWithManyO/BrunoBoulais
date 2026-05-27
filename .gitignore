@@ -115,4 +115,5 @@ logs/
 .claude/
 CLAUDE.local.md
 to-prod.md
+to-dev.md
 cr*.md
