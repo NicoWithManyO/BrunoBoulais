@@ -18,13 +18,22 @@ _SKIP_PREFIXES = ("/gestion/", "/static/", "/media/", "/__debug__/", "/accounts/
 _SKIP_PATHS = {"/favicon.ico", "/sitemap.xml", "/robots.txt", "/site.webmanifest"}
 _BOT_HINTS = ("bot", "crawl", "spider", "facebookexternalhit", "preview", "monitor", "wget", "curl/")
 
-# En prod : Cloudflare → reverse proxy local → gunicorn. Le reverse
-# proxy tournant sur le même hôte, REMOTE_ADDR vu par gunicorn est
-# toujours loopback. /32 (et pas /8) — seul 127.0.0.1 est le hop
-# attendu ; un autre process loopback ne doit pas pouvoir spoofer
-# CF-Connecting-IP. Si un jour gunicorn change de bind (LAN, public,
-# autre hôte), réintroduire ici les ranges Cloudflare officiels
-# (https://www.cloudflare.com/ips-v4 / -v6).
+# En prod : Cloudflare → nginx local → gunicorn. nginx tournant sur le
+# même hôte, REMOTE_ADDR vu par gunicorn est soit loopback (bind TCP
+# 127.0.0.1) soit "" (bind socket unix — pas de source IP TCP). Les deux
+# cas sont implicitement trustés : ni le socket unix ni un port loopback
+# ne sont joignables depuis le réseau public, donc seul nginx local peut
+# poser CF-Connecting-IP côté requête entrante. /32 (et pas /8) — seul
+# 127.0.0.1 est le hop attendu ; un autre process loopback ne doit pas
+# pouvoir spoofer. Si un jour gunicorn change de bind (LAN, public, autre
+# hôte), réintroduire ici les ranges Cloudflare officiels
+# (https://www.cloudflare.com/ips-v4 / -v6) et retirer le cas "" trusté
+# dans `_client_ip`.
+#
+# Précondition critique côté ops : nginx DOIT strip tout CF-Connecting-IP
+# entrant côté public (`proxy_set_header CF-Connecting-IP "";` dans le
+# bloc location), sinon le trust de REMOTE_ADDR vide ouvre un spoof
+# trivial via bypass DNS. Voir to-prod.md.
 _TRUSTED_PROXY_NETWORKS = (
     ipaddress.ip_network("127.0.0.1/32"),
     ipaddress.ip_network("::1/128"),
@@ -65,23 +74,41 @@ def _is_trusted_proxy(ip_str: str) -> bool:
 def _client_ip(request) -> str:
     """IP réelle du client, normalisée (IPv4-mapped IPv6 → IPv4).
 
-    En prod : Cloudflare → reverse proxy local → gunicorn. REMOTE_ADDR
-    vu par gunicorn = loopback (le reverse proxy tourne sur le même
-    hôte), donc trusted, donc on lit ``CF-Connecting-IP`` (positionné
-    par Cloudflare et écrasé sur chaque hop CF). Si la requête arrive
-    d'ailleurs (bypass DNS, sonde directe), REMOTE_ADDR n'est pas
-    trusted et on ignore le header pour empêcher le spoof. Suppose que
-    le reverse proxy strip tout CF-Connecting-IP entrant côté public —
-    voir note ops dans le plan sécu.
+    En prod : Cloudflare → nginx local → gunicorn. Deux cas de bind possibles :
+    - TCP loopback (``--bind 127.0.0.1:port``) : REMOTE_ADDR == ``127.0.0.1``,
+      trusté par ``_TRUSTED_PROXY_NETWORKS``.
+    - Socket unix (``--bind unix:/run/...``) : pas de source IP TCP, donc
+      REMOTE_ADDR == ``""``. Le socket n'étant joignable que depuis le host,
+      on trust implicitement (seul nginx local peut poser le header).
+
+    Dans les deux cas trustés, on lit ``CF-Connecting-IP`` (positionné par
+    Cloudflare et écrasé sur chaque hop CF). Si la requête arrive d'ailleurs
+    (REMOTE_ADDR == IP publique, cas anormal), on ignore le header pour
+    empêcher le spoof.
+
+    Précondition critique côté ops : nginx DOIT strip tout
+    ``CF-Connecting-IP`` entrant côté public, sinon le trust REMOTE_ADDR==""
+    ouvre un spoof trivial via bypass DNS. Voir note dans
+    ``_TRUSTED_PROXY_NETWORKS`` + to-prod.md.
 
     Toute valeur lue (REMOTE_ADDR ou CF-Connecting-IP) passe par
     ``_normalize_ip`` : invalide / comma-list / junk → traité comme
     absent et on retombe sur la source précédente. Les callers
     (``_ratelimit_bucket``, compteur de visites) peuvent supposer que
     le retour est soit ``""`` soit une string IP canoniquement parseable.
+
+    Trust gate : on check la valeur RAW de REMOTE_ADDR pour le cas socket
+    unix (``== ""``), pas la valeur normalisée. ``_normalize_ip`` swallow
+    les ``ValueError`` en retournant ``""`` — sur la valeur normalisée
+    seule, un REMOTE_ADDR non-vide mais malformé (whitespace, garbage,
+    XFF-style comma-list) collapserait sur ``""`` et hériterait du trust
+    socket unix. Gater sur la raw garde ça strict : seul un REMOTE_ADDR
+    réellement absent compte comme socket unix.
     """
-    remote = _normalize_ip(request.META.get("REMOTE_ADDR", ""))
-    if _is_trusted_proxy(remote):
+    remote_raw = request.META.get("REMOTE_ADDR", "")
+    remote = _normalize_ip(remote_raw)
+    trusted = remote_raw == "" or _is_trusted_proxy(remote)
+    if trusted:
         cf_ip = _normalize_ip(request.META.get("HTTP_CF_CONNECTING_IP", "").strip())
         if cf_ip:
             return cf_ip
