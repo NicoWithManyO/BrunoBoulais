@@ -45,7 +45,7 @@ class ContactForm(forms.ModelForm):
     def save_and_notify(self):
         msg = self.save()
         email = EmailMessage(
-            subject=f"[brunoboulais.fr] {msg.get_sujet_display()} — {msg.nom}",
+            subject=f"[jacques-bertin.manyo.dev] {msg.get_sujet_display()} — {msg.nom}",
             body=(
                 f"De : {msg.nom} <{msg.email}>\n"
                 f"Téléphone : {msg.telephone or '—'}\n"
