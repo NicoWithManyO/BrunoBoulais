@@ -1,6 +1,67 @@
+from types import SimpleNamespace
+
 from django.test import RequestFactory
 
 from apps.core.middleware import _client_ip
+from apps.core.templatetags.richtext import richtext_images
+
+
+def _img(position, url, alt="", legende=""):
+    # Stub minimal : le filtre ne lit que position, image.url, alt, legende.
+    return SimpleNamespace(position=position, image=SimpleNamespace(url=url), alt=alt, legende=legende)
+
+
+class TestRichtextImages:
+    """Filtre `richtext_images` : remplacement des repères `[image:N]` par une
+    figure cliquable, en réutilisant l'« Ordre »/`position` des images contenu."""
+
+    def test_standalone_marker_absorbs_wrapping_p(self):
+        # Un repère seul dans son <p> : le <p> est absorbé (la <figure>, élément
+        # bloc, ne doit pas finir imbriquée dans un <p>).
+        out = richtext_images("<p>[image:1]</p>", [_img(1, "/media/a.jpg", alt="Photo")])
+        assert "<figure class=\"news-img\">" in out
+        assert "<p>" not in out
+        assert out.startswith("<figure")
+
+    def test_inline_marker_kept_in_place(self):
+        # Repère au milieu d'un paragraphe : remplacé sur place, <p> conservé.
+        out = richtext_images("<p>Avant [image:1] apres</p>", [_img(1, "/media/a.jpg")])
+        assert out.startswith("<p>Avant <figure")
+        assert "apres</p>" in out
+
+    def test_unknown_marker_left_as_is(self):
+        # Pas d'image à cette position : repère laissé tel quel.
+        out = richtext_images("<p>[image:9]</p>", [_img(1, "/media/a.jpg")])
+        assert "[image:9]" in out
+        assert "<figure" not in out
+
+    def test_empty_value_returns_empty_string(self):
+        assert richtext_images("", [_img(1, "/media/a.jpg")]) == ""
+        assert richtext_images(None, []) == ""
+
+    def test_alt_and_url_are_html_escaped(self):
+        # alt et url passent par escape : pas d'injection via guillemet/chevron.
+        img = _img(1, '/media/a&b".jpg', alt='Méchant"<script>')
+        out = richtext_images("<p>[image:1]</p>", [img])
+        assert "/media/a&amp;b&quot;.jpg" in out
+        assert "&quot;&lt;script&gt;" in out
+        assert "<script>" not in out
+
+    def test_alt_falls_back_to_legend_plain_text(self):
+        # alt vide → on retombe sur la légende en texte brut (balises retirées).
+        img = _img(1, "/media/a.jpg", alt="", legende="<strong>Une</strong> légende")
+        out = richtext_images("<p>[image:1]</p>", [img])
+        assert 'alt="Une légende"' in out
+
+    def test_legend_rendered_as_inline_richtext_in_figcaption(self):
+        # La légende garde son balisage inline (<strong>) dans le <figcaption>.
+        img = _img(1, "/media/a.jpg", legende="<strong>Gras</strong>")
+        out = richtext_images("<p>[image:1]</p>", [img])
+        assert "<figcaption><strong>Gras</strong></figcaption>" in out
+
+    def test_no_legend_omits_figcaption(self):
+        out = richtext_images("<p>[image:1]</p>", [_img(1, "/media/a.jpg")])
+        assert "<figcaption>" not in out
 
 
 class TestClientIp:
