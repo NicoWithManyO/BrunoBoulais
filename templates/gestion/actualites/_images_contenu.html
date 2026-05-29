@@ -1,0 +1,68 @@
+{% comment %}
+Bloc « Images à insérer dans le texte » (lot séparé du carrousel). Le
+formulaire parent fournit :
+  - contenu_formset          : inline formset des images de contenu (None en création)
+  - nouvelles_contenu_errors : (optionnel) erreurs sur les fichiers uploadés
+Chaque image affiche son repère `[image:N]` à coller dans le contenu, avec un
+bouton « Copier ». Le repère utilise l'« Ordre » (champ position) de l'image.
+{% endcomment %}
+<div class="panel mt-6">
+    <h3 class="font-display text-xl text-brown mb-1">Images à insérer dans le texte</h3>
+    <p class="helptext mb-4">Collez le repère <code>[image:N]</code> d'une image à l'endroit voulu dans le contenu : elle s'affichera là, en illustration légendée et cliquable. Ces images sont indépendantes du carrousel ci-dessus.</p>
+
+    {% if contenu_formset %}
+        {{ contenu_formset.management_form }}
+        {% if contenu_formset.non_form_errors %}
+        <div class="flash flash-error mb-4">{{ contenu_formset.non_form_errors }}</div>
+        {% endif %}
+
+        <div id="image-contenu-list" class="grid gap-4">
+        {% for f in contenu_formset %}
+            <div class="image-row{% if f.errors %} image-row--error{% endif %}" id="image-contenu-row-{{ f.instance.pk }}">
+                {% for hidden in f.hidden_fields %}{{ hidden }}{% if hidden.errors %}<div class="errorlist">{{ hidden.errors }}</div>{% endif %}{% endfor %}
+                {% if f.instance.image %}
+                <div class="image-row__thumb">
+                    <img src="{{ f.instance.image.url }}" alt="{{ f.instance.alt }}">
+                </div>
+                {% endif %}
+                <div class="image-row__fields">
+                    <div class="flex items-center gap-2 mb-2">
+                        <code class="text-sm bg-mist/30 px-2 py-1 rounded">[image:{{ f.instance.position }}]</code>
+                        <button type="button" class="btn-sm btn-ghost"
+                                data-copy-marker="[image:{{ f.instance.position }}]">Copier</button>
+                    </div>
+                    <label class="!mt-0">Ordre</label>{{ f.position }}
+                    <label>Texte alternatif</label>{{ f.alt }}
+                    <label>Légende</label>{{ f.legende }}
+                    {% for field in f.visible_fields %}{% if field.errors %}<div class="errorlist">{{ field.errors }}</div>{% endif %}{% endfor %}
+                </div>
+                {% if f.instance.pk %}
+                <div class="image-row__delete">
+                    <button type="button"
+                            class="btn-sm btn-danger"
+                            hx-post="{% url 'gestion:actualite_image_contenu_supprimer' f.instance.pk %}"
+                            hx-target="#image-contenu-row-{{ f.instance.pk }}"
+                            hx-swap="outerHTML"
+                            hx-confirm="Supprimer cette image ?">
+                        Supprimer
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        {% empty %}
+            <p class="font-serif italic text-ink/60">Aucune image de contenu pour le moment. Ajoutez-en ci-dessous.</p>
+        {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="carrousel-add mt-6 pt-5 border-t border-mist/40">
+        <h4 class="font-display text-base text-brown mb-2">Ajouter des images à insérer</h4>
+        <div class="carrousel-add__row">
+            <input type="file" name="nouvelles_images_contenu" id="id_nouvelles_images_contenu" multiple accept="image/*">
+        </div>
+        {% if nouvelles_contenu_errors %}
+        <ul class="errorlist mt-2">{% for e in nouvelles_contenu_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+        {% endif %}
+        <span class="helptext">Plusieurs fichiers d'un coup (Ctrl/Cmd+clic). Formats : JPG, PNG, WEBP, AVIF. Taille max 8 Mo par image. Les fichiers sont uploadés en cliquant <strong>Enregistrer</strong> en bas de page.</span>
+    </div>
+</div>

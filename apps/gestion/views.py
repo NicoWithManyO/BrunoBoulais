@@ -27,7 +27,12 @@ def gestion_required(view_func):
 from django.core.exceptions import ValidationError
 from django.db.models import Max
 
-from apps.actualites.models import Actualite, ActualiteImage, ActualitesPage
+from apps.actualites.models import (
+    Actualite,
+    ActualiteImage,
+    ActualiteImageContenu,
+    ActualitesPage,
+)
 from apps.carnet.models import Billet
 from apps.contact.models import ContactPage, Message
 from apps.core.images import strip_exif
@@ -44,6 +49,7 @@ from .forms import (
     AccueilForm,
     AccueilImageFormSet,
     ActualiteForm,
+    ActualiteImageContenuFormSet,
     ActualiteImageFormSet,
     ActualitesPageForm,
     BilletForm,
@@ -65,14 +71,14 @@ from .forms import (
 
 # ---- Helpers for multi-image upload field shared across editors -------------
 
-def _validate_new_images(request):
-    """Validate files dropped into the shared `nouvelles_images` field.
+def _validate_new_images(request, field_name="nouvelles_images"):
+    """Validate files dropped into a multi-file upload field.
 
     Returns (files, errors) — caller persists the files post-parent-save.
     Errors are prefixed with the offending filename so the user knows which
     file in a multi-upload batch was rejected.
     """
-    files = request.FILES.getlist("nouvelles_images") if request.method == "POST" else []
+    files = request.FILES.getlist(field_name) if request.method == "POST" else []
     errors = []
     for f in files:
         for validator in IMAGE_VALIDATORS:
@@ -103,17 +109,18 @@ def _flash_save_blocked(request, files):
     )
 
 
-def _save_new_images(parent, files):
+def _save_new_images(parent, files, relation="images"):
     """Create one image row per file at the next available `position`.
 
-    Relies on the reverse manager `parent.images` (every OrderedImage
-    subclass uses `related_name="images"`).
+    `relation` is the reverse manager name (e.g. "images" for the carousel,
+    "images_contenu" for in-body images).
     """
     if not files:
         return
-    max_pos = parent.images.aggregate(Max("position"))["position__max"] or 0
+    manager = getattr(parent, relation)
+    max_pos = manager.aggregate(Max("position"))["position__max"] or 0
     for i, f in enumerate(files, start=1):
-        parent.images.create(image=strip_exif(f), position=max_pos + i)
+        manager.create(image=strip_exif(f), position=max_pos + i)
 
 
 # ---- Dashboard ---------------------------------------------------------------
@@ -174,27 +181,39 @@ def actualite_form(request, pk=None):
         ActualiteImageFormSet(request.POST or None, instance=instance)
         if instance is not None else None
     )
+    contenu_formset = (
+        ActualiteImageContenuFormSet(request.POST or None, instance=instance)
+        if instance is not None else None
+    )
 
     files, img_errors = _validate_new_images(request)
+    files_contenu, img_contenu_errors = _validate_new_images(request, "nouvelles_images_contenu")
     formset_ok = image_formset is None or image_formset.is_valid()
+    contenu_ok = contenu_formset is None or contenu_formset.is_valid()
     if (
         request.method == "POST"
-        and form.is_valid() and formset_ok and not img_errors
+        and form.is_valid() and formset_ok and contenu_ok
+        and not img_errors and not img_contenu_errors
     ):
         with transaction.atomic():
             obj = form.save()
             if image_formset is not None:
                 image_formset.save()
+            if contenu_formset is not None:
+                contenu_formset.save()
             _save_new_images(obj, files)
+            _save_new_images(obj, files_contenu, relation="images_contenu")
         messages.success(request, f"Actualité « {obj.titre} » enregistrée.")
         return redirect("gestion:actualite_modifier", pk=obj.pk)
     if request.method == "POST":
-        _flash_save_blocked(request, files)
+        _flash_save_blocked(request, files + files_contenu)
     return render(request, "gestion/actualites/form.html", {
         "form": form,
         "image_formset": image_formset,
+        "contenu_formset": contenu_formset,
         "instance": instance,
         "nouvelles_errors": img_errors,
+        "nouvelles_contenu_errors": img_contenu_errors,
     })
 
 
@@ -604,13 +623,14 @@ def livre_form(request):
 
 # ---- HTMX endpoints: per-row image actions (instant Supprimer) --------------
 
-def _make_image_supprimer(image_model, parent_attr):
+def _make_image_supprimer(image_model, parent_attr, relation="images"):
     """Build a `@require_POST` HTMX endpoint that deletes one image row.
 
     Returns an OOB swap that decrements the formset's management form counters
-    (`images-TOTAL_FORMS` and `images-INITIAL_FORMS`); without it, the next
-    submit fails because Django expects N forms in POST while the DOM only
-    has N-1 prefixes left.
+    (`<relation>-TOTAL_FORMS` and `<relation>-INITIAL_FORMS`); without it, the
+    next submit fails because Django expects N forms in POST while the DOM only
+    has N-1 prefixes left. `relation` is both the reverse manager name and the
+    inline formset prefix (they match: the prefix defaults to the accessor name).
     """
     @gestion_required
     @require_POST
@@ -618,13 +638,13 @@ def _make_image_supprimer(image_model, parent_attr):
         img = get_object_or_404(image_model, pk=image_pk)
         parent = getattr(img, parent_attr)
         img.delete()
-        new_count = parent.images.count()
+        new_count = getattr(parent, relation).count()
         # Body holds only OOB elements: htmx extracts them by id, leaving an
         # empty body which `outerHTML`-swaps over the row target — removing it.
         html = (
-            f'<input id="id_images-TOTAL_FORMS" name="images-TOTAL_FORMS" '
+            f'<input id="id_{relation}-TOTAL_FORMS" name="{relation}-TOTAL_FORMS" '
             f'type="hidden" value="{new_count}" hx-swap-oob="true">'
-            f'<input id="id_images-INITIAL_FORMS" name="images-INITIAL_FORMS" '
+            f'<input id="id_{relation}-INITIAL_FORMS" name="{relation}-INITIAL_FORMS" '
             f'type="hidden" value="{new_count}" hx-swap-oob="true">'
         )
         return HttpResponse(html)
@@ -635,6 +655,9 @@ accueil_image_supprimer = _make_image_supprimer(AccueilImage, "accueil")
 livre_image_supprimer = _make_image_supprimer(LivreImage, "livre")
 personne_image_supprimer = _make_image_supprimer(PersonneImage, "personne")
 actualite_image_supprimer = _make_image_supprimer(ActualiteImage, "actualite")
+actualite_image_contenu_supprimer = _make_image_supprimer(
+    ActualiteImageContenu, "actualite", "images_contenu"
+)
 
 
 # ---- Paramètres (singleton) -------------------------------------------------

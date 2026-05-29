@@ -7,7 +7,12 @@ from django.core.files.uploadedfile import UploadedFile
 from django.forms import inlineformset_factory
 from django.utils import timezone
 
-from apps.actualites.models import Actualite, ActualiteImage, ActualitesPage
+from apps.actualites.models import (
+    Actualite,
+    ActualiteImage,
+    ActualiteImageContenu,
+    ActualitesPage,
+)
 from apps.carnet.models import Billet
 from apps.contact.models import ContactPage
 from apps.core.images import strip_exif
@@ -136,6 +141,7 @@ class ActualiteForm(forms.ModelForm):
 
 
 ActualiteImageFormSet = _make_image_formset(Actualite, ActualiteImage)
+ActualiteImageContenuFormSet = _make_image_formset(Actualite, ActualiteImageContenu)
 
 
 class ActualitesPageForm(forms.ModelForm):
