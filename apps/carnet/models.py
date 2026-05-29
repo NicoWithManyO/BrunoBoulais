@@ -1,9 +1,12 @@
 from django.db import models
+from django.db.models.signals import pre_delete
 from django.utils import timezone
 from django.utils.text import slugify
 
 from apps.core.fields import RichTextField
-from apps.core.models import TimestampedModel
+from apps.core.models import OrderedImage, TimestampedModel, delete_image_file
+from apps.core.uploads import carnet_contenu_upload_to
+from apps.core.validators import IMAGE_VALIDATORS
 
 
 class Billet(TimestampedModel):
@@ -36,3 +39,21 @@ class Billet(TimestampedModel):
         if not self.slug:
             self.slug = slugify(self.titre)[:220]
         super().save(*args, **kwargs)
+
+
+class BilletImageContenu(OrderedImage):
+    """Images insérables dans le corps du texte via le repère `[image:N]`.
+
+    Affichées uniquement là où l'éditeur place leur repère dans le contenu.
+    """
+
+    billet = models.ForeignKey(
+        Billet, related_name="images_contenu", on_delete=models.CASCADE,
+        verbose_name="Billet",
+    )
+    image = models.ImageField(
+        "Image", upload_to=carnet_contenu_upload_to, validators=IMAGE_VALIDATORS,
+    )
+
+
+pre_delete.connect(delete_image_file, sender=BilletImageContenu)
