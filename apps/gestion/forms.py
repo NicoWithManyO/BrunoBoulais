@@ -12,7 +12,7 @@ from apps.actualites.models import (
     ActualiteImage,
     ActualitesPage,
 )
-from apps.carnet.models import Billet
+from apps.carnet.models import Billet, BilletImageContenu
 from apps.contact.models import ContactPage
 from apps.core.images import strip_exif
 from apps.core.validators import ALLOWED_IMAGE_EXTENSIONS, ALLOWED_VIDEO_EXTENSIONS
@@ -161,6 +161,9 @@ class BilletForm(forms.ModelForm):
     class Meta:
         model = Billet
         fields = ["titre", "statut", "date_publication", "contenu"]
+
+
+BilletImageContenuFormSet = _make_image_formset(Billet, BilletImageContenu)
 
 
 class ChansonForm(StripExifMixin, forms.ModelForm):

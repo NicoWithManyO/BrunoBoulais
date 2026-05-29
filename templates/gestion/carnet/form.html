@@ -9,11 +9,14 @@
 {% endblock %}
 
 {% block content %}
-<form method="post" class="gform max-w-2xl">
+<form method="post" enctype="multipart/form-data" class="gform max-w-2xl">
     {% csrf_token %}
     <div class="panel">
         {% include "gestion/_form.html" %}
     </div>
+
+    {% include "gestion/_images_contenu.html" with delete_url_name="gestion:billet_image_contenu_supprimer" %}
+
     <div class="mt-6 flex items-center gap-3">
         <button type="submit" class="btn btn-primary">{% if instance %}Enregistrer{% else %}Créer{% endif %}</button>
         <a href="{% url 'gestion:billets_liste' %}" class="btn-sm btn-ghost">Annuler</a>
@@ -22,4 +25,20 @@
         {% endif %}
     </div>
 </form>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ block.super }}
+{# Copie le repère [image:N] dans le presse-papier ; feedback visuel bref. #}
+<script>
+    document.addEventListener("click", function (e) {
+        const btn = e.target.closest("[data-copy-marker]");
+        if (!btn) return;
+        navigator.clipboard.writeText(btn.dataset.copyMarker).then(function () {
+            const original = btn.textContent;
+            btn.textContent = "Copié !";
+            setTimeout(function () { btn.textContent = original; }, 1200);
+        });
+    });
+</script>
 {% endblock %}

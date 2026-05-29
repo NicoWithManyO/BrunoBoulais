@@ -32,7 +32,7 @@ from apps.actualites.models import (
     ActualiteImage,
     ActualitesPage,
 )
-from apps.carnet.models import Billet
+from apps.carnet.models import Billet, BilletImageContenu
 from apps.contact.models import ContactPage, Message
 from apps.core.images import strip_exif
 from apps.core.validators import IMAGE_VALIDATORS
@@ -51,6 +51,7 @@ from .forms import (
     ActualiteImageFormSet,
     ActualitesPageForm,
     BilletForm,
+    BilletImageContenuFormSet,
     ChansonForm,
     ContactPageForm,
     DiscothequePageForm,
@@ -239,13 +240,32 @@ def billets_liste(request):
 def billet_form(request, pk=None):
     instance = get_object_or_404(Billet, pk=pk) if pk is not None else None
     form = BilletForm(request.POST or None, instance=instance)
-    if request.method == "POST" and form.is_valid():
-        obj = form.save()
+    contenu_formset = (
+        BilletImageContenuFormSet(request.POST or None, instance=instance)
+        if instance is not None else None
+    )
+
+    files_contenu, img_contenu_errors = _validate_new_images(request, "nouvelles_images_contenu")
+    contenu_ok = contenu_formset is None or contenu_formset.is_valid()
+    if (
+        request.method == "POST"
+        and form.is_valid() and contenu_ok
+        and not img_contenu_errors
+    ):
+        with transaction.atomic():
+            obj = form.save()
+            if contenu_formset is not None:
+                contenu_formset.save()
+            _save_new_images(obj, files_contenu, relation="images_contenu")
         messages.success(request, f"Billet « {obj.titre} » enregistré.")
         return redirect("gestion:billet_modifier", pk=obj.pk)
+    if request.method == "POST":
+        _flash_save_blocked(request, files_contenu)
     return render(request, "gestion/carnet/form.html", {
         "form": form,
+        "contenu_formset": contenu_formset,
         "instance": instance,
+        "nouvelles_contenu_errors": img_contenu_errors,
     })
 
 
@@ -642,6 +662,9 @@ accueil_image_supprimer = _make_image_supprimer(AccueilImage, "accueil")
 livre_image_supprimer = _make_image_supprimer(LivreImage, "livre")
 personne_image_supprimer = _make_image_supprimer(PersonneImage, "personne")
 actualite_image_supprimer = _make_image_supprimer(ActualiteImage, "actualite")
+billet_image_contenu_supprimer = _make_image_supprimer(
+    BilletImageContenu, "billet", "images_contenu"
+)
 
 
 # ---- Paramètres (singleton) -------------------------------------------------

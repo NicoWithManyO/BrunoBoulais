@@ -150,4 +150,7 @@
     </div>
 </section>
 
+{# Lightbox pour les images de contenu du billet (seul porteur de déclencheurs). #}
+{% if dernier_billet %}{% include "partials/_lightbox.html" %}{% endif %}
+
 {% endblock %}
