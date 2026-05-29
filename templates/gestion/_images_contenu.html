@@ -61,10 +61,21 @@ bouton « Copier ». Le repère utilise l'« Ordre » (champ position) de l'imag
         <h4 class="font-display text-base text-brown mb-2">Ajouter des images à insérer</h4>
         <div class="carrousel-add__row">
             <input type="file" name="nouvelles_images_contenu" id="id_nouvelles_images_contenu" multiple accept="image/*">
+            {% if upload_url %}
+            <button type="button" class="btn-sm btn-primary"
+                    hx-post="{{ upload_url }}"
+                    hx-include="closest form"
+                    hx-encoding="multipart/form-data"
+                    hx-target="#image-contenu-upload-errors"
+                    hx-swap="innerHTML">
+                Uploader maintenant
+            </button>
+            {% endif %}
         </div>
+        <div id="image-contenu-upload-errors"></div>
         {% if nouvelles_contenu_errors %}
         <ul class="errorlist mt-2">{% for e in nouvelles_contenu_errors %}<li>{{ e }}</li>{% endfor %}</ul>
         {% endif %}
-        <span class="helptext">Plusieurs fichiers d'un coup (Ctrl/Cmd+clic). Formats : JPG, PNG, WEBP, AVIF. Taille max 8 Mo par image. Les fichiers sont uploadés en cliquant <strong>Enregistrer</strong> en bas de page.</span>
+        <span class="helptext">Plusieurs fichiers d'un coup (Ctrl/Cmd+clic). Formats : JPG, PNG, WEBP, AVIF. Taille max 8 Mo par image.{% if upload_url %} Cliquez <strong>Uploader maintenant</strong> pour les ajouter et voir leur repère <code>[image:N]</code> sans quitter la page : le billet est alors enregistré (en brouillon tant que vous ne l'avez pas publié). Sinon ils partent aussi en cliquant <strong>Enregistrer</strong> en bas.{% else %} Les fichiers sont uploadés en cliquant <strong>Enregistrer</strong> en bas de page.{% endif %}</span>
     </div>
 </div>

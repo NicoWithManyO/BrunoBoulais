@@ -76,4 +76,6 @@ urlpatterns = [
     path("personnes/images/<int:image_pk>/supprimer/", views.personne_image_supprimer, name="personne_image_supprimer"),
     path("actualites/images/<int:image_pk>/supprimer/", views.actualite_image_supprimer, name="actualite_image_supprimer"),
     path("carnet/images-contenu/<int:image_pk>/supprimer/", views.billet_image_contenu_supprimer, name="billet_image_contenu_supprimer"),
+    path("carnet/images-contenu/ajouter/", views.billet_image_contenu_ajouter, name="billet_image_contenu_ajouter_new"),
+    path("carnet/<int:pk>/images-contenu/ajouter/", views.billet_image_contenu_ajouter, name="billet_image_contenu_ajouter"),
 ]

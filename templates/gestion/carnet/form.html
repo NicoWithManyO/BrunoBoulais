@@ -15,7 +15,8 @@
         {% include "gestion/_form.html" %}
     </div>
 
-    {% include "gestion/_images_contenu.html" with delete_url_name="gestion:billet_image_contenu_supprimer" %}
+    {% if instance %}{% url 'gestion:billet_image_contenu_ajouter' instance.pk as billet_upload_url %}{% else %}{% url 'gestion:billet_image_contenu_ajouter_new' as billet_upload_url %}{% endif %}
+    {% include "gestion/_images_contenu.html" with delete_url_name="gestion:billet_image_contenu_supprimer" upload_url=billet_upload_url %}
 
     <div class="mt-6 flex items-center gap-3">
         <button type="submit" class="btn btn-primary">{% if instance %}Enregistrer{% else %}Créer{% endif %}</button>

@@ -284,6 +284,35 @@ def billet_supprimer(request, pk):
     })
 
 
+@gestion_required
+@require_POST
+def billet_image_contenu_ajouter(request, pk=None):
+    """Upload immédiat (HTMX) d'images de contenu : enregistre le billet sans
+    passer par le bouton « Créer » (en brouillon par défaut), attache les
+    fichiers, puis recharge la page d'édition où les repères [image:N]
+    deviennent visibles. `contenu` non requis ici : on doit pouvoir uploader
+    les images AVANT de rédiger le texte qui les référence."""
+    instance = get_object_or_404(Billet, pk=pk) if pk is not None else None
+    form = BilletForm(request.POST, instance=instance)
+    form.fields["contenu"].required = False
+    files, file_errors = _validate_new_images(request, "nouvelles_images_contenu")
+    if not files and not file_errors:
+        file_errors = ["Sélectionnez au moins une image à uploader."]
+    if form.is_valid() and not file_errors:
+        with transaction.atomic():
+            billet = form.save()
+            _save_new_images(billet, files, relation="images_contenu")
+        messages.success(request, f"{len(files)} image(s) ajoutée(s).")
+        resp = HttpResponse(status=204)
+        resp["HX-Redirect"] = reverse("gestion:billet_modifier", args=[billet.pk])
+        return resp
+    errors = list(file_errors)
+    if "titre" in form.errors:
+        errors.append("Renseignez un titre avant d'ajouter une image.")
+    errors += list(form.errors.get("date_publication", []))
+    return render(request, "gestion/_images_contenu_errors.html", {"errors": errors})
+
+
 # ---- Discothèque (chansons) -------------------------------------------------
 
 # Filtre publié : "1" = publiées, "0" = brouillons, "" = toutes.

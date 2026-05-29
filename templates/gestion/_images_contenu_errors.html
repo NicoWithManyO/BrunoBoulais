@@ -1,0 +1,4 @@
+{% comment %}Erreurs de l'upload immédiat d'images de contenu (cible HTMX).{% endcomment %}
+{% if errors %}
+<ul class="errorlist mt-2">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+{% endif %}
