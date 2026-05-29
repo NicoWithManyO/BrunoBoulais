@@ -1220,6 +1220,10 @@
   }
   .richtext__editor p { margin: 0 0 0.6em 0; }
   .richtext__editor p:last-child { margin-bottom: 0; }
+  /* Un paragraphe vide (ligne sautée) n'a pas de line box : le clic ne place
+     pas le curseur. Ce caractère zéro-largeur lui rend sa hauteur. Généré en
+     CSS, il n'est pas sérialisé dans le HTML → invisible à la sauvegarde. */
+  .richtext__editor p:empty::after { content: "\200B"; }
   .richtext__editor ul,
   .richtext__editor ol { margin: 0 0 0.6em 0; padding-left: 1.5rem; }
   .richtext__editor ul { list-style: disc; }
