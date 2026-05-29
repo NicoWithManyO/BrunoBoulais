@@ -35,6 +35,7 @@ from apps.actualites.models import (
 from apps.carnet.models import Billet, BilletImageContenu
 from apps.contact.models import ContactPage, Message
 from apps.core.images import strip_exif
+from apps.core.templatetags.richtext import richtext_plain
 from apps.core.validators import IMAGE_VALIDATORS
 from apps.discotheque.models import Chanson, DiscothequePage
 from apps.galerie.models import GaleriePage, Media
@@ -311,6 +312,22 @@ def billet_image_contenu_ajouter(request, pk=None):
         errors.append("Renseignez un titre avant d'ajouter une image.")
     errors += list(form.errors.get("date_publication", []))
     return render(request, "gestion/_images_contenu_errors.html", {"errors": errors})
+
+
+@gestion_required
+@require_POST
+def billet_annuler(request, pk):
+    """« Annuler » sur l'édition d'un billet. Supprime les brouillons restés
+    vides (créés à la volée par l'upload d'image puis abandonnés) — sinon simple
+    retour à la liste. La suppression cascade sur les images (fichiers nettoyés
+    via pre_delete)."""
+    billet = get_object_or_404(Billet, pk=pk)
+    if billet.statut == Billet.STATUT_BROUILLON and not richtext_plain(billet.contenu).strip():
+        billet.delete()
+        messages.info(request, f"Billet vide « {billet.titre} » abandonné et supprimé.")
+    resp = HttpResponse(status=204)
+    resp["HX-Redirect"] = reverse("gestion:billets_liste")
+    return resp
 
 
 # ---- Discothèque (chansons) -------------------------------------------------

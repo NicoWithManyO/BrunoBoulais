@@ -20,9 +20,12 @@
 
     <div class="mt-6 flex items-center gap-3">
         <button type="submit" class="btn btn-primary">{% if instance %}Enregistrer{% else %}Créer{% endif %}</button>
-        <a href="{% url 'gestion:billets_liste' %}" class="btn-sm btn-ghost">Annuler</a>
         {% if instance %}
+        {# Annuler supprime le billet s'il est resté un brouillon vide (créé à la volée par l'upload). #}
+        <button type="button" class="btn-sm btn-ghost" hx-post="{% url 'gestion:billet_annuler' instance.pk %}">Annuler</button>
         <a href="{% url 'gestion:billet_supprimer' instance.pk %}" class="btn-sm btn-danger ml-auto">Supprimer</a>
+        {% else %}
+        <a href="{% url 'gestion:billets_liste' %}" class="btn-sm btn-ghost">Annuler</a>
         {% endif %}
     </div>
 </form>
