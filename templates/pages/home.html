@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load richtext seo_tags %}
+{% load static richtext seo_tags %}
 
 {% block extra_head %}
 {% website_jsonld %}
@@ -71,18 +71,32 @@
 
 {# =========================  CARNET + ACTUS / DÉDICACES  ========================= #}
 <section class="bg-cream-dark/40 border-y border-mist/30 py-20">
-    <div class="container-wide grid {% if dernier_billet %}lg:grid-cols-2{% endif %} gap-12 lg:gap-0 items-start">
+    <div class="container-wide grid {% if billets %}lg:grid-cols-2{% endif %} gap-12 lg:gap-0 items-start">
 
-        {% if dernier_billet %}
-        {# Colonne gauche : dernier billet du carnet (feuillet épinglé) #}
-        <div class="lg:pr-12">
-            <p class="eyebrow mb-8">Dernières nouvelles</p>
-            {% include "carnet/_billet_card.html" with billet=dernier_billet %}
+        {% if billets %}
+        {# Colonne gauche : carnet (feuillets épinglés), navigation entre billets via les flèches #}
+        <div class="lg:pr-12" data-carnet-nav>
+            <div class="flex items-center gap-3 mb-8">
+                {% if billets|length > 1 %}
+                <button type="button" data-carnet-newer aria-label="Billet plus récent"
+                        class="text-terracotta text-2xl leading-none cursor-pointer hover:text-terracotta-deep disabled:opacity-25 disabled:cursor-default transition-colors">‹</button>
+                {% endif %}
+                <p class="eyebrow">Dernières nouvelles</p>
+                {% if billets|length > 1 %}
+                <button type="button" data-carnet-older aria-label="Billet plus ancien"
+                        class="text-terracotta text-2xl leading-none cursor-pointer hover:text-terracotta-deep disabled:opacity-25 disabled:cursor-default transition-colors">›</button>
+                {% endif %}
+            </div>
+            {% for billet in billets %}
+            <div data-carnet-item{% if not forloop.first %} class="hidden"{% endif %}>
+                {% include "carnet/_billet_card.html" with billet=billet %}
+            </div>
+            {% endfor %}
         </div>
         {% endif %}
 
         {# Colonne droite : cards d'actualités / dédicaces #}
-        <div class="{% if dernier_billet %}lg:pl-12 lg:border-l lg:border-mist/50{% else %}max-w-2xl mx-auto w-full{% endif %}">
+        <div class="{% if billets %}lg:pl-12 lg:border-l lg:border-mist/50{% else %}max-w-2xl mx-auto w-full{% endif %}">
             <p class="eyebrow mb-8">Actus &amp; dédicaces</p>
             <div class="space-y-6">
                 {% for actualite in actualites %}
@@ -150,7 +164,11 @@
     </div>
 </section>
 
-{# Lightbox pour les images de contenu du billet (seul porteur de déclencheurs). #}
-{% if dernier_billet %}{% include "partials/_lightbox.html" %}{% endif %}
+{# Lightbox pour les images de contenu des billets (seul porteur de déclencheurs). #}
+{% if billets %}{% include "partials/_lightbox.html" %}{% endif %}
 
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/carnet-nav.js' %}" defer></script>
 {% endblock %}

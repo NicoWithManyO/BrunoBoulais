@@ -21,10 +21,9 @@ def home(request):
     livre = _get_livre()
     temoignages = Temoignage.objects.filter(statut=Temoignage.STATUT_PUBLIE, mis_en_avant=True).order_by("?")[:3]
     actualites = Actualite.objects.filter(statut=Actualite.STATUT_PUBLIE)[:3]
-    dernier_billet = (
+    billets = list(
         Billet.objects
         .filter(statut=Billet.STATUT_PUBLIE, date_publication__lte=timezone.now())
-        .first()
     )
     accueil = Accueil.get_solo()
     return render(
@@ -34,7 +33,7 @@ def home(request):
             "livre": livre,
             "temoignages": temoignages,
             "actualites": actualites,
-            "dernier_billet": dernier_billet,
+            "billets": billets,
             "accueil": accueil,
             **seo_from_obj(request, accueil),
         },
