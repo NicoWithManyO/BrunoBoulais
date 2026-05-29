@@ -45,6 +45,10 @@ def actualites_image_upload_to(instance, filename):
     return _slugged("actualites/images", filename)
 
 
+def actualites_contenu_upload_to(instance, filename):
+    return _slugged("actualites/contenu", filename)
+
+
 def portraits_upload_to(instance, filename):
     return _slugged("portraits", filename)
 
