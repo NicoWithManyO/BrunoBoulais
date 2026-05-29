@@ -10,7 +10,6 @@ from django.utils import timezone
 from apps.actualites.models import (
     Actualite,
     ActualiteImage,
-    ActualiteImageContenu,
     ActualitesPage,
 )
 from apps.carnet.models import Billet
@@ -141,7 +140,6 @@ class ActualiteForm(forms.ModelForm):
 
 
 ActualiteImageFormSet = _make_image_formset(Actualite, ActualiteImage)
-ActualiteImageContenuFormSet = _make_image_formset(Actualite, ActualiteImageContenu)
 
 
 class ActualitesPageForm(forms.ModelForm):

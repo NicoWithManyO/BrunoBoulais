@@ -15,7 +15,6 @@ from apps.core.models import (
     delete_image_file,
 )
 from apps.core.uploads import (
-    actualites_contenu_upload_to,
     actualites_image_upload_to,
     actualites_upload_to,
 )
@@ -109,25 +108,6 @@ class ActualiteImage(OrderedImage):
 
 
 pre_delete.connect(delete_image_file, sender=ActualiteImage)
-
-
-class ActualiteImageContenu(OrderedImage):
-    """Images insérables dans le corps du texte via le repère `[image:N]`.
-
-    Lot séparé du carrousel : ces images n'apparaissent que là où l'éditeur
-    place leur repère dans le contenu.
-    """
-
-    actualite = models.ForeignKey(
-        Actualite, related_name="images_contenu", on_delete=models.CASCADE,
-        verbose_name="Actualité",
-    )
-    image = models.ImageField(
-        "Image", upload_to=actualites_contenu_upload_to, validators=IMAGE_VALIDATORS,
-    )
-
-
-pre_delete.connect(delete_image_file, sender=ActualiteImageContenu)
 
 
 class ActualitesPage(TimestampedModel):

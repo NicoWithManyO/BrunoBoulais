@@ -1,8 +1,10 @@
 {% comment %}
-Bloc « Images à insérer dans le texte » (lot séparé du carrousel). Le
-formulaire parent fournit :
+Bloc « Images à insérer dans le texte » (lot séparé du carrousel). Partagé entre
+les objets qui acceptent des images de contenu via le repère `[image:N]`.
+Variables attendues :
   - contenu_formset          : inline formset des images de contenu (None en création)
   - nouvelles_contenu_errors : (optionnel) erreurs sur les fichiers uploadés
+  - delete_url_name          : nom d'URL de suppression d'une image (HTMX)
 Chaque image affiche son repère `[image:N]` à coller dans le contenu, avec un
 bouton « Copier ». Le repère utilise l'« Ordre » (champ position) de l'image.
 {% endcomment %}
@@ -40,7 +42,7 @@ bouton « Copier ». Le repère utilise l'« Ordre » (champ position) de l'imag
                 <div class="image-row__delete">
                     <button type="button"
                             class="btn-sm btn-danger"
-                            hx-post="{% url 'gestion:actualite_image_contenu_supprimer' f.instance.pk %}"
+                            hx-post="{% url delete_url_name f.instance.pk %}"
                             hx-target="#image-contenu-row-{{ f.instance.pk }}"
                             hx-swap="outerHTML"
                             hx-confirm="Supprimer cette image ?">

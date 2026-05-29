@@ -30,7 +30,6 @@ from django.db.models import Max
 from apps.actualites.models import (
     Actualite,
     ActualiteImage,
-    ActualiteImageContenu,
     ActualitesPage,
 )
 from apps.carnet.models import Billet
@@ -49,7 +48,6 @@ from .forms import (
     AccueilForm,
     AccueilImageFormSet,
     ActualiteForm,
-    ActualiteImageContenuFormSet,
     ActualiteImageFormSet,
     ActualitesPageForm,
     BilletForm,
@@ -181,39 +179,28 @@ def actualite_form(request, pk=None):
         ActualiteImageFormSet(request.POST or None, instance=instance)
         if instance is not None else None
     )
-    contenu_formset = (
-        ActualiteImageContenuFormSet(request.POST or None, instance=instance)
-        if instance is not None else None
-    )
 
     files, img_errors = _validate_new_images(request)
-    files_contenu, img_contenu_errors = _validate_new_images(request, "nouvelles_images_contenu")
     formset_ok = image_formset is None or image_formset.is_valid()
-    contenu_ok = contenu_formset is None or contenu_formset.is_valid()
     if (
         request.method == "POST"
-        and form.is_valid() and formset_ok and contenu_ok
-        and not img_errors and not img_contenu_errors
+        and form.is_valid() and formset_ok
+        and not img_errors
     ):
         with transaction.atomic():
             obj = form.save()
             if image_formset is not None:
                 image_formset.save()
-            if contenu_formset is not None:
-                contenu_formset.save()
             _save_new_images(obj, files)
-            _save_new_images(obj, files_contenu, relation="images_contenu")
         messages.success(request, f"Actualité « {obj.titre} » enregistrée.")
         return redirect("gestion:actualite_modifier", pk=obj.pk)
     if request.method == "POST":
-        _flash_save_blocked(request, files + files_contenu)
+        _flash_save_blocked(request, files)
     return render(request, "gestion/actualites/form.html", {
         "form": form,
         "image_formset": image_formset,
-        "contenu_formset": contenu_formset,
         "instance": instance,
         "nouvelles_errors": img_errors,
-        "nouvelles_contenu_errors": img_contenu_errors,
     })
 
 
@@ -655,9 +642,6 @@ accueil_image_supprimer = _make_image_supprimer(AccueilImage, "accueil")
 livre_image_supprimer = _make_image_supprimer(LivreImage, "livre")
 personne_image_supprimer = _make_image_supprimer(PersonneImage, "personne")
 actualite_image_supprimer = _make_image_supprimer(ActualiteImage, "actualite")
-actualite_image_contenu_supprimer = _make_image_supprimer(
-    ActualiteImageContenu, "actualite", "images_contenu"
-)
 
 
 # ---- Paramètres (singleton) -------------------------------------------------
