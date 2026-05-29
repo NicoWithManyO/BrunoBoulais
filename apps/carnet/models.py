@@ -47,12 +47,33 @@ class BilletImageContenu(OrderedImage):
     Affichées uniquement là où l'éditeur place leur repère dans le contenu.
     """
 
+    LARGEUR_CHOICES = [
+        ("100", "Pleine largeur"),
+        ("75", "3/4 de la largeur"),
+        ("50", "Moitié"),
+        ("33", "Tiers"),
+        ("25", "Quart"),
+    ]
+    ALIGNEMENT_CHOICES = [
+        ("center", "Centré"),
+        ("left", "À gauche (texte autour)"),
+        ("right", "À droite (texte autour)"),
+    ]
+
     billet = models.ForeignKey(
         Billet, related_name="images_contenu", on_delete=models.CASCADE,
         verbose_name="Billet",
     )
     image = models.ImageField(
         "Image", upload_to=carnet_contenu_upload_to, validators=IMAGE_VALIDATORS,
+    )
+    largeur = models.CharField(
+        "Largeur", max_length=3, choices=LARGEUR_CHOICES, default="100",
+        help_text="Proportion de la largeur du bloc occupée par l'image. Le ratio est conservé.",
+    )
+    alignement = models.CharField(
+        "Alignement", max_length=6, choices=ALIGNEMENT_CHOICES, default="center",
+        help_text="Position de l'image. À gauche ou à droite, le texte s'enroule autour.",
     )
 
 

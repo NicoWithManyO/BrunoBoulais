@@ -433,6 +433,23 @@
     font-size: 0.875rem;
     color: var(--color-slate);
   }
+  /* Largeur paramétrable d'une image de contenu : max-width + margin auto
+     (héritée de .news-img) la cale en fraction et la centre. L'image reste
+     en width:100% / height:auto → le ratio n'est jamais déformé. */
+  .news-img--w75 { max-width: 75%; }
+  .news-img--w50 { max-width: 50%; }
+  .news-img--w33 { max-width: 33.333%; }
+  .news-img--w25 { max-width: 25%; }
+  /* Alignement gauche/droite : l'image flotte, le texte s'enroule. Les marges
+     remplacent le « margin auto » centreur de .news-img et dégagent le texte. */
+  .news-img--left  { float: left;  margin: 0.4rem 1.6rem 1rem 0; }
+  .news-img--right { float: right; margin: 0.4rem 0 1rem 1.6rem; }
+  /* Sous le breakpoint mobile : fractions illisibles et enroulement à l'étroit
+     → pleine largeur, bloc centré. */
+  @media (max-width: 640px) {
+    .news-img--w75, .news-img--w50, .news-img--w33, .news-img--w25 { max-width: 100%; }
+    .news-img--left, .news-img--right { float: none; margin: 1.75rem auto; }
+  }
 
   /* --- Boutons --- */
   .btn {

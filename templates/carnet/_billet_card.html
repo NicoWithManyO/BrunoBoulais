@@ -37,7 +37,7 @@ Variable attendue : `billet` (instance de apps.carnet.models.Billet).
         <h3 class="mt-4 font-display text-2xl text-brown leading-snug">
             {{ billet.titre }}
         </h3>
-        <div class="mt-5 font-serif text-base text-ink/85 leading-relaxed prose">
+        <div class="mt-5 font-serif text-base text-ink/85 leading-relaxed prose flow-root">
             {{ billet.contenu|richtext_images:billet.images_contenu.all }}
         </div>
         <p class="mt-6 font-sans text-xs text-brown-soft italic">— Bruno</p>

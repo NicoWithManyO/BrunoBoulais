@@ -77,8 +77,20 @@ def _figure(img):
     url = escape(img.image.url)
     legende_plain = _plain_text(img.legende)
     alt = escape(img.alt or legende_plain)
+    # Largeur + alignement optionnels (images de contenu du carnet). 100 =
+    # pleine largeur ; center = bloc centré (défaut). gauche/droite flottent
+    # pour laisser le texte s'enrouler. Tout est géré par des classes CSS,
+    # le ratio reste préservé (width:100% / height:auto sur l'<img>).
+    classes = ["news-img"]
+    largeur = getattr(img, "largeur", "100")
+    if largeur != "100":
+        classes.append(f"news-img--w{largeur}")
+    alignement = getattr(img, "alignement", "center")
+    if alignement in ("left", "right"):
+        classes.append(f"news-img--{alignement}")
+    css_class = " ".join(classes)
     parts = [
-        f'<figure class="news-img">'
+        f'<figure class="{css_class}">'
         f'<a href="{url}" data-lightbox-trigger data-lightbox-src="{url}" '
         f'data-lightbox-caption="{escape(legende_plain)}" data-lightbox-alt="{alt}" '
         f'target="_blank" rel="noopener">'

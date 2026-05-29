@@ -49,19 +49,21 @@ class StripExifMixin:
         return cleaned
 
 
-def _make_image_formset(parent_model, image_model):
+def _make_image_formset(parent_model, image_model, field_names=("image", "alt", "legende", "position")):
     """Build an inline formset for an OrderedImage subclass (image + alt + position).
 
     Shared between Actualite, Accueil, Personne, Livre: same fields, same
     StripExif behaviour, no extra blank rows (uploads happen via the
-    `nouvelles_images` multi-file field handled in the view).
+    `nouvelles_images` multi-file field handled in the view). `field_names`
+    lets a caller add model-specific fields (e.g. the Billet content image
+    width).
     """
     class _Form(StripExifMixin, forms.ModelForm):
         exif_fields = ["image"]
 
         class Meta:
             model = image_model
-            fields = ["image", "alt", "legende", "position"]
+            fields = list(field_names)
 
     return inlineformset_factory(
         parent_model, image_model, form=_Form, extra=0, can_delete=True,
@@ -163,7 +165,10 @@ class BilletForm(forms.ModelForm):
         fields = ["titre", "statut", "date_publication", "contenu"]
 
 
-BilletImageContenuFormSet = _make_image_formset(Billet, BilletImageContenu)
+BilletImageContenuFormSet = _make_image_formset(
+    Billet, BilletImageContenu,
+    field_names=("image", "alt", "legende", "position", "largeur", "alignement"),
+)
 
 
 class ChansonForm(StripExifMixin, forms.ModelForm):
