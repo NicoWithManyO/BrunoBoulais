@@ -1124,6 +1124,12 @@
   .image-row__fields input[type="number"] {
     max-width: 6rem;
   }
+  /* Largeur + alignement côte à côte. */
+  .image-row__pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
   /* Bouton de suppression sur sa propre ligne, en bas, aligné à droite. */
   .image-row__delete {
     grid-area: delete;
