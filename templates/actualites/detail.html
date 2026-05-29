@@ -49,7 +49,7 @@
     {# Contenu #}
     {% if obj.contenu %}
     <div class="container-prose">
-        <div class="prose">{{ obj.contenu|richtext }}</div>
+        <div class="prose">{{ obj.contenu|richtext_images:obj.images_contenu.all }}</div>
     </div>
     {% endif %}
 

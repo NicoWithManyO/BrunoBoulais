@@ -420,6 +420,20 @@
   .prose li { margin: 0.25em 0; }
   .prose li::marker { color: var(--color-terracotta); }
 
+  /* Photo insérée dans le corps d'une actu (repère [image:N]), cliquable →
+     lightbox. Largeur de la colonne prose, légende centrée. */
+  .news-img { margin: 1.75rem auto; }
+  .news-img a { display: block; cursor: zoom-in; }
+  .news-img img { width: 100%; height: auto; display: block; }
+  .news-img figcaption {
+    margin-top: 0.5rem;
+    text-align: center;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 0.875rem;
+    color: var(--color-slate);
+  }
+
   /* --- Boutons --- */
   .btn {
     @apply inline-flex items-center gap-2 px-5 py-3 font-sans text-sm font-medium tracking-wide;
