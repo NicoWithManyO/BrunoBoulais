@@ -79,4 +79,6 @@ urlpatterns = [
     path("carnet/images-contenu/ajouter/", views.billet_image_contenu_ajouter, name="billet_image_contenu_ajouter_new"),
     path("carnet/<int:pk>/images-contenu/ajouter/", views.billet_image_contenu_ajouter, name="billet_image_contenu_ajouter"),
     path("carnet/<int:pk>/annuler/", views.billet_annuler, name="billet_annuler"),
+    path("carnet/preview/", views.billet_preview, name="billet_preview_new"),
+    path("carnet/<int:pk>/preview/", views.billet_preview, name="billet_preview"),
 ]

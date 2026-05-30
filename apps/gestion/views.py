@@ -330,6 +330,51 @@ def billet_annuler(request, pk):
     return resp
 
 
+@gestion_required
+@require_POST
+def billet_preview(request, pk=None):
+    """Rend (HTMX) le feuillet du Carnet tel qu'il apparaîtra sur le site, à
+    partir des valeurs courantes du formulaire d'édition — sans rien enregistrer.
+    Tolérant : une saisie partielle ou invalide donne un aperçu partiel, jamais
+    une erreur. Les repères [image:N] référencent les images du billet, avec leurs
+    largeur/alignement/ordre courants du formset (même non encore enregistrés)."""
+    instance = get_object_or_404(Billet, pk=pk) if pk is not None else None
+    form = BilletForm(request.POST, instance=instance)
+    for name in ("titre", "contenu", "date_publication"):
+        form.fields[name].required = False
+    if form.is_valid():
+        billet = form.save(commit=False)
+    else:
+        billet = instance or Billet()
+        billet.titre = request.POST.get("titre", billet.titre)
+        billet.contenu = request.POST.get("contenu", billet.contenu)
+    if not billet.date_publication:
+        billet.date_publication = getattr(instance, "date_publication", None) or timezone.now()
+    images = _preview_content_images(request, instance)
+    return render(request, "gestion/_billet_preview.html", {"billet": billet, "images": images})
+
+
+def _preview_content_images(request, instance):
+    """Images de contenu à afficher dans l'aperçu, avec les largeur/alignement/
+    ordre courants du formset POSTé (appliqués en mémoire, sans sauvegarde).
+    Replie sur l'état en base si le formset est absent ou illisible."""
+    if instance is None:
+        return []
+    try:
+        formset = BilletImageContenuFormSet(request.POST, instance=instance)
+        formset.is_valid()  # peuple form.instance via _post_clean ; résultat ignoré (mode tolérant)
+        applied = [
+            f.instance for f in formset.forms
+            if f.instance.pk and not getattr(f, "cleaned_data", {}).get("DELETE")
+        ]
+    except Exception:
+        return instance.images_contenu.all()
+    if not applied:
+        return instance.images_contenu.all()
+    applied.sort(key=lambda img: img.position)
+    return applied
+
+
 # ---- Discothèque (chansons) -------------------------------------------------
 
 # Filtre publié : "1" = publiées, "0" = brouillons, "" = toutes.

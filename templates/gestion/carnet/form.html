@@ -9,25 +9,42 @@
 {% endblock %}
 
 {% block content %}
-<form method="post" enctype="multipart/form-data" class="gform max-w-2xl">
+<form method="post" enctype="multipart/form-data" class="gform flex flex-col 2xl:flex-row gap-8 2xl:items-start">
     {% csrf_token %}
-    <div class="panel">
-        {% include "gestion/_form.html" %}
+
+    <div class="min-w-0 2xl:flex-1 2xl:max-w-2xl">
+        <div class="panel">
+            {% include "gestion/_form.html" %}
+        </div>
+
+        {% if instance %}{% url 'gestion:billet_image_contenu_ajouter' instance.pk as billet_upload_url %}{% else %}{% url 'gestion:billet_image_contenu_ajouter_new' as billet_upload_url %}{% endif %}
+        {% include "gestion/_images_contenu.html" with delete_url_name="gestion:billet_image_contenu_supprimer" upload_url=billet_upload_url %}
+
+        <div class="mt-6 flex items-center gap-3">
+            <button type="submit" class="btn btn-primary">{% if instance %}Enregistrer{% else %}Créer{% endif %}</button>
+            {% if instance %}
+            {# Annuler supprime le billet s'il est resté un brouillon vide (créé à la volée par l'upload). #}
+            <button type="button" class="btn-sm btn-ghost" hx-post="{% url 'gestion:billet_annuler' instance.pk %}">Annuler</button>
+            <a href="{% url 'gestion:billet_supprimer' instance.pk %}" class="btn-sm btn-danger ml-auto">Supprimer</a>
+            {% else %}
+            <a href="{% url 'gestion:billets_liste' %}" class="btn-sm btn-ghost">Annuler</a>
+            {% endif %}
+        </div>
     </div>
 
-    {% if instance %}{% url 'gestion:billet_image_contenu_ajouter' instance.pk as billet_upload_url %}{% else %}{% url 'gestion:billet_image_contenu_ajouter_new' as billet_upload_url %}{% endif %}
-    {% include "gestion/_images_contenu.html" with delete_url_name="gestion:billet_image_contenu_supprimer" upload_url=billet_upload_url %}
-
-    <div class="mt-6 flex items-center gap-3">
-        <button type="submit" class="btn btn-primary">{% if instance %}Enregistrer{% else %}Créer{% endif %}</button>
-        {% if instance %}
-        {# Annuler supprime le billet s'il est resté un brouillon vide (créé à la volée par l'upload). #}
-        <button type="button" class="btn-sm btn-ghost" hx-post="{% url 'gestion:billet_annuler' instance.pk %}">Annuler</button>
-        <a href="{% url 'gestion:billet_supprimer' instance.pk %}" class="btn-sm btn-danger ml-auto">Supprimer</a>
-        {% else %}
-        <a href="{% url 'gestion:billets_liste' %}" class="btn-sm btn-ghost">Annuler</a>
-        {% endif %}
-    </div>
+    {% comment %}Aperçu live : rendu serveur (HTMX) du feuillet tel qu'il sera sur le site, en taille réelle. À droite si la fenêtre est assez large, sinon dessous.{% endcomment %}
+    <aside class="shrink-0 w-full 2xl:w-[600px] 2xl:sticky 2xl:top-24">
+        <p class="text-[10px] uppercase tracking-[0.22em] text-slate-soft mb-3">Aperçu sur le site</p>
+        <div class="pt-6 w-[568px] max-w-full">
+            {% comment %}hx-params exclut le champ fichier : sans ça, les images sélectionnées mais pas encore uploadées repartiraient en multipart à chaque rafraîchissement. La vue de preview ne lit jamais request.FILES.{% endcomment %}
+            <div id="billet-preview"
+                 hx-post="{% if instance %}{% url 'gestion:billet_preview' instance.pk %}{% else %}{% url 'gestion:billet_preview_new' %}{% endif %}"
+                 hx-include="closest form"
+                 hx-params="not nouvelles_images_contenu"
+                 hx-trigger="load, input delay:500ms from:closest form, change delay:500ms from:closest form"
+                 hx-swap="innerHTML"></div>
+        </div>
+    </aside>
 </form>
 {% endblock %}
 
