@@ -21,11 +21,17 @@ register = template.Library()
 _BLOCK_TAGS = frozenset({"p", "br", "strong", "em", "ul", "ol", "li"})
 _INLINE_TAGS = frozenset({"br", "strong", "em"})
 
-# Repère d'insertion d'une image dans le corps d'une actu. On absorbe le <p>
-# qui enveloppe un repère seul (sinon la <figure>, élément bloc, se retrouverait
-# imbriquée dans un <p> → HTML invalide) ; un repère inline est remplacé tel
-# quel. L'absorption est tout-ou-rien pour ne jamais laisser de balise orpheline.
-_IMAGE_MARKER_RE = re.compile(r"<p>\s*\[image:(\d+)\]\s*</p>|\[image:(\d+)\]")
+# Repère d'insertion d'une image dans le corps d'une actu. Une seule passe par
+# alternance (re.sub ne re-balaye jamais le texte qu'il insère → un littéral
+# [image:N] écrit dans une légende n'est jamais ré-interprété) :
+#  - groupe 1 : un paragraphe ne contenant QUE des repères (un ou plusieurs,
+#    séparés d'espaces). On absorbe le <p> (la <figure> est un bloc, interdite
+#    dans un <p>) ; plusieurs repères collés → rangée côte à côte, sinon deux
+#    floats opposés laissent un grand vide.
+#  - groupe 2 : un repère inline (au fil du texte), remplacé sur place pour
+#    laisser le texte s'enrouler.
+_IMAGE_MARKER_RE = re.compile(r"<p>\s*((?:\[image:\d+\]\s*)+)</p>|\[image:(\d+)\]")
+_IMAGE_NUM_RE = re.compile(r"\[image:(\d+)\]")
 
 
 @register.filter(name="richtext")
@@ -57,8 +63,19 @@ def richtext_images(value, images):
     by_position = {img.position: img for img in images}
 
     def replace(match):
-        position = int(match.group(1) or match.group(2))
-        img = by_position.get(position)
+        if match.group(1) is not None:
+            # Paragraphe dédié aux repères. Un repère inconnu casse l'absorption
+            # (on laisse le <p> intact). Plusieurs figures → rangée côte à côte.
+            figures = []
+            for position in _IMAGE_NUM_RE.findall(match.group(1)):
+                img = by_position.get(int(position))
+                if img is None:
+                    return match.group(0)
+                figures.append(_figure(img))
+            if len(figures) == 1:
+                return figures[0]
+            return f'<div class="news-img-row">{"".join(figures)}</div>'
+        img = by_position.get(int(match.group(2)))
         return _figure(img) if img is not None else match.group(0)
 
     return mark_safe(_IMAGE_MARKER_RE.sub(replace, cleaned))

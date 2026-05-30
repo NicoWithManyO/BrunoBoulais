@@ -451,6 +451,26 @@
     .news-img--left, .news-img--right { float: none; margin: 1.75rem auto; }
   }
 
+  /* Plusieurs images consécutives (repères [image:N] collés) : une rangée qui
+     partage la largeur, légende sous chacune, le texte reprend EN DESSOUS. On
+     neutralise float/largeur/marges hérités de chaque figure (pensés pour
+     l'enroulement, hors-sujet ici). À l'étroit, flex-wrap les empile. */
+  .news-img-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 1.25rem 1.5rem;
+    margin: 1.75rem 0;
+    clear: both;
+  }
+  .news-img-row .news-img {
+    float: none;
+    margin: 0;
+    max-width: 100%;
+    flex: 1 1 200px;
+  }
+
   /* --- Boutons --- */
   .btn {
     @apply inline-flex items-center gap-2 px-5 py-3 font-sans text-sm font-medium tracking-wide;

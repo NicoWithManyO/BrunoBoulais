@@ -63,6 +63,43 @@ class TestRichtextImages:
         out = richtext_images("<p>[image:1]</p>", [_img(1, "/media/a.jpg")])
         assert "<figcaption>" not in out
 
+    def test_consecutive_markers_form_a_row(self):
+        # Deux repères collés dans le même <p> : rangée côte à côte, <p> absorbé.
+        out = richtext_images(
+            "<p>[image:1][image:2]</p>",
+            [_img(1, "/media/a.jpg"), _img(2, "/media/b.jpg")],
+        )
+        assert '<div class="news-img-row">' in out
+        assert out.count("<figure") == 2
+        assert "<p>" not in out
+        assert "/media/a.jpg" in out and "/media/b.jpg" in out
+
+    def test_consecutive_markers_tolerate_whitespace(self):
+        # Espaces entre les repères : toujours une rangée.
+        out = richtext_images(
+            "<p>[image:1]  [image:2]</p>",
+            [_img(1, "/media/a.jpg"), _img(2, "/media/b.jpg")],
+        )
+        assert '<div class="news-img-row">' in out
+        assert out.count("<figure") == 2
+
+    def test_single_marker_paragraph_not_wrapped_in_row(self):
+        # Un seul repère : pas de rangée, juste la figure (comportement inchangé).
+        out = richtext_images("<p>[image:1]</p>", [_img(1, "/media/a.jpg")])
+        assert "news-img-row" not in out
+        assert out.startswith("<figure")
+
+    def test_marker_literal_in_legend_is_not_re_substituted(self):
+        # Un [image:N] écrit dans une légende ne doit pas être ré-interprété en
+        # figure (sinon HTML corrompu) : une seule passe, pas de re-balayage.
+        out = richtext_images(
+            "<p>[image:1][image:2]</p>",
+            [_img(1, "/media/a.jpg", legende="comparer avec [image:1]"),
+             _img(2, "/media/b.jpg")],
+        )
+        assert out.count("<figure") == 2
+        assert "<figcaption>comparer avec [image:1]</figcaption>" in out
+
 
 class TestClientIp:
     """Vérifie la résolution d'IP client sous les différentes archis de bind.
