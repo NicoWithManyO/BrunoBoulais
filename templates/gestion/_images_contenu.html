@@ -40,6 +40,9 @@ bouton « Copier ». Le repère utilise l'« Ordre » (champ position) de l'imag
                         {% if f.alignement %}<div><label>Alignement</label>{{ f.alignement }}</div>{% endif %}
                     </div>
                     {% endif %}
+                    {% if f.sans_habillage %}
+                    <label class="flex items-center gap-2 !mt-2">{{ f.sans_habillage }} Pas de texte à côté</label>
+                    {% endif %}
                     <label>Texte alternatif</label>{{ f.alt }}
                     <label>Légende</label>{{ f.legende }}
                     {% for field in f.visible_fields %}{% if field.errors %}<div class="errorlist">{{ field.errors }}</div>{% endif %}{% endfor %}

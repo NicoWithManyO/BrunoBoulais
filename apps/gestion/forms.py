@@ -167,7 +167,7 @@ class BilletForm(forms.ModelForm):
 
 BilletImageContenuFormSet = _make_image_formset(
     Billet, BilletImageContenu,
-    field_names=("image", "alt", "legende", "position", "largeur", "alignement"),
+    field_names=("image", "alt", "legende", "position", "largeur", "alignement", "sans_habillage"),
 )
 
 

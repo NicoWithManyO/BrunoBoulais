@@ -73,7 +73,13 @@ class BilletImageContenu(OrderedImage):
     )
     alignement = models.CharField(
         "Alignement", max_length=6, choices=ALIGNEMENT_CHOICES, default="center",
-        help_text="Position de l'image. À gauche ou à droite, le texte s'enroule autour.",
+        help_text="Position de l'image. À gauche ou à droite, le texte s'enroule autour "
+                  "(sauf si « Pas de texte à côté » est coché).",
+    )
+    sans_habillage = models.BooleanField(
+        "Pas de texte à côté", default=False,
+        help_text="L'image reste seule sur sa ligne, à sa largeur : le texte ne "
+                  "s'enroule pas autour. Sans effet sur une image centrée.",
     )
 
 

@@ -105,6 +105,8 @@ def _figure(img):
     alignement = getattr(img, "alignement", "center")
     if alignement in ("left", "right"):
         classes.append(f"news-img--{alignement}")
+        if getattr(img, "sans_habillage", False):
+            classes.append("news-img--noflow")
     css_class = " ".join(classes)
     parts = [
         f'<figure class="{css_class}">'

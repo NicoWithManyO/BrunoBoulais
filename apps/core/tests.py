@@ -100,6 +100,27 @@ class TestRichtextImages:
         assert out.count("<figure") == 2
         assert "<figcaption>comparer avec [image:1]</figcaption>" in out
 
+    def test_sans_habillage_adds_noflow_class_on_side_aligned_image(self):
+        # Case « pas de texte à côté » cochée + alignement latéral : on coupe le
+        # float via la classe news-img--noflow, la largeur (w50) est conservée.
+        img = SimpleNamespace(
+            position=1, image=SimpleNamespace(url="/media/a.jpg"), alt="", legende="",
+            largeur="50", alignement="left", sans_habillage=True,
+        )
+        out = richtext_images("<p>[image:1]</p>", [img])
+        assert "news-img--noflow" in out
+        assert "news-img--left" in out
+        assert "news-img--w50" in out
+
+    def test_sans_habillage_ignored_when_centered(self):
+        # Centré : pas de float à couper, la classe noflow n'a pas lieu d'être.
+        img = SimpleNamespace(
+            position=1, image=SimpleNamespace(url="/media/a.jpg"), alt="", legende="",
+            largeur="100", alignement="center", sans_habillage=True,
+        )
+        out = richtext_images("<p>[image:1]</p>", [img])
+        assert "news-img--noflow" not in out
+
 
 class TestClientIp:
     """Vérifie la résolution d'IP client sous les différentes archis de bind.
