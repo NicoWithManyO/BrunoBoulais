@@ -3,7 +3,7 @@ from types import SimpleNamespace
 from django.test import RequestFactory
 
 from apps.core.middleware import _client_ip
-from apps.core.templatetags.richtext import richtext_images
+from apps.core.templatetags.richtext import richtext, richtext_images
 
 
 def _img(position, url, alt="", legende=""):
@@ -120,6 +120,21 @@ class TestRichtextImages:
         )
         out = richtext_images("<p>[image:1]</p>", [img])
         assert "news-img--noflow" not in out
+
+
+class TestRichtextBoldItalic:
+    """L'éditeur émet <b>/<i> (sortie native de execCommand bold/italic) ;
+    le rendu doit les conserver, pas seulement <strong>/<em>."""
+
+    def test_block_keeps_b_and_i(self):
+        out = richtext("<p><b>gras</b> et <i>italique</i></p>")
+        assert "<b>gras</b>" in out
+        assert "<i>italique</i>" in out
+
+    def test_inline_keeps_b_and_i(self):
+        out = richtext("<b>gras</b> <i>it</i>", mode="inline")
+        assert "<b>gras</b>" in out
+        assert "<i>it</i>" in out
 
 
 class TestClientIp:

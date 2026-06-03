@@ -18,8 +18,10 @@ register = template.Library()
 # Block mode keeps <p> so paragraphs render. Inline mode strips <p>: useful
 # when the surrounding template already provides the block container (e.g.
 # inside an <h1> or an inline pull-quote).
-_BLOCK_TAGS = frozenset({"p", "br", "strong", "em", "ul", "ol", "li"})
-_INLINE_TAGS = frozenset({"br", "strong", "em"})
+# <b>/<i> en plus de <strong>/<em> : execCommand("bold"/"italic") émet <b>/<i>,
+# c'est donc ce que l'éditeur stocke et ce que bleach doit laisser passer.
+_BLOCK_TAGS = frozenset({"p", "br", "strong", "b", "em", "i", "ul", "ol", "li"})
+_INLINE_TAGS = frozenset({"br", "strong", "b", "em", "i"})
 
 # Repère d'insertion d'une image dans le corps d'une actu. Une seule passe par
 # alternance (re.sub ne re-balaye jamais le texte qu'il insère → un littéral
