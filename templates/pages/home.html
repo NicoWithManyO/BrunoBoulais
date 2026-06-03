@@ -61,16 +61,10 @@
     </div>
 </section>
 
-{# =========================  PULL QUOTE  ========================= #}
-{% if accueil.pull_quote_texte|richtext_plain %}
+{# =========================  CITATION  ========================= #}
+{% if accueil.citation_texte|richtext_plain %}
 <section class="container-page py-12">
-    <p class="pull-quote">{{ accueil.pull_quote_texte|richtext:"inline" }}</p>
-    {% if accueil.pull_quote_auteur %}
-    <p class="ornament mt-4"><span class="font-sans text-xs uppercase tracking-widest">{{ accueil.pull_quote_auteur }}</span></p>
-    {% endif %}
-    {% if accueil.pull_quote_commentaire %}
-    <p class="mt-3 font-sans text-xs text-slate-soft max-w-[42ch] mx-auto text-center">{{ accueil.pull_quote_commentaire }}</p>
-    {% endif %}
+    {% include "partials/citation.html" with texte=accueil.citation_texte auteur=accueil.citation_auteur commentaire=accueil.citation_commentaire ornament_mt="mt-4" only %}
 </section>
 {% endif %}
 

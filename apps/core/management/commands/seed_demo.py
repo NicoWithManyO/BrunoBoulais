@@ -376,11 +376,11 @@ class Command(BaseCommand):
             "d’entrée vers ses chansons, ses poèmes, ses écrits — discrets comme lui, "
             "puissants comme une braise.</p>"
         )
-        accueil.pull_quote_texte = (
+        accueil.citation_texte = (
             "Ses chansons ne séduisent pas, elles touchent. "
             "Ses poèmes ne décorent pas, ils dévoilent."
         )
-        accueil.pull_quote_auteur = "Bruno Boulais"
+        accueil.citation_auteur = "Bruno Boulais"
         accueil.dedicaces_intro = (
             "Bruno parcourt la France, des librairies aux créperies, "
             "pour porter ce livre à la rencontre de ses lecteurs."

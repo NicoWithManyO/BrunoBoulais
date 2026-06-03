@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from django.db import migrations
 
 PULL_QUOTE_TEXTE = (
@@ -23,6 +24,9 @@ def set_citation(apps, schema_editor):
         changed = True
     if changed:
         obj.save()
+        # Le save() du modèle historique n'invalide pas le cache du singleton ;
+        # on le purge à la main (cf. CACHE_KEY_ACCUEIL dans apps/pages/models.py).
+        cache.delete("pages_accueil")
 
 
 class Migration(migrations.Migration):

@@ -26,7 +26,7 @@
         <h2 class="font-display text-lg text-brown mb-1">Citation centrale</h2>
         <p class="text-xs text-slate-soft mb-4">Phrase mise en exergue entre le hero et les actualités.</p>
         {% for field in form %}
-            {% if field.name == 'pull_quote_texte' or field.name == 'pull_quote_auteur' or field.name == 'pull_quote_commentaire' %}
+            {% if field.name == 'citation_texte' or field.name == 'citation_auteur' or field.name == 'citation_commentaire' %}
                 {% include "gestion/_form_field.html" %}
             {% endif %}
         {% endfor %}

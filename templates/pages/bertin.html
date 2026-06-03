@@ -62,15 +62,7 @@
 {% if personne.citation_texte|richtext_plain %}
 <section class="bg-cream-dark/40 border-y border-mist/30 py-20">
     <div class="container-page">
-        <p class="pull-quote">{{ personne.citation_texte|richtext:"inline" }}</p>
-        {% if personne.citation_auteur %}
-        <p class="ornament mt-6">
-            <span class="font-sans text-xs uppercase tracking-widest">{{ personne.citation_auteur }}</span>
-        </p>
-        {% endif %}
-        {% if personne.citation_commentaire %}
-        <p class="mt-3 font-sans text-xs text-slate-soft max-w-[42ch] mx-auto text-center">{{ personne.citation_commentaire }}</p>
-        {% endif %}
+        {% include "partials/citation.html" with texte=personne.citation_texte auteur=personne.citation_auteur commentaire=personne.citation_commentaire only %}
     </div>
 </section>
 {% endif %}

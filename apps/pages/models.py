@@ -94,18 +94,18 @@ class Accueil(TimestampedModel, SeoMixin, CarrouselSettingsMixin):
         blank=True,
         help_text="Paragraphe d'introduction sous le titre.",
     )
-    pull_quote_texte = RichTextField(
+    citation_texte = RichTextField(
         "Citation centrale",
         blank=True,
         mode="inline",
         help_text="Phrase mise en exergue entre le hero et les actualités.",
     )
-    pull_quote_auteur = models.CharField(
+    citation_auteur = models.CharField(
         "Auteur de la citation",
         max_length=120,
         blank=True,
     )
-    pull_quote_commentaire = models.CharField(
+    citation_commentaire = models.CharField(
         "Commentaire",
         max_length=300,
         blank=True,
