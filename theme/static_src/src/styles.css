@@ -527,7 +527,7 @@
     align-items: center;
     justify-content: center;
     gap: 1rem;
-    color: var(--color-mist);
+    color: var(--color-slate-soft);
   }
   .ornament::before,
   .ornament::after {

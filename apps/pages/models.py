@@ -105,6 +105,12 @@ class Accueil(TimestampedModel, SeoMixin, CarrouselSettingsMixin):
         max_length=120,
         blank=True,
     )
+    pull_quote_commentaire = models.CharField(
+        "Commentaire",
+        max_length=300,
+        blank=True,
+        help_text="Quelques mots, affichés sous l'auteur, sur la citation ou son auteur (optionnel).",
+    )
 
     dedicaces_intro = RichTextField(
         "Introduction du bloc Dédicaces",

@@ -62,12 +62,17 @@
 </section>
 
 {# =========================  PULL QUOTE  ========================= #}
+{% if accueil.pull_quote_texte|richtext_plain %}
 <section class="container-page py-12">
-    <p class="pull-quote">
-        {% if accueil.pull_quote_texte %}{{ accueil.pull_quote_texte|richtext:"inline" }}{% else %}Ses chansons ne séduisent pas, elles touchent. Ses poèmes ne décorent pas, ils dévoilent.{% endif %}
-    </p>
-    <p class="ornament mt-4"><span class="font-sans text-xs uppercase tracking-widest">{{ accueil.pull_quote_auteur|default:"Bruno Boulais" }}</span></p>
+    <p class="pull-quote">{{ accueil.pull_quote_texte|richtext:"inline" }}</p>
+    {% if accueil.pull_quote_auteur %}
+    <p class="ornament mt-4"><span class="font-sans text-xs uppercase tracking-widest">{{ accueil.pull_quote_auteur }}</span></p>
+    {% endif %}
+    {% if accueil.pull_quote_commentaire %}
+    <p class="mt-3 font-sans text-xs text-slate-soft max-w-[42ch] mx-auto text-center">{{ accueil.pull_quote_commentaire }}</p>
+    {% endif %}
 </section>
+{% endif %}
 
 {# =========================  CARNET + ACTUS / DÉDICACES  ========================= #}
 <section class="bg-cream-dark/40 border-y border-mist/30 py-20">

@@ -37,6 +37,17 @@ class Personne(TimestampedModel, CarrouselSettingsMixin):
         "Biographie", blank=True,
         help_text="Texte riche : gras, italique, sauts de ligne."
     )
+    citation_texte = RichTextField(
+        "Citation", blank=True, mode="inline",
+        help_text="Phrase mise en exergue sur la page dédiée."
+    )
+    citation_auteur = models.CharField(
+        "Auteur de la citation", max_length=120, blank=True,
+    )
+    citation_commentaire = models.CharField(
+        "Commentaire", max_length=300, blank=True,
+        help_text="Quelques mots, affichés sous l'auteur, sur la citation ou son auteur (optionnel)."
+    )
 
     class Meta:
         verbose_name = "Personne"

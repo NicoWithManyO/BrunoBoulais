@@ -32,6 +32,16 @@
         {% endfor %}
     </div>
 
+    <div class="panel mt-6">
+        <h2 class="font-display text-lg text-brown mb-1">Citation</h2>
+        <p class="text-xs text-slate-soft mb-4">Phrase mise en exergue sur la page dédiée, avec son auteur et un commentaire optionnel.</p>
+        {% for field in form %}
+            {% if field.name == 'citation_texte' or field.name == 'citation_auteur' or field.name == 'citation_commentaire' %}
+                {% include "gestion/_form_field.html" %}
+            {% endif %}
+        {% endfor %}
+    </div>
+
     {% include "gestion/_images_carousel.html" with add_label="Ajouter des portraits" hint="La première image (ordre 1) sert de portrait principal. Si plusieurs sont définies, elles défilent en carrousel selon le délai ci-dessous." delete_url_name="gestion:personne_image_supprimer" %}
 
     <div class="mt-6 flex items-center gap-3">

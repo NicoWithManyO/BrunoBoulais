@@ -370,10 +370,12 @@ class PersonneForm(forms.ModelForm):
         fields = [
             "nom", "sous_titre", "annee_naissance",
             "bio_courte", "bio_longue",
+            "citation_texte", "citation_auteur", "citation_commentaire",
             "delai_rotation_s",
         ]
         widgets = {
             "bio_courte": forms.Textarea(attrs={"rows": 2}),
+            "citation_commentaire": forms.Textarea(attrs={"rows": 2}),
         }
 
 
@@ -387,13 +389,14 @@ class AccueilForm(StripExifMixin, forms.ModelForm):
         model = Accueil
         fields = [
             "hero_titre", "hero_pitch",
-            "pull_quote_texte", "pull_quote_auteur",
+            "pull_quote_texte", "pull_quote_auteur", "pull_quote_commentaire",
             "dedicaces_intro", "temoignages_intro",
             "delai_rotation_s",
             "seo_title", "seo_description", "og_image",
         ]
         widgets = {
             "seo_description": forms.Textarea(attrs={"rows": 2}),
+            "pull_quote_commentaire": forms.Textarea(attrs={"rows": 2}),
         }
 
 

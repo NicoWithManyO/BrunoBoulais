@@ -59,17 +59,21 @@
 {% endif %}
 
 {# =========================  CITATION  ========================= #}
+{% if personne.citation_texte|richtext_plain %}
 <section class="bg-cream-dark/40 border-y border-mist/30 py-20">
     <div class="container-page">
-        <p class="pull-quote">
-            Dans un monde saturé de bruit, Jacques Bertin est une source claire&nbsp;:
-            celui qui ne crie pas pour qu’on l’entende, mais qui se penche pour qu’on l’écoute.
-        </p>
+        <p class="pull-quote">{{ personne.citation_texte|richtext:"inline" }}</p>
+        {% if personne.citation_auteur %}
         <p class="ornament mt-6">
-            <span class="font-sans text-xs uppercase tracking-widest">d’après Jean-Claude Guillebaud</span>
+            <span class="font-sans text-xs uppercase tracking-widest">{{ personne.citation_auteur }}</span>
         </p>
+        {% endif %}
+        {% if personne.citation_commentaire %}
+        <p class="mt-3 font-sans text-xs text-slate-soft max-w-[42ch] mx-auto text-center">{{ personne.citation_commentaire }}</p>
+        {% endif %}
     </div>
 </section>
+{% endif %}
 
 {# =========================  DISCOGRAPHIE (carrousel pochettes) ========================= #}
 <section class="container-wide py-20">
