@@ -13,12 +13,18 @@ MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024
 MAX_VIDEO_SIZE_MB = 50
 MAX_VIDEO_SIZE_BYTES = MAX_VIDEO_SIZE_MB * 1024 * 1024
 
+# Un enregistrement téléphonique peut être long → plafond généreux.
+MAX_AUDIO_SIZE_MB = 100
+MAX_AUDIO_SIZE_BYTES = MAX_AUDIO_SIZE_MB * 1024 * 1024
+
 ALLOWED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "avif"]
 ALLOWED_VIDEO_EXTENSIONS = ["mp4", "webm", "mov"]
+ALLOWED_AUDIO_EXTENSIONS = ["mp3", "m4a", "ogg", "wav", "aac"]
 ALLOWED_MEDIA_EXTENSIONS = ALLOWED_IMAGE_EXTENSIONS + ALLOWED_VIDEO_EXTENSIONS
 
 image_extension_validator = FileExtensionValidator(allowed_extensions=ALLOWED_IMAGE_EXTENSIONS)
 media_extension_validator = FileExtensionValidator(allowed_extensions=ALLOWED_MEDIA_EXTENSIONS)
+audio_extension_validator = FileExtensionValidator(allowed_extensions=ALLOWED_AUDIO_EXTENSIONS)
 
 
 def _safe_file_size(file):
@@ -73,5 +79,18 @@ def validate_media_size(file):
         )
 
 
+def validate_audio_size(file):
+    """Reject audio files larger than MAX_AUDIO_SIZE_BYTES."""
+    size = _safe_file_size(file)
+    if size is None:
+        return
+    if size > MAX_AUDIO_SIZE_BYTES:
+        raise ValidationError(
+            f"L'enregistrement dépasse {MAX_AUDIO_SIZE_MB} Mo "
+            f"(taille actuelle : {size / 1024 / 1024:.1f} Mo)."
+        )
+
+
 IMAGE_VALIDATORS = [image_extension_validator, validate_image_size]
 MEDIA_VALIDATORS = [media_extension_validator, validate_media_size]
+AUDIO_VALIDATORS = [audio_extension_validator, validate_audio_size]

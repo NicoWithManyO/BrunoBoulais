@@ -395,9 +395,13 @@ def chansons_liste(request):
     publie_filter = request.GET.get("publie", "")
     if publie_filter in DISCOTHEQUE_PUBLIE_FILTRES:
         qs = qs.filter(publie=DISCOTHEQUE_PUBLIE_FILTRES[publie_filter])
+    type_filter = request.GET.get("type", "")
+    if type_filter in dict(Chanson.TYPE_CHOICES):
+        qs = qs.filter(type=type_filter)
     return render(request, "gestion/discotheque/list.html", {
         "chansons": qs,
         "publie_filter": publie_filter,
+        "type_filter": type_filter,
         "page_form": page_form,
     })
 
@@ -421,9 +425,12 @@ def chanson_supprimer(request, pk):
     obj = get_object_or_404(Chanson, pk=pk)
     if request.method == "POST":
         label = str(obj)
-        # Le fichier illustration n'est pas nettoyé par CASCADE ; on le supprime explicitement.
+        # Les fichiers (illustration, audio) ne sont pas nettoyés par CASCADE ;
+        # on les supprime explicitement.
         if obj.illustration:
             obj.illustration.delete(save=False)
+        if obj.audio:
+            obj.audio.delete(save=False)
         obj.delete()
         messages.success(request, f"Chanson « {label} » supprimée.")
         return redirect("gestion:chansons_liste")

@@ -2,6 +2,8 @@ from unittest.mock import patch
 from urllib.error import URLError
 
 import pytest
+from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 from apps.discotheque.models import Chanson, extract_youtube_id
 from apps.discotheque.youtube import (
@@ -69,6 +71,50 @@ class TestChansonModel:
             url_youtube="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
         )
         assert chanson.youtube_id == "dQw4w9WgXcQ"
+
+
+class TestChansonClean:
+    """clean() impose le champ requis selon le type (logique métier, pas de DB)."""
+
+    def test_chanson_without_url_is_invalid(self):
+        chanson = Chanson(type=Chanson.TYPE_CHANSON, url_youtube="")
+        with pytest.raises(ValidationError):
+            chanson.clean()
+
+    def test_chanson_with_url_is_valid(self):
+        chanson = Chanson(
+            type=Chanson.TYPE_CHANSON,
+            url_youtube="https://youtu.be/dQw4w9WgXcQ",
+        )
+        chanson.clean()  # ne lève pas
+
+    def test_enregistrement_without_audio_is_invalid(self):
+        enr = Chanson(type=Chanson.TYPE_ENREGISTREMENT)
+        with pytest.raises(ValidationError):
+            enr.clean()
+
+    def test_enregistrement_with_audio_is_valid(self):
+        enr = Chanson(type=Chanson.TYPE_ENREGISTREMENT)
+        enr.audio = SimpleUploadedFile("appel.mp3", b"fakeaudio")
+        enr.clean()  # ne lève pas
+
+    def test_est_enregistrement_property(self):
+        assert Chanson(type=Chanson.TYPE_ENREGISTREMENT).est_enregistrement is True
+        assert Chanson(type=Chanson.TYPE_CHANSON).est_enregistrement is False
+
+    def test_is_playable_chanson(self):
+        assert Chanson(type=Chanson.TYPE_CHANSON, url_youtube="https://youtu.be/dQw4w9WgXcQ").is_playable
+        # URL non extractible (playlist) → pas d'ID → non jouable
+        assert not Chanson(type=Chanson.TYPE_CHANSON, url_youtube="https://youtube.com/playlist?list=x").is_playable
+
+    def test_is_playable_enregistrement(self):
+        # Un enregistrement avec une url_youtube résiduelle mais sans audio
+        # n'est PAS jouable (sinon audio.url planterait au rendu).
+        bad = Chanson(type=Chanson.TYPE_ENREGISTREMENT, url_youtube="https://youtu.be/dQw4w9WgXcQ")
+        assert not bad.is_playable
+        ok = Chanson(type=Chanson.TYPE_ENREGISTREMENT)
+        ok.audio = SimpleUploadedFile("a.mp3", b"\x00")
+        assert ok.is_playable
 
 
 def _fake_response(payload):

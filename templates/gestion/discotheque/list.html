@@ -33,8 +33,16 @@
             <option value="0" {% if publie_filter == "0" %}selected{% endif %}>Brouillons</option>
         </select>
     </div>
+    <div>
+        <label class="!mt-0">Type</label>
+        <select name="type">
+            <option value="">Tous</option>
+            <option value="chanson" {% if type_filter == "chanson" %}selected{% endif %}>Chansons</option>
+            <option value="enregistrement" {% if type_filter == "enregistrement" %}selected{% endif %}>Enregistrements</option>
+        </select>
+    </div>
     <button type="submit" class="btn-sm btn-ghost mb-[1px]">Filtrer</button>
-    {% if publie_filter %}
+    {% if publie_filter or type_filter %}
     <a href="{% url 'gestion:chansons_liste' %}" class="text-xs text-slate-soft mb-[1px]">Réinitialiser</a>
     {% endif %}
 </form>
@@ -58,11 +66,14 @@
                 {% if c.illustration %}
                 <img src="{{ c.illustration.url }}" alt="" class="w-12 h-12 object-cover rounded">
                 {% else %}
-                <span class="inline-flex items-center justify-center w-12 h-12 bg-sand/30 rounded text-mist">♪</span>
+                <span class="inline-flex items-center justify-center w-12 h-12 bg-sand/30 rounded text-mist">{% if c.est_enregistrement %}☎{% else %}♪{% endif %}</span>
                 {% endif %}
             </td>
             <td>
-                <a href="{% url 'gestion:chanson_modifier' c.pk %}" class="font-medium text-brown no-underline hover:text-terracotta">{{ c.titre|default:c.url_youtube }}</a>
+                <a href="{% url 'gestion:chanson_modifier' c.pk %}" class="font-medium text-brown no-underline hover:text-terracotta">{{ c }}</a>
+                {% if c.est_enregistrement %}
+                <span class="badge bg-sand/40 text-brown ml-1">☎ Enregistrement</span>
+                {% endif %}
             </td>
             <td class="text-xs text-slate-soft">
                 {{ c.album|default:"—" }}{% if c.annee %} · {{ c.annee }}{% endif %}

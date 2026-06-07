@@ -174,11 +174,16 @@ BilletImageContenuFormSet = _make_image_formset(
 class ChansonForm(StripExifMixin, forms.ModelForm):
     exif_fields = ["illustration"]
 
+    date_enregistrement = forms.DateField(
+        label="Date de l'enregistrement", required=False,
+        widget=_DateInput(), input_formats=_HTML5_DATE_FORMATS,
+    )
+
     class Meta:
         model = Chanson
         fields = [
-            "titre", "url_youtube", "illustration",
-            "description", "album", "annee",
+            "type", "titre", "url_youtube", "audio", "date_enregistrement",
+            "illustration", "description", "album", "annee",
             "position", "publie",
         ]
         widgets = {
@@ -201,7 +206,7 @@ class ChansonForm(StripExifMixin, forms.ModelForm):
     def _autofill_from_youtube(self, obj):
         """Si url_youtube présent et titre/illustration vides, va chercher
         ces infos via oEmbed (best-effort, n'échoue jamais)."""
-        if not obj.url_youtube:
+        if obj.type != Chanson.TYPE_CHANSON or not obj.url_youtube:
             return
         needs_title = not obj.titre
         needs_image = not obj.illustration

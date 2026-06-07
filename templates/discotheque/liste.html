@@ -135,6 +135,7 @@
         color: inherit;
     }
     .card-chanson .vignette {
+        position: relative;
         aspect-ratio: 1 / 1;
         background: var(--color-cream-dark);
         overflow: hidden;
@@ -175,6 +176,89 @@
     .card-chanson:focus-visible p {
         color: var(--color-terracotta);
     }
+
+    /* Pills de filtre par type (affichées s'il existe des enregistrements). */
+    .disco-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .disco-pills .pill {
+        font-family: var(--font-sans, sans-serif);
+        font-size: 0.85rem;
+        padding: 0.35rem 0.9rem;
+        border-radius: 9999px;
+        border: 1px solid rgba(200, 188, 168, 0.6);
+        background: transparent;
+        color: var(--color-brown);
+        cursor: pointer;
+        transition: background .2s var(--ease-soft), color .2s var(--ease-soft);
+    }
+    .disco-pills .pill:hover { background: var(--color-cream-dark); }
+    .disco-pills .pill.is-active {
+        background: var(--color-brown);
+        color: var(--color-cream);
+        border-color: var(--color-brown);
+    }
+
+    /* Mode audio dans le bandeau : illustration (ou icône téléphone) dans le
+       wrap, lecteur <audio> sous le titre. */
+    .audio-stage {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, var(--color-brown) 0%, var(--color-ink) 100%);
+    }
+    .audio-stage[hidden] { display: none; }
+    .audio-stage img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .audio-stage img[hidden] { display: none; }
+    .audio-phone-icon {
+        width: 38%;
+        height: 38%;
+        color: var(--color-cream);
+        opacity: 0.85;
+    }
+    #audio-player {
+        width: 100%;
+        margin-top: 0.6rem;
+    }
+    #audio-player[hidden] { display: none; }
+
+    /* Pill « Enregistrement » sur la vignette pour le distinguer d'une chanson. */
+    .badge-tel {
+        position: absolute;
+        bottom: 0.4rem;
+        right: 0.4rem;
+        z-index: 2;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.2rem 0.55rem;
+        border-radius: 9999px;
+        background: rgba(43, 29, 18, 0.82);
+        color: var(--color-cream);
+        font-family: var(--font-sans, sans-serif);
+        font-size: 0.62rem;
+        font-weight: 500;
+        letter-spacing: 0.02em;
+        line-height: 1;
+    }
+    .badge-tel svg { width: 0.7rem; height: 0.7rem; }
+    .card-date {
+        font-size: 0.7rem;
+        color: var(--color-brown-soft);
+        margin-top: 0.1rem;
+    }
 </style>
 {% endblock %}
 
@@ -202,10 +286,18 @@
                         allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
                         referrerpolicy="strict-origin-when-cross-origin"
                         allowfullscreen></iframe>
+                {# Scène audio : visible quand on lit un enregistrement téléphonique. #}
+                <div id="audio-stage" class="audio-stage" hidden>
+                    <svg class="audio-phone-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.24.2 2.45.57 3.57a1 1 0 0 1-.24 1.02l-2.21 2.2z"/>
+                    </svg>
+                    <img id="audio-cover" alt="" hidden>
+                </div>
             </div>
             <div class="yt-meta">
                 <p id="yt-now" class="yt-now"></p>
                 <p id="yt-note" class="yt-note" hidden></p>
+                <audio id="audio-player" controls preload="none" hidden></audio>
             </div>
         </div>
     </div>
@@ -222,18 +314,35 @@
 </section>
 
 <section class="container-wide pb-24">
+    {% if has_enregistrements %}
+    <div class="disco-pills" role="group" aria-label="Filtrer par type">
+        <button type="button" class="pill is-active" data-filter="all">Tout</button>
+        <button type="button" class="pill" data-filter="chanson">Chansons</button>
+        <button type="button" class="pill" data-filter="enregistrement">Enregistrements</button>
+    </div>
+    {% endif %}
     {% if chansons %}
     <ul class="cards-discotheque">
         {% for c in chansons %}
-            {% if c.youtube_id %}
-            <li>
+            {% if c.is_playable %}
+            <li data-type="{{ c.type }}">
                 <button type="button"
                         class="card-chanson group"
-                        data-yt-id="{{ c.youtube_id }}"
+                        data-type="{{ c.type }}"
+                        {% if c.est_enregistrement %}data-audio-src="{{ c.audio.url }}"{% else %}data-yt-id="{{ c.youtube_id }}"{% endif %}
                         data-yt-title="{{ c.titre }}"
                         data-yt-note="{{ c.description }}"
-                        aria-label="Écouter : {{ c.titre|default:'chanson sans titre' }}">
+                        {% if c.illustration %}data-cover="{{ c.illustration.url }}"{% endif %}
+                        aria-label="Écouter : {{ c.titre|default:'sans titre' }}">
                     <div class="vignette">
+                        {% if c.est_enregistrement %}
+                        <span class="badge-tel">
+                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.24.2 2.45.57 3.57a1 1 0 0 1-.24 1.02l-2.21 2.2z"/>
+                            </svg>
+                            Enregistrement
+                        </span>
+                        {% endif %}
                         {% if c.illustration %}
                             <img src="{{ c.illustration.url }}"
                                  alt=""
@@ -249,6 +358,9 @@
                     </div>
                     {% if c.titre %}
                     <p class="mt-2 font-display text-sm text-brown leading-tight">{{ c.titre }}</p>
+                    {% endif %}
+                    {% if c.est_enregistrement and c.date_enregistrement %}
+                    <p class="card-date">{{ c.date_enregistrement|date:"j N Y" }}</p>
                     {% endif %}
                 </button>
             </li>

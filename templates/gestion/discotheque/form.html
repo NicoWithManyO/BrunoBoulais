@@ -28,4 +28,27 @@
         {% endif %}
     </div>
 </form>
+
+{# Affiche le lien YouTube (chanson) ou le fichier audio + date (enregistrement) selon le type. #}
+<script>
+(function () {
+    var typeSelect = document.getElementById("id_type");
+    if (!typeSelect) return;
+    function row(id) {
+        var el = document.getElementById(id);
+        return el ? el.closest(".mb-1") : null;
+    }
+    var ytRow = row("id_url_youtube");
+    var audioRow = row("id_audio");
+    var dateRow = row("id_date_enregistrement");
+    function sync() {
+        var isEnr = typeSelect.value === "enregistrement";
+        if (ytRow) ytRow.hidden = isEnr;
+        if (audioRow) audioRow.hidden = !isEnr;
+        if (dateRow) dateRow.hidden = !isEnr;
+    }
+    typeSelect.addEventListener("change", sync);
+    sync();
+})();
+</script>
 {% endblock %}

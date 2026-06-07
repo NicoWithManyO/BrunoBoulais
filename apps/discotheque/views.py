@@ -7,11 +7,13 @@ from .models import Chanson, DiscothequePage
 
 def liste(request):
     chansons = Chanson.objects.filter(publie=True)
+    has_enregistrements = chansons.filter(type=Chanson.TYPE_ENREGISTREMENT).exists()
     return render(
         request,
         "discotheque/liste.html",
         {
             "chansons": chansons,
+            "has_enregistrements": has_enregistrements,
             "page": DiscothequePage.get_solo(),
             **seo(
                 request,
