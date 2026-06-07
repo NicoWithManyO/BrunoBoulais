@@ -33,7 +33,6 @@
             <a href="{% url 'pages:auteur' %}"  class="nav-link {% if request.resolver_match.url_name == 'auteur' %}is-active{% endif %}">L’auteur</a>
             <a href="{% url 'actualites:liste' %}" class="nav-link {% if 'actualites' in request.path %}is-active{% endif %}">Actualités</a>
             <a href="{% url 'temoignages:liste' %}" class="nav-link {% if 'temoignages' in request.path %}is-active{% endif %}">Témoignages</a>
-            <a href="{% url 'galerie:liste' %}" class="nav-link {% if 'galerie' in request.path %}is-active{% endif %}">Galerie</a>
             <a href="{% url 'discotheque:liste' %}" class="nav-link {% if 'discotheque' in request.path %}is-active{% endif %}">Discothèque</a>
         </nav>
 
@@ -92,7 +91,6 @@
                 <a href="{% url 'pages:auteur' %}"     class="nav-link-mobile {% if request.resolver_match.url_name == 'auteur' %}is-active{% endif %}">L’auteur</a>
                 <a href="{% url 'actualites:liste' %}" class="nav-link-mobile {% if 'actualites' in request.path %}is-active{% endif %}">Actualités</a>
                 <a href="{% url 'temoignages:liste' %}" class="nav-link-mobile {% if 'temoignages' in request.path %}is-active{% endif %}">Témoignages</a>
-                <a href="{% url 'galerie:liste' %}"    class="nav-link-mobile {% if 'galerie' in request.path %}is-active{% endif %}">Galerie</a>
                 <a href="{% url 'discotheque:liste' %}" class="nav-link-mobile {% if 'discotheque' in request.path %}is-active{% endif %}">Discothèque</a>
             </nav>
 

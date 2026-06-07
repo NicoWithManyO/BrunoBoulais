@@ -1,7 +1,7 @@
 """Sitemap definitions for /sitemap.xml.
 
 The home page gets a higher priority; the livre / personnes / dédicaces
-pages come next; the auxiliary pages (témoignages, galerie, contact,
+pages come next; the auxiliary pages (témoignages, contact,
 mentions) trail behind.
 """
 from django.contrib.sitemaps import Sitemap
@@ -22,7 +22,6 @@ class StaticPagesSitemap(Sitemap):
             ("pages:auteur", 0.7),
             ("actualites:liste", 0.7),
             ("temoignages:liste", 0.5),
-            ("galerie:liste", 0.5),
             ("contact:form", 0.5),
             ("pages:mentions", 0.1),
         ]
