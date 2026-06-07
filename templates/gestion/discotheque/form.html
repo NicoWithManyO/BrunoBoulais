@@ -1,8 +1,8 @@
 {% extends "gestion/_layout.html" %}
 
-{% block title %}{% if instance %}Modifier{% else %}Nouvelle{% endif %} chanson · Gestion{% endblock %}
+{% block title %}{% if instance %}Modifier{% else %}Nouvel extrait / chanson{% endif %} · Gestion{% endblock %}
 {% block crumb %}Discothèque{% endblock %}
-{% block heading %}{% if instance %}Modifier « {{ instance }} »{% else %}Nouvelle chanson{% endif %}{% endblock %}
+{% block heading %}{% if instance %}Modifier « {{ instance }} »{% else %}Nouvel extrait / chanson{% endif %}{% endblock %}
 
 {% block header_actions %}
     <a href="{% url 'gestion:chansons_liste' %}" class="btn-sm btn-ghost">← Liste</a>
