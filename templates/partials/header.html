@@ -7,7 +7,7 @@
 
         <div class="flex items-center gap-4">
             <a href="{% url 'pages:home' %}" class="group relative flex items-baseline gap-3 no-underline">
-                <span class="brand-hat" aria-hidden="true"></span>
+                <span class="brand-hat{% if unread_messages_count %} brand-hat--alert{% endif %}" aria-hidden="true"></span>
                 <span class="title-display text-2xl lg:text-3xl text-brown leading-none">
                     Bruno&nbsp;Boulais
                 </span>

@@ -709,6 +709,22 @@
     }
   }
 
+  /* Indicateur discret de message non lu : le chapeau se balance doucement.
+     Affiché pour tout le monde, mais seul Bruno en connaît le sens. */
+  .brand-hat--alert {
+    animation: hat-alert 2.6s var(--ease-soft) infinite;
+  }
+  @keyframes hat-alert {
+    0%, 100% { transform: translateY(-55%) rotate(12deg); }
+    50%      { transform: translateY(-55%) rotate(-10deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .brand-hat--alert {
+      animation: none;
+      transform: translateY(-55%) rotate(-10deg);
+    }
+  }
+
   .nav-link-mobile {
     color: var(--color-ink);
     text-decoration: none;
