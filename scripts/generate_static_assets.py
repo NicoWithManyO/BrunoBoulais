@@ -1,7 +1,10 @@
-"""Generate the open-graph default image used in social link previews.
+"""Generate the open-graph default image used in social link previews,
+and the nav hat asset derived from its raw source.
 
-Re-run manually after editing the OG card design. The output
-(``static/img/og-default.jpg``) is committed and shipped via Whitenoise.
+Re-run manually after editing the OG card design or replacing the hat
+source. The outputs (``static/img/og-default.jpg`` and
+``static/img/chapeau-bruno-nav.png``) are committed and shipped via
+Whitenoise.
 
 Les favicons (chapeau de Bruno) sont des assets dessinés à la main,
 PAS générés par ce script — ne pas les régénérer ici.
@@ -12,6 +15,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent
 IMG = ROOT / "static" / "img"
+SOURCES = ROOT / "sources"
 
 TERRACOTTA = (201, 98, 43)
 CREAM = (245, 239, 230)
@@ -66,11 +70,42 @@ def _og_default() -> Image.Image:
     return img
 
 
+def _nav_hat() -> None:
+    """Dérive l'asset nav du chapeau depuis sa source brute (RGBA, fond transparent)."""
+    source = SOURCES / "chapeau-bruno.png"
+    if not source.exists():
+        # sources/ est gitignoré : la source n'existe que sur la machine de Bruno.
+        print(f"  skip {source.relative_to(ROOT)} absent — chapeau nav non régénéré")
+        return
+
+    img = Image.open(source)
+    # Recadrage sur le chapeau : seuil sur l'alpha car la source contient du
+    # bruit quasi transparent sur toute la surface, qui fausserait getbbox().
+    mask = img.getchannel("A").point(lambda v: 255 if v > 30 else 0)
+    left, top, right, bottom = mask.getbbox()
+    margin = 8  # marge pour ne pas couper l'anticrénelage du bord
+    hat = img.crop((
+        max(left - margin, 0),
+        max(top - margin, 0),
+        min(right + margin, img.width),
+        min(bottom + margin, img.height),
+    ))
+    # 2× la plus grande taille d'affichage CSS (.brand-hat : 88×60) pour le retina.
+    width = 176
+    height = round(width * hat.height / hat.width)
+    hat = hat.resize((width, height), Image.LANCZOS)
+
+    path = IMG / "chapeau-bruno-nav.png"
+    hat.save(path, optimize=True)
+    print(f"  wrote {path.relative_to(ROOT)} ({width}×{height})")
+
+
 def main():
     IMG.mkdir(parents=True, exist_ok=True)
     path = IMG / "og-default.jpg"
     _og_default().save(path, "JPEG", quality=88, progressive=True, optimize=True)
     print(f"  wrote {path.relative_to(ROOT)} (1200×630)")
+    _nav_hat()
 
 
 if __name__ == "__main__":
