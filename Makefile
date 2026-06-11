@@ -5,6 +5,11 @@ PIP := .venv/bin/pip
 MANAGE := $(PY) manage.py
 PORT ?= 8001
 
+# Premier port libre à partir de $(PORT) (incrémente tant qu'un serveur écoute).
+FIND_PORT = $(PY) -c "import socket,sys,itertools; busy=lambda p: socket.socket().connect_ex(('127.0.0.1',p))==0; print(next(p for p in itertools.count(int(sys.argv[1])) if not busy(p)))"
+# Sort 0 quand le port écoute (sert à attendre que runserver soit prêt).
+PORT_LISTENS = $(PY) -c "import socket,sys; sys.exit(0 if socket.socket().connect_ex(('127.0.0.1',int(sys.argv[1])))==0 else 1)"
+
 help:
 	@echo "Cibles disponibles :"
 	@echo "  install     Installe les dépendances (dev)"
@@ -31,10 +36,15 @@ tailwind:
 	$(MANAGE) tailwind start
 
 dev:
-	@trap 'kill 0' INT TERM EXIT; \
+	@PORT=$$($(FIND_PORT) $(PORT)); \
+	 trap 'kill 0' INT TERM EXIT; \
 	 $(MANAGE) tailwind start & \
-	 $(MANAGE) runserver $(PORT); \
-	 wait
+	 ( while ! $(PORT_LISTENS) $$PORT; do sleep 0.2; done; \
+	   echo ""; \
+	   echo "  Front : http://127.0.0.1:$$PORT/"; \
+	   echo "  Back  : http://127.0.0.1:$$PORT/gestion/"; \
+	   echo "" ) & \
+	 $(MANAGE) runserver $$PORT
 
 shell:
 	$(MANAGE) shell
