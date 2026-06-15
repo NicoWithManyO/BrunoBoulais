@@ -26,7 +26,7 @@ class ContactForm(forms.ModelForm):
 
     class Meta:
         model = Message
-        fields = ["nom", "sujet", "email", "telephone", "adresse_postale", "contenu"]
+        fields = ["nom", "sujet", "email", "telephone", "adresse_postale", "mode_paiement", "contenu"]
         widgets = {
             "contenu": forms.Textarea(attrs={"rows": 6}),
             "adresse_postale": forms.Textarea(attrs={"rows": 3}),
@@ -40,6 +40,8 @@ class ContactForm(forms.ModelForm):
                 self.add_error("telephone", "Numéro de téléphone requis pour une commande.")
             if not (cleaned.get("adresse_postale") or "").strip():
                 self.add_error("adresse_postale", "Adresse de destination requise pour une commande.")
+            if not cleaned.get("mode_paiement"):
+                self.add_error("mode_paiement", "Merci d'indiquer un mode de paiement.")
         return cleaned
 
     def save_and_notify(self):
@@ -50,7 +52,8 @@ class ContactForm(forms.ModelForm):
                 f"De : {msg.nom} <{msg.email}>\n"
                 f"Téléphone : {msg.telephone or '—'}\n"
                 f"Adresse : {msg.adresse_postale or '—'}\n"
-                f"Sujet : {msg.get_sujet_display()}\n\n"
+                f"Sujet : {msg.get_sujet_display()}\n"
+                f"Paiement : {msg.get_mode_paiement_display() or '—'}\n\n"
                 f"{msg.contenu}\n"
             ),
             from_email=settings.DEFAULT_FROM_EMAIL,
@@ -58,7 +61,21 @@ class ContactForm(forms.ModelForm):
             reply_to=[msg.email],
         )
         try:
+            # msg.notified vaut déjà True par défaut : pas de réécriture sur le
+            # chemin nominal.
             email.send(fail_silently=False)
         except Exception:
-            logger.exception("Contact form notification failed for message #%s", msg.pk)
+            # La commande est déjà enregistrée (source de vérité = admin gestion) :
+            # on n'échoue pas la requête pour un mail. On persiste le drapeau pour
+            # que la commande remonte comme « à traiter » dans l'admin, + log.
+            msg.notified = False
+            msg.save(update_fields=["notified"])
+            logger.error(
+                "Contact: commande #%s de %s <%s> enregistrée mais notification "
+                "non envoyée — à traiter manuellement.",
+                msg.pk,
+                msg.nom,
+                msg.email,
+                exc_info=True,
+            )
         return msg

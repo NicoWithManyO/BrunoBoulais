@@ -57,14 +57,29 @@ class Message(TimestampedModel):
         (SUJET_AUTRE, "Autre"),
     ]
 
+    PAIEMENT_CB = "cb"
+    PAIEMENT_CHEQUE = "cheque"
+    PAIEMENT_VIREMENT = "virement"
+    PAIEMENT_CHOICES = [
+        (PAIEMENT_CB, "Carte bancaire"),
+        (PAIEMENT_CHEQUE, "Chèque"),
+        (PAIEMENT_VIREMENT, "Virement"),
+    ]
+
     nom = models.CharField("Nom", max_length=120)
     email = models.EmailField("Email")
     telephone = models.CharField("Téléphone", max_length=30, blank=True)
     adresse_postale = models.TextField("Adresse postale de destination", blank=True)
     sujet = models.CharField("Sujet", max_length=20, choices=SUJET_CHOICES, default=SUJET_COMMANDE)
+    mode_paiement = models.CharField(
+        "Mode de paiement", max_length=20, choices=PAIEMENT_CHOICES, blank=True
+    )
     contenu = models.TextField("Message")
     lu = models.BooleanField("Lu", default=False)
     archive = models.BooleanField("Archivé", default=False)
+    # False = la commande est enregistrée mais l'email de notification n'est pas
+    # parti : à traiter manuellement (visible/filtrable dans l'admin).
+    notified = models.BooleanField("Notifié", default=True)
 
     class Meta:
         ordering = ["-created_at"]

@@ -129,8 +129,18 @@ def contact(request):
                     #   Retry-After négatif, invalide RFC 7231.
                     retry_after = max(1, math.ceil(usage["time_left"]))
                 else:
-                    form.save_and_notify()
+                    msg = form.save_and_notify()
                     _bucket_usage(request, bucket, increment=True)
+                    # Le paiement se règle à l'étape suivante (/merci/) : on
+                    # transmet le mode choisi via la session pour afficher la
+                    # bonne consigne (boutons Stripe pour CB, etc.).
+                    if msg.sujet == Message.SUJET_COMMANDE and msg.mode_paiement:
+                        request.session["order_paiement"] = {
+                            "mode": msg.mode_paiement,
+                            "ref": msg.pk,
+                        }
+                    else:
+                        request.session.pop("order_paiement", None)
                     return redirect(reverse("contact:merci"))
     else:
         form = ContactForm()
@@ -141,6 +151,9 @@ def contact(request):
             "form": form,
             "page": ContactPage.get_solo(),
             "commande_value": Message.SUJET_COMMANDE,
+            "paiement_cb": Message.PAIEMENT_CB,
+            "paiement_cheque": Message.PAIEMENT_CHEQUE,
+            "paiement_virement": Message.PAIEMENT_VIREMENT,
             "rate_limited": rate_limited,
             "ip_unresolved": ip_unresolved,
             **seo(
@@ -174,11 +187,20 @@ def contact(request):
 
 
 def merci(request):
+    # Consommé à l'affichage : la consigne de paiement ne s'affiche qu'une fois,
+    # pour ne pas reproposer de payer une commande déjà réglée (les liens Stripe
+    # statiques rechargeraient un paiement). Un rechargement de /merci/ retombe
+    # donc sur le simple remerciement.
+    order_paiement = request.session.pop("order_paiement", None)
     return render(
         request,
         "contact/merci.html",
         {
             "page": ContactPage.get_solo(),
+            "order_paiement": order_paiement,
+            "paiement_cb": Message.PAIEMENT_CB,
+            "paiement_cheque": Message.PAIEMENT_CHEQUE,
+            "paiement_virement": Message.PAIEMENT_VIREMENT,
             **seo(request, title="Message envoyé · Bruno Boulais"),
         },
     )

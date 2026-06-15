@@ -49,6 +49,30 @@
             {{ form.adresse_postale }}
             <p class="mt-1 text-xs text-slate-soft">Indiquez le nom et l'adresse de destination du colis.</p>
         </div>
+        <div data-paiement-wrap aria-live="polite"{% if form.sujet.value != commande_value %} hidden{% endif %}>
+            <label class="field-label" for="{{ form.mode_paiement.id_for_label }}">
+                Mode de paiement
+                <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire pour une commande)</span>
+            </label>
+            {{ form.mode_paiement }}
+
+            {# Carte bancaire : le règlement Stripe se fait sur /merci/ après l'envoi #}
+            <div data-paiement-panel="{{ paiement_cb }}" class="mt-4 text-ink/80 leading-relaxed"{% if form.mode_paiement.value != paiement_cb %} hidden{% endif %}>
+                <p>Le règlement par carte se fait juste après l'envoi de votre commande.</p>
+            </div>
+
+            {# Chèque : envoi postal à l'auteur #}
+            <div data-paiement-panel="{{ paiement_cheque }}" class="mt-4 text-ink/80 leading-relaxed"{% if form.mode_paiement.value != paiement_cheque %} hidden{% endif %}>
+                <p>Pour payer par chèque, merci de me l'envoyer à l'adresse suivante&nbsp;:<br>
+                Bruno BOULAIS — 22 Chemin Orossen — 40290 MISSON.</p>
+            </div>
+
+            {# Virement : RIB envoyé par retour #}
+            <div data-paiement-panel="{{ paiement_virement }}" class="mt-4 text-ink/80 leading-relaxed"{% if form.mode_paiement.value != paiement_virement %} hidden{% endif %}>
+                <p>Pour un règlement par virement, je vous transmettrai mon RIB par retour de message.</p>
+            </div>
+        </div>
+
         <div>
             <label class="field-label" for="{{ form.contenu.id_for_label }}">Votre message</label>
             {{ form.contenu }}
@@ -82,8 +106,18 @@
             const telHintExtra = document.querySelector('[data-telephone-hint-extra]');
             const adrWrap = document.querySelector('[data-adresse-wrap]');
             const adrInput = document.getElementById('{{ form.adresse_postale.id_for_label }}');
-            if (!sujet || !telInput || !telHint || !telHintExtra || !adrWrap || !adrInput) return;
+            const paiementWrap = document.querySelector('[data-paiement-wrap]');
+            const paiementSelect = document.getElementById('{{ form.mode_paiement.id_for_label }}');
+            const paiementPanels = document.querySelectorAll('[data-paiement-panel]');
+            if (!sujet || !telInput || !telHint || !telHintExtra || !adrWrap || !adrInput
+                || !paiementWrap || !paiementSelect) return;
             const COMMANDE = '{{ commande_value|escapejs }}';
+            function syncPaiement() {
+                const isCommande = sujet.value === COMMANDE;
+                paiementPanels.forEach((panel) => {
+                    panel.hidden = !isCommande || panel.dataset.paiementPanel !== paiementSelect.value;
+                });
+            }
             function sync() {
                 const isCommande = sujet.value === COMMANDE;
                 telInput.required = isCommande;
@@ -93,8 +127,12 @@
                 telHint.classList.toggle('text-terracotta-deep', isCommande);
                 telHint.classList.toggle('text-slate-soft', !isCommande);
                 telHintExtra.hidden = !isCommande;
+                paiementWrap.hidden = !isCommande;
+                paiementSelect.required = isCommande;
+                syncPaiement();
             }
             sujet.addEventListener('change', sync);
+            paiementSelect.addEventListener('change', syncPaiement);
             sync();
         })();
         </script>

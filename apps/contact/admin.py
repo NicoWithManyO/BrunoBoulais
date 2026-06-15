@@ -1,3 +1,11 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import Message
+
+
+@admin.register(Message)
+class MessageAdmin(admin.ModelAdmin):
+    list_display = ("nom", "sujet", "mode_paiement", "notified", "lu", "created_at")
+    list_filter = ("notified", "sujet", "mode_paiement", "lu", "archive")
+    search_fields = ("nom", "email", "contenu")
+    readonly_fields = ("created_at", "updated_at")

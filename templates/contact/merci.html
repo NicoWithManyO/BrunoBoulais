@@ -7,6 +7,41 @@
     <p class="mt-6 text-ink/80">
         {% if page.merci_message %}{{ page.merci_message|richtext:"inline" }}{% else %}Bruno revient vers vous dès que possible.{% endif %}
     </p>
+
+    {% if order_paiement %}
+    <div class="mt-10 mx-auto max-w-xl text-left">
+        <p class="text-ink/80 leading-relaxed">Votre commande est bien enregistrée
+            (réf.&nbsp;{{ order_paiement.ref }}).</p>
+
+        {% if order_paiement.mode == paiement_cb %}
+        <p class="mt-4 text-ink/80 leading-relaxed">Pour la régler par carte&nbsp;:</p>
+        <div class="mt-5 flex flex-wrap items-center gap-4">
+            <a href="https://buy.stripe.com/00w28sdfp3GK08ygNKe3e03" target="_blank" rel="noopener" class="btn-stripe">
+                <span class="btn-stripe__label">
+                    <svg viewBox="0 0 60 25" aria-hidden="true" class="h-4 w-auto fill-current"><path d="M59.64 14.28h-8.06c.19 1.93 1.6 2.55 3.2 2.55 1.64 0 2.96-.37 4.05-.95v3.32a8.33 8.33 0 0 1-4.56 1.1c-4.01 0-6.83-2.5-6.83-7.48 0-4.19 2.39-7.52 6.3-7.52 3.92 0 5.96 3.28 5.96 7.5 0 .4-.04 1.26-.06 1.48zm-5.92-5.62c-1.03 0-2.17.73-2.17 2.58h4.25c0-1.85-1.07-2.58-2.08-2.58zM40.95 20.3c-1.44 0-2.32-.6-2.9-1.04l-.02 4.63-4.12.87V5.57h3.76l.08 1.02a4.7 4.7 0 0 1 3.23-1.29c2.9 0 5.62 2.6 5.62 7.39 0 5.23-2.7 7.6-5.65 7.6zM40 8.95c-.95 0-1.54.34-1.97.81l.02 6.12c.4.44.98.78 1.95.78 1.52 0 2.54-1.65 2.54-3.87 0-2.15-1.04-3.84-2.54-3.84zM28.24 5.57h4.13v14.44h-4.13V5.57zm0-4.7L32.37 0v3.36l-4.13.88V.88zm-4.32 9.35v9.79H19.8V5.57h3.7l.12 1.22c1-1.77 3.07-1.41 3.62-1.22v3.79c-.52-.17-2.29-.43-3.32.86zm-8.55 4.72c0 2.43 2.6 1.68 3.12 1.46v3.36c-.55.3-1.54.54-2.89.54a4.15 4.15 0 0 1-4.27-4.24l.02-13.17 4.02-.86v3.54h3.14V9.1h-3.14v5.85zm-4.91.7c0 2.97-2.31 4.66-5.73 4.66a11.2 11.2 0 0 1-4.46-.93v-3.93c1.38.75 3.1 1.31 4.46 1.31.92 0 1.53-.24 1.53-1C6.16 13.77 0 14.51 0 9.81 0 6.79 2.26 5.3 5.62 5.3c1.36 0 2.72.2 4.09.75v3.88a9.23 9.23 0 0 0-4.09-1.06c-.87 0-1.41.25-1.41.9 0 1.85 6.17.97 6.17 5.88h.01z" fill-rule="evenodd"></path></svg>
+                    Payer un exemplaire
+                </span>
+                <span class="btn-stripe__price">24,10&nbsp;€</span>
+            </a>
+            <a href="https://buy.stripe.com/bJe4gA7V5fpsdZo696e3e02" target="_blank" rel="noopener" class="btn-stripe">
+                <span class="btn-stripe__label">
+                    <svg viewBox="0 0 60 25" aria-hidden="true" class="h-4 w-auto fill-current"><path d="M59.64 14.28h-8.06c.19 1.93 1.6 2.55 3.2 2.55 1.64 0 2.96-.37 4.05-.95v3.32a8.33 8.33 0 0 1-4.56 1.1c-4.01 0-6.83-2.5-6.83-7.48 0-4.19 2.39-7.52 6.3-7.52 3.92 0 5.96 3.28 5.96 7.5 0 .4-.04 1.26-.06 1.48zm-5.92-5.62c-1.03 0-2.17.73-2.17 2.58h4.25c0-1.85-1.07-2.58-2.08-2.58zM40.95 20.3c-1.44 0-2.32-.6-2.9-1.04l-.02 4.63-4.12.87V5.57h3.76l.08 1.02a4.7 4.7 0 0 1 3.23-1.29c2.9 0 5.62 2.6 5.62 7.39 0 5.23-2.7 7.6-5.65 7.6zM40 8.95c-.95 0-1.54.34-1.97.81l.02 6.12c.4.44.98.78 1.95.78 1.52 0 2.54-1.65 2.54-3.87 0-2.15-1.04-3.84-2.54-3.84zM28.24 5.57h4.13v14.44h-4.13V5.57zm0-4.7L32.37 0v3.36l-4.13.88V.88zm-4.32 9.35v9.79H19.8V5.57h3.7l.12 1.22c1-1.77 3.07-1.41 3.62-1.22v3.79c-.52-.17-2.29-.43-3.32.86zm-8.55 4.72c0 2.43 2.6 1.68 3.12 1.46v3.36c-.55.3-1.54.54-2.89.54a4.15 4.15 0 0 1-4.27-4.24l.02-13.17 4.02-.86v3.54h3.14V9.1h-3.14v5.85zm-4.91.7c0 2.97-2.31 4.66-5.73 4.66a11.2 11.2 0 0 1-4.46-.93v-3.93c1.38.75 3.1 1.31 4.46 1.31.92 0 1.53-.24 1.53-1C6.16 13.77 0 14.51 0 9.81 0 6.79 2.26 5.3 5.62 5.3c1.36 0 2.72.2 4.09.75v3.88a9.23 9.23 0 0 0-4.09-1.06c-.87 0-1.41.25-1.41.9 0 1.85 6.17.97 6.17 5.88h.01z" fill-rule="evenodd"></path></svg>
+                    Payer deux exemplaires
+                </span>
+                <span class="btn-stripe__price">45,99&nbsp;€</span>
+            </a>
+        </div>
+        {% elif order_paiement.mode == paiement_cheque %}
+        <p class="mt-4 text-ink/80 leading-relaxed">Pour payer par chèque, merci de me l'envoyer à l'adresse suivante&nbsp;:<br>
+            Bruno BOULAIS — 22 Chemin Orossen — 40290 MISSON.</p>
+        {% elif order_paiement.mode == paiement_virement %}
+        <p class="mt-4 text-ink/80 leading-relaxed">Pour un règlement par virement, je vous transmettrai mon RIB par retour de message.</p>
+        {% else %}
+        <p class="mt-4 text-ink/80 leading-relaxed">Je reviens vers vous très vite pour finaliser le règlement.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
     <a href="{% url 'pages:home' %}" class="btn btn-ghost mt-10">Retour à l’accueil</a>
 </section>
 {% endblock %}

@@ -509,6 +509,26 @@
   }
   .btn-link:hover { color: var(--color-terracotta); }
 
+  /* --- Bouton Stripe (couleur de marque) --- */
+  .btn-stripe {
+    @apply inline-flex flex-col items-center text-center gap-1 px-6 py-3 rounded-md font-sans text-sm font-medium tracking-wide text-white;
+    background: #635bff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(99, 91, 255, 0.25);
+    transition: all 0.2s var(--ease-soft);
+    text-decoration: none;
+  }
+  .btn-stripe:hover {
+    background: #554af0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 4px 14px rgba(99, 91, 255, 0.35);
+    transform: translateY(-1px);
+  }
+  .btn-stripe__label {
+    @apply inline-flex items-center gap-2;
+  }
+  .btn-stripe__price {
+    @apply text-base font-semibold;
+  }
+
   /* --- Carte éditoriale --- */
   .card-edito {
     background: rgba(255, 252, 244, 0.6);
