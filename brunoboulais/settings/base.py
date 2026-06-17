@@ -229,6 +229,12 @@ CONTENT_SECURITY_POLICY = {
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="boulaisbruno@free.fr")
 CONTACT_EMAIL = env("CONTACT_EMAIL", default="boulaisbruno@free.fr")
 
+# --- Stripe --------------------------------------------------------------
+# Checkout hébergée : seule la clé secrète (serveur) et le secret du webhook
+# sont nécessaires — pas de clé publique (aucun Stripe.js côté front).
+STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
+STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
+
 # --- Logging -------------------------------------------------------------
 
 LOGGING = {

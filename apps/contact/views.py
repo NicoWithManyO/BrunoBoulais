@@ -2,16 +2,22 @@ import ipaddress
 import logging
 import math
 
+import stripe
+from django.conf import settings
 from django.core.cache import cache
+from django.core.mail import send_mail
+from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django_ratelimit.core import get_usage
 
 from apps.core.middleware import _client_ip
 from apps.core.seo import seo
 
-from .forms import ContactForm
-from .models import ContactPage, Message
+from .forms import CommandeForm, ContactForm
+from .models import PRODUITS, ContactPage, Message, montant_euros
 
 logger = logging.getLogger(__name__)
 
@@ -204,3 +210,188 @@ def merci(request):
             **seo(request, title="Message envoyé · Bruno Boulais"),
         },
     )
+
+
+# --- Nouvelle page de commande (page de travail /contact/v2/, swap à venir) ---
+# Réutilise les helpers de rate-limit ci-dessus. La similarité d'orchestration
+# avec `contact` est temporaire : l'ancienne page disparaît au swap.
+
+
+def commande(request):
+    rate_limited = False
+    ip_unresolved = False
+    retry_after = None
+    if request.method == "POST":
+        form = CommandeForm(request.POST)
+        if (request.POST.get("website") or "").strip():
+            bucket = _ratelimit_bucket(request)
+            if bucket is None:
+                _log_ip_unresolved_dedup(request)
+            else:
+                _bucket_usage(request, bucket, increment=True)
+            return redirect(reverse("contact:commande_merci"))
+        if form.is_valid():
+            bucket = _ratelimit_bucket(request)
+            if bucket is None:
+                _log_ip_unresolved_dedup(request)
+                ip_unresolved = True
+            else:
+                usage = _bucket_usage(request, bucket, increment=False)
+                if usage is not None and usage["count"] >= usage["limit"]:
+                    rate_limited = True
+                    retry_after = max(1, math.ceil(usage["time_left"]))
+                else:
+                    msg = form.save_and_notify()
+                    _bucket_usage(request, bucket, increment=True)
+                    # On ne garde que la référence : mode et quantité se relisent
+                    # depuis le Message (pas de duplication en session).
+                    if msg.sujet == Message.SUJET_COMMANDE and msg.mode_paiement:
+                        request.session["order_ref"] = msg.pk
+                    else:
+                        request.session.pop("order_ref", None)
+                    return redirect(reverse("contact:commande_merci"))
+    else:
+        form = CommandeForm()
+    response = render(
+        request,
+        "contact/commande.html",
+        {
+            "form": form,
+            "page": ContactPage.get_solo(),
+            "commande_value": Message.SUJET_COMMANDE,
+            "paiement_cb": Message.PAIEMENT_CB,
+            "paiement_cheque": Message.PAIEMENT_CHEQUE,
+            "paiement_virement": Message.PAIEMENT_VIREMENT,
+            "rate_limited": rate_limited,
+            "ip_unresolved": ip_unresolved,
+            **seo(
+                request,
+                title="Contact & commande dédicacée · Bruno Boulais",
+                description=(
+                    "Commander le livre avec une dédicace personnalisée ou écrire"
+                    " à Bruno Boulais."
+                ),
+            ),
+        },
+    )
+    if ip_unresolved:
+        response.status_code = 503
+        response["Cache-Control"] = "no-store"
+    elif rate_limited:
+        response.status_code = 429
+        response["Retry-After"] = str(retry_after)
+        response["Cache-Control"] = "no-store"
+    return response
+
+
+def commande_merci(request):
+    # On garde `order_ref` en session tant que la commande n'est pas réglée :
+    # le client doit pouvoir relancer un paiement annulé. On le purge dès que
+    # la commande est payée (ou au retour « succès » de Stripe).
+    ref = request.session.get("order_ref")
+    order = Message.objects.filter(pk=ref).first() if ref else None
+    paiement = request.GET.get("paiement")  # succes | annule | erreur
+
+    if order and (order.paye or paiement == "succes"):
+        request.session.pop("order_ref", None)
+
+    produit = PRODUITS.get(order.nb_exemplaires) if order else None
+    return render(
+        request,
+        "contact/commande_merci.html",
+        {
+            "page": ContactPage.get_solo(),
+            "order": order,
+            "montant": montant_euros(produit["montant_cents"]) if produit else "",
+            "paiement": paiement,
+            "paiement_cb": Message.PAIEMENT_CB,
+            "paiement_cheque": Message.PAIEMENT_CHEQUE,
+            "paiement_virement": Message.PAIEMENT_VIREMENT,
+            **seo(request, title="Message envoyé · Bruno Boulais"),
+        },
+    )
+
+
+@require_POST
+def paiement_checkout(request):
+    """Crée une Checkout Session Stripe pour la commande CB en cours de session."""
+    ref = request.session.get("order_ref")
+    order = Message.objects.filter(pk=ref).first() if ref else None
+    # Garde : commande CB non encore payée. Sinon, rien à payer → retour /merci/.
+    if not order or order.mode_paiement != Message.PAIEMENT_CB or order.paye:
+        return redirect(reverse("contact:commande_merci"))
+
+    produit = PRODUITS.get(order.nb_exemplaires)
+    merci_url = request.build_absolute_uri(reverse("contact:commande_merci"))
+    if produit is None:
+        # Quantité absente/incohérente (donnée legacy, admin) : pas de montant
+        # à facturer, on ne lance pas Stripe et on retourne proprement.
+        logger.error(
+            "Stripe: commande #%s sans quantité valide (nb_exemplaires=%r).",
+            order.pk,
+            order.nb_exemplaires,
+        )
+        return redirect(f"{merci_url}?paiement=erreur")
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    try:
+        session = stripe.checkout.Session.create(
+            mode="payment",
+            line_items=[
+                {
+                    "price_data": {
+                        "currency": "eur",
+                        "product_data": {"name": produit["label"]},
+                        "unit_amount": produit["montant_cents"],
+                    },
+                    "quantity": 1,
+                }
+            ],
+            customer_email=order.email,
+            client_reference_id=str(order.pk),
+            success_url=f"{merci_url}?paiement=succes",
+            cancel_url=f"{merci_url}?paiement=annule",
+        )
+    except stripe.error.StripeError:
+        logger.error(
+            "Stripe: échec de création de la Checkout Session pour la commande #%s.",
+            order.pk,
+            exc_info=True,
+        )
+        return redirect(f"{merci_url}?paiement=erreur")
+
+    order.stripe_session_id = session.id
+    order.save(update_fields=["stripe_session_id"])
+    return redirect(session.url)
+
+
+@csrf_exempt
+@require_POST
+def paiement_webhook(request):
+    """Webhook Stripe : confirme le paiement d'une commande (checkout.session.completed)."""
+    try:
+        event = stripe.Webhook.construct_event(
+            request.body,
+            request.META.get("HTTP_STRIPE_SIGNATURE", ""),
+            settings.STRIPE_WEBHOOK_SECRET,
+        )
+    except (ValueError, stripe.error.SignatureVerificationError):
+        return HttpResponse(status=400)
+
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        # On ne marque payé que si le paiement est réellement abouti : pour une
+        # méthode asynchrone, `completed` peut arriver avec payment_status != paid.
+        if session.get("payment_status") != "paid":
+            return HttpResponse(status=200)
+        ref = session.get("client_reference_id")
+        # filter(paye=False) = idempotent : un re-delivery Stripe ne renotifie pas.
+        updated = Message.objects.filter(pk=ref, paye=False).update(paye=True)
+        if updated:
+            send_mail(
+                subject=f"[jacques-bertin.manyo.dev] Paiement reçu — commande #{ref}",
+                message=f"Le paiement par carte de la commande #{ref} a bien été reçu.\n",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[settings.CONTACT_EMAIL],
+                fail_silently=True,
+            )
+    return HttpResponse(status=200)

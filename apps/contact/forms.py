@@ -4,7 +4,7 @@ from django import forms
 from django.conf import settings
 from django.core.mail import EmailMessage
 
-from .models import Message
+from .models import PRODUITS, Message, montant_euros
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +46,14 @@ class ContactForm(forms.ModelForm):
 
     def save_and_notify(self):
         msg = self.save()
+        # Ligne quantité + montant uniquement si renseignée (commande).
+        exemplaires_line = ""
+        if msg.nb_exemplaires:
+            produit = PRODUITS[msg.nb_exemplaires]
+            exemplaires_line = (
+                f"Exemplaires : {produit['label']} — "
+                f"{montant_euros(produit['montant_cents'])}\n"
+            )
         email = EmailMessage(
             subject=f"[jacques-bertin.manyo.dev] {msg.get_sujet_display()} — {msg.nom}",
             body=(
@@ -53,7 +61,8 @@ class ContactForm(forms.ModelForm):
                 f"Téléphone : {msg.telephone or '—'}\n"
                 f"Adresse : {msg.adresse_postale or '—'}\n"
                 f"Sujet : {msg.get_sujet_display()}\n"
-                f"Paiement : {msg.get_mode_paiement_display() or '—'}\n\n"
+                f"Paiement : {msg.get_mode_paiement_display() or '—'}\n"
+                f"{exemplaires_line}\n"
                 f"{msg.contenu}\n"
             ),
             from_email=settings.DEFAULT_FROM_EMAIL,
@@ -79,3 +88,20 @@ class ContactForm(forms.ModelForm):
                 exc_info=True,
             )
         return msg
+
+
+class CommandeForm(ContactForm):
+    """Formulaire de la nouvelle page de commande : ajoute le nombre d'exemplaires.
+
+    Sous-classe pour ne pas toucher ``ContactForm`` (encore utilisé par la page
+    /contact/ live) tant que le swap n'est pas fait.
+    """
+
+    class Meta(ContactForm.Meta):
+        fields = ContactForm.Meta.fields + ["nb_exemplaires"]
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("sujet") == Message.SUJET_COMMANDE and not cleaned.get("nb_exemplaires"):
+            self.add_error("nb_exemplaires", "Merci d'indiquer le nombre d'exemplaires.")
+        return cleaned

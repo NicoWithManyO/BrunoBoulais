@@ -7,6 +7,18 @@ from apps.core.models import TimestampedModel
 
 CACHE_KEY_CONTACT_PAGE = "contact_page"
 
+# Tarifs dégressifs du livre dédicacé. Montants en centimes = source de vérité
+# unique (formulaire, page /merci/, line items Stripe, email de notification).
+PRODUITS = {
+    1: {"label": "1 exemplaire dédicacé", "montant_cents": 2410},
+    2: {"label": "2 exemplaires dédicacés", "montant_cents": 4599},
+}
+
+
+def montant_euros(cents):
+    """Formate un montant en centimes pour l'affichage FR : 2410 → "24,10 €"."""
+    return f"{cents / 100:.2f}".replace(".", ",") + " €"
+
 
 class ContactPage(TimestampedModel):
     """Singleton holding the editable header of /contact/ AND the post-submit /contact/merci/ page."""
@@ -74,12 +86,22 @@ class Message(TimestampedModel):
     mode_paiement = models.CharField(
         "Mode de paiement", max_length=20, choices=PAIEMENT_CHOICES, blank=True
     )
+    # null pour les sujets non-commande (question, presse, autre).
+    nb_exemplaires = models.PositiveSmallIntegerField(
+        "Nombre d'exemplaires",
+        choices=[(n, montant_euros(p["montant_cents"])) for n, p in PRODUITS.items()],
+        null=True,
+        blank=True,
+    )
     contenu = models.TextField("Message")
     lu = models.BooleanField("Lu", default=False)
     archive = models.BooleanField("Archivé", default=False)
     # False = la commande est enregistrée mais l'email de notification n'est pas
     # parti : à traiter manuellement (visible/filtrable dans l'admin).
     notified = models.BooleanField("Notifié", default=True)
+    # Posé par le webhook Stripe (CB) ou coché à la main par Bruno (chèque/virement).
+    paye = models.BooleanField("Payé", default=False)
+    stripe_session_id = models.CharField("Session Stripe", max_length=255, blank=True)
 
     class Meta:
         ordering = ["-created_at"]
