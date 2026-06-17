@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% load richtext %}
+{% load richtext static %}
 {% block content %}
 <section class="container-prose py-20">
     <p class="eyebrow">{{ page.eyebrow|default:"Écrire à l’auteur" }}</p>
     <h1 class="mt-4">{{ page.titre|default:"Contact & commande" }}</h1>
     <div class="mt-6 text-ink/80 leading-relaxed prose">
         {% if page.intro %}{{ page.intro|richtext }}{% else %}
-        <p>Pour commander le livre avec dédicace (envoi via Mondial Relay) ou poser une question,
+        <p>Pour commander le livre (envoi via Mondial Relay) ou poser une question,
             utilisez ce formulaire. Vous pouvez aussi écrire directement à
             <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a>.</p>
         {% endif %}
@@ -29,7 +29,10 @@
         </div>
         <div class="grid sm:grid-cols-2 gap-6">
             <div>
-                <label class="field-label" for="{{ form.email.id_for_label }}">Email</label>
+                <label class="field-label" for="{{ form.email.id_for_label }}">
+                    Email
+                    <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire)</span>
+                </label>
                 {{ form.email }}
             </div>
             <div>
@@ -41,20 +44,49 @@
                 <p data-telephone-hint-extra class="mt-1 text-xs text-slate-soft"{% if form.sujet.value != commande_value %} hidden{% endif %}>Pour le suivi du colis.</p>
             </div>
         </div>
-        <div data-adresse-wrap aria-live="polite"{% if form.sujet.value != commande_value %} hidden{% endif %}>
-            <label class="field-label" for="{{ form.adresse_postale.id_for_label }}">
-                Adresse postale de destination
-                <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire pour une commande)</span>
-            </label>
-            {{ form.adresse_postale }}
-            <p class="mt-1 text-xs text-slate-soft">Indiquez le nom et l'adresse de destination du colis.</p>
-        </div>
         <div data-exemplaires-wrap aria-live="polite"{% if form.sujet.value != commande_value %} hidden{% endif %}>
             <label class="field-label" for="{{ form.nb_exemplaires.id_for_label }}">
                 Nombre d'exemplaires
                 <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire pour une commande)</span>
             </label>
             {{ form.nb_exemplaires }}
+        </div>
+        <div data-livraison-wrap aria-live="polite"{% if form.sujet.value != commande_value %} hidden{% endif %}>
+            <label class="field-label" for="{{ form.mode_livraison.id_for_label }}">
+                Mode de livraison
+                <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire pour une commande)</span>
+            </label>
+            {{ form.mode_livraison }}
+            <p class="mt-1 text-xs text-slate-soft">Point Relais&nbsp;: chez un commerçant (selon ses horaires). Locker&nbsp;: casier accessible 24&nbsp;h/24. Domicile&nbsp;: selon l'éligibilité de l'adresse.</p>
+        </div>
+
+        {# Point de livraison : adresse libre (domicile) OU widget Mondial Relay (relais/locker) #}
+        <div data-livraison-domicile aria-live="polite" hidden>
+            <label class="field-label" for="{{ form.adresse_postale.id_for_label }}">
+                Adresse de livraison
+                <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire)</span>
+            </label>
+            {{ form.adresse_postale }}
+            <p class="mt-1 text-xs text-slate-soft">Indiquez vos nom et prénom et votre adresse complète. Toutes les adresses ne sont pas encore éligibles à la livraison à domicile&nbsp;; je vous recontacte si besoin.</p>
+        </div>
+        <div data-livraison-relais aria-live="polite" hidden>
+            <span class="field-label">Choisissez votre point de retrait</span>
+            {{ form.point_relais_id }}
+            {{ form.point_relais_libelle }}
+            <div id="mr-widget" class="mt-2 rounded-md overflow-hidden border border-mist-light" style="min-height:420px"></div>
+            <p data-mr-selected class="mt-2 text-sm text-ink/80" hidden></p>
+        </div>
+
+        <div data-dedicace-wrap aria-live="polite"{% if form.sujet.value != commande_value %} hidden{% endif %}>
+            <label class="inline-flex items-center gap-2 cursor-pointer">
+                {{ form.dedicace }}
+                <span class="field-label !mb-0">Dédicacer le livre</span>
+            </label>
+            <div data-prenom-wrap class="mt-3"{% if not form.dedicace.value %} hidden{% endif %}>
+                <label class="field-label" for="{{ form.prenom_dedicace.id_for_label }}">Prénom pour la dédicace</label>
+                {{ form.prenom_dedicace }}
+                <p class="mt-1 text-xs text-slate-soft">Laissez vide pour une dédicace simple, sans prénom.</p>
+            </div>
         </div>
         <div data-paiement-wrap aria-live="polite"{% if form.sujet.value != commande_value %} hidden{% endif %}>
             <label class="field-label" for="{{ form.mode_paiement.id_for_label }}">
@@ -65,7 +97,7 @@
 
             {# Carte bancaire : le règlement Stripe se fait sur la page suivante après l'envoi #}
             <div data-paiement-panel="{{ paiement_cb }}" class="mt-4 text-ink/80 leading-relaxed"{% if form.mode_paiement.value != paiement_cb %} hidden{% endif %}>
-                <p>Le règlement par carte se fait juste après l'envoi de votre commande.</p>
+                <p>Le règlement par carte s'effectue juste après la validation de votre commande.</p>
             </div>
 
             {# Chèque : envoi postal à l'auteur #}
@@ -105,45 +137,112 @@
 
         <button type="submit" class="btn btn-primary">Envoyer le message</button>
 
+        {# Widget point relais Mondial Relay : jQuery + Leaflet (self-hostés) puis le plugin MR #}
+        <link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
+        <script src="{% static 'vendor/jquery.min.js' %}"></script>
+        <script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
+        <script src="https://widget.mondialrelay.com/parcelshop-picker/jquery.plugin.mondialrelay.parcelshoppicker.min.js"></script>
         <script>
         (function () {
             const sujet = document.getElementById('{{ form.sujet.id_for_label }}');
             const telInput = document.getElementById('{{ form.telephone.id_for_label }}');
             const telHint = document.querySelector('[data-telephone-hint]');
             const telHintExtra = document.querySelector('[data-telephone-hint-extra]');
-            const adrWrap = document.querySelector('[data-adresse-wrap]');
-            const adrInput = document.getElementById('{{ form.adresse_postale.id_for_label }}');
             const exemplairesWrap = document.querySelector('[data-exemplaires-wrap]');
             const exemplairesSelect = document.getElementById('{{ form.nb_exemplaires.id_for_label }}');
+            const livraisonWrap = document.querySelector('[data-livraison-wrap]');
+            const livraisonSelect = document.getElementById('{{ form.mode_livraison.id_for_label }}');
+            const domicileWrap = document.querySelector('[data-livraison-domicile]');
+            const relaisWrap = document.querySelector('[data-livraison-relais]');
+            const adrInput = document.getElementById('{{ form.adresse_postale.id_for_label }}');
+            const pointId = document.getElementById('{{ form.point_relais_id.id_for_label }}');
+            const pointLibelle = document.getElementById('{{ form.point_relais_libelle.id_for_label }}');
+            const mrSelected = document.querySelector('[data-mr-selected]');
+            const dedicaceWrap = document.querySelector('[data-dedicace-wrap]');
+            const dedicaceCheck = document.getElementById('{{ form.dedicace.id_for_label }}');
+            const prenomWrap = document.querySelector('[data-prenom-wrap]');
             const paiementWrap = document.querySelector('[data-paiement-wrap]');
             const paiementSelect = document.getElementById('{{ form.mode_paiement.id_for_label }}');
             const paiementPanels = document.querySelectorAll('[data-paiement-panel]');
-            if (!sujet || !telInput || !telHint || !telHintExtra || !adrWrap || !adrInput
-                || !exemplairesWrap || !exemplairesSelect || !paiementWrap || !paiementSelect) return;
+            if (!sujet || !telInput || !telHint || !telHintExtra || !exemplairesWrap
+                || !exemplairesSelect || !livraisonWrap || !livraisonSelect || !domicileWrap
+                || !relaisWrap || !adrInput || !pointId || !pointLibelle || !mrSelected
+                || !dedicaceWrap || !dedicaceCheck || !prenomWrap
+                || !paiementWrap || !paiementSelect) return;
             const COMMANDE = '{{ commande_value|escapejs }}';
+            const LIV_DOMICILE = '{{ livraison_domicile|escapejs }}';
+            const LIV_LOCKER = '{{ livraison_locker|escapejs }}';
+            const MR_BRAND = '{{ mondial_relay_brand|escapejs }}';
+
+            function colLivMod() {
+                return livraisonSelect.value === LIV_LOCKER ? '24L' : '24R';
+            }
+            let mrReady = false;
+            function initMrWidget() {
+                // Init paresseuse : seulement quand le conteneur est visible (sinon la
+                // carte Leaflet se rend avec une taille nulle).
+                if (mrReady || typeof window.jQuery === 'undefined' || !jQuery.fn.MR_ParcelShopPicker) return;
+                jQuery('#mr-widget').MR_ParcelShopPicker({
+                    Target: '#{{ form.point_relais_id.id_for_label }}',
+                    Brand: MR_BRAND,
+                    Country: 'FR',
+                    ColLivMod: colLivMod(),
+                    NbResults: '7',
+                    ShowResultsOnMap: true,
+                    OnParcelShopSelected: function (data) {
+                        const libelle = [data.Nom, data.Adresse1, ((data.CP || '') + ' ' + (data.Ville || '')).trim()]
+                            .filter(Boolean).join(', ');
+                        pointId.value = data.ID || '';
+                        pointLibelle.value = libelle;
+                        mrSelected.textContent = 'Point sélectionné : ' + libelle;
+                        mrSelected.hidden = false;
+                    },
+                });
+                mrReady = true;
+            }
             function syncPaiement() {
                 const isCommande = sujet.value === COMMANDE;
                 paiementPanels.forEach((panel) => {
                     panel.hidden = !isCommande || panel.dataset.paiementPanel !== paiementSelect.value;
                 });
             }
+            function syncPrenom() {
+                prenomWrap.hidden = sujet.value !== COMMANDE || !dedicaceCheck.checked;
+            }
+            function syncLivraison() {
+                const isCommande = sujet.value === COMMANDE;
+                const isDomicile = livraisonSelect.value === LIV_DOMICILE;
+                const isPoint = isCommande && livraisonSelect.value && !isDomicile;
+                domicileWrap.hidden = !(isCommande && isDomicile);
+                relaisWrap.hidden = !isPoint;
+                adrInput.required = isCommande && isDomicile;
+                if (isPoint) {
+                    initMrWidget();
+                    if (mrReady) jQuery('#mr-widget').trigger('MR_SetParams', { ColLivMod: colLivMod() });
+                }
+            }
             function sync() {
                 const isCommande = sujet.value === COMMANDE;
                 telInput.required = isCommande;
-                adrInput.required = isCommande;
-                adrWrap.hidden = !isCommande;
                 telHint.textContent = isCommande ? '(obligatoire)' : '(optionnel)';
                 telHint.classList.toggle('text-terracotta-deep', isCommande);
                 telHint.classList.toggle('text-slate-soft', !isCommande);
                 telHintExtra.hidden = !isCommande;
                 exemplairesWrap.hidden = !isCommande;
                 exemplairesSelect.required = isCommande;
+                livraisonWrap.hidden = !isCommande;
+                livraisonSelect.required = isCommande;
+                dedicaceWrap.hidden = !isCommande;
                 paiementWrap.hidden = !isCommande;
                 paiementSelect.required = isCommande;
                 syncPaiement();
+                syncPrenom();
+                syncLivraison();
             }
             sujet.addEventListener('change', sync);
+            livraisonSelect.addEventListener('change', syncLivraison);
             paiementSelect.addEventListener('change', syncPaiement);
+            dedicaceCheck.addEventListener('change', syncPrenom);
             sync();
         })();
         </script>

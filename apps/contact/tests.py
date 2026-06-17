@@ -218,15 +218,18 @@ class TestContactNotificationHardening:
 
 
 def _commande_data(**overrides):
+    # Commande « point relais » par défaut (point sélectionné via le widget).
     data = {
         "nom": "Alice",
         "sujet": Message.SUJET_COMMANDE,
         "email": "alice@example.com",
         "telephone": "0612345678",
-        "adresse_postale": "1 rue du Livre, 40000 Mont-de-Marsan",
         "mode_paiement": Message.PAIEMENT_CB,
         "nb_exemplaires": 1,
-        "contenu": "Je commande un exemplaire dédicacé.",
+        "mode_livraison": Message.LIVRAISON_POINT_RELAIS,
+        "point_relais_id": "FR-12345",
+        "point_relais_libelle": "Tabac de la Poste, 40000 Mont-de-Marsan",
+        "contenu": "Je commande un exemplaire.",
         "website": "",
     }
     data.update(overrides)
@@ -235,14 +238,47 @@ def _commande_data(**overrides):
 
 @pytest.mark.django_db
 class TestCommandeForm:
-    """Le nombre d'exemplaires est requis pour une commande (nouveau champ)."""
+    """Exemplaires, mode de livraison et point/adresse requis selon le mode."""
 
     def test_commande_requires_nb_exemplaires(self):
         form = CommandeForm(data=_commande_data(nb_exemplaires=""))
         assert not form.is_valid()
         assert "nb_exemplaires" in form.errors
 
-    def test_commande_with_nb_exemplaires_is_valid(self):
+    def test_commande_requires_mode_livraison(self):
+        form = CommandeForm(data=_commande_data(mode_livraison=""))
+        assert not form.is_valid()
+        assert "mode_livraison" in form.errors
+
+    def test_relais_requires_point_relais_id(self):
+        form = CommandeForm(data=_commande_data(point_relais_id=""))
+        assert not form.is_valid()
+        assert "point_relais_id" in form.errors
+
+    def test_domicile_requires_adresse(self):
+        form = CommandeForm(
+            data=_commande_data(
+                mode_livraison=Message.LIVRAISON_DOMICILE,
+                point_relais_id="",
+                point_relais_libelle="",
+                adresse_postale="",
+            )
+        )
+        assert not form.is_valid()
+        assert "adresse_postale" in form.errors
+
+    def test_domicile_with_adresse_is_valid(self):
+        form = CommandeForm(
+            data=_commande_data(
+                mode_livraison=Message.LIVRAISON_DOMICILE,
+                point_relais_id="",
+                point_relais_libelle="",
+                adresse_postale="1 rue du Livre, 40000 Mont-de-Marsan",
+            )
+        )
+        assert form.is_valid(), form.errors
+
+    def test_relais_complete_is_valid(self):
         form = CommandeForm(data=_commande_data())
         assert form.is_valid(), form.errors
 
@@ -397,14 +433,28 @@ class TestPaiementWebhook:
             HTTP_STRIPE_SIGNATURE="t=1,v1=deadbeef",
         )
 
+    def _event(self, order, *, payment_status="paid", amount_total=2410):
+        # Vrai StripeObject (comme construct_event en prod), PAS un dict : c'est ce
+        # qui a révélé le bug `.get()` → on teste désormais l'objet réel.
+        return stripe.Event.construct_from(
+            {
+                "type": "checkout.session.completed",
+                "data": {
+                    "object": {
+                        "object": "checkout.session",
+                        "client_reference_id": str(order.pk),
+                        "payment_status": payment_status,
+                        "amount_total": amount_total,
+                    }
+                },
+            },
+            "sk_test_dummy",
+        )
+
     def test_completed_marks_paid_and_notifies(self):
         order = self._order()
-        event = {
-            "type": "checkout.session.completed",
-            "data": {"object": {"client_reference_id": str(order.pk), "payment_status": "paid"}},
-        }
         with mock.patch(
-            "apps.contact.views.stripe.Webhook.construct_event", return_value=event
+            "apps.contact.views.stripe.Webhook.construct_event", return_value=self._event(order)
         ), mock.patch("apps.contact.views.send_mail") as send:
             response = self._post(Client())
         assert response.status_code == 200
@@ -425,12 +475,9 @@ class TestPaiementWebhook:
 
     def test_completed_but_unpaid_does_not_mark_paid(self):
         order = self._order()
-        event = {
-            "type": "checkout.session.completed",
-            "data": {"object": {"client_reference_id": str(order.pk), "payment_status": "unpaid"}},
-        }
         with mock.patch(
-            "apps.contact.views.stripe.Webhook.construct_event", return_value=event
+            "apps.contact.views.stripe.Webhook.construct_event",
+            return_value=self._event(order, payment_status="unpaid"),
         ), mock.patch("apps.contact.views.send_mail") as send:
             response = self._post(Client())
         assert response.status_code == 200
@@ -441,12 +488,8 @@ class TestPaiementWebhook:
     def test_idempotent_no_double_notify(self):
         # Commande déjà payée : un re-delivery ne doit pas renotifier.
         order = self._order(paye=True)
-        event = {
-            "type": "checkout.session.completed",
-            "data": {"object": {"client_reference_id": str(order.pk), "payment_status": "paid"}},
-        }
         with mock.patch(
-            "apps.contact.views.stripe.Webhook.construct_event", return_value=event
+            "apps.contact.views.stripe.Webhook.construct_event", return_value=self._event(order)
         ), mock.patch("apps.contact.views.send_mail") as send:
             response = self._post(Client())
         assert response.status_code == 200

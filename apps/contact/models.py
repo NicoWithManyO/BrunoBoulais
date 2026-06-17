@@ -7,11 +7,11 @@ from apps.core.models import TimestampedModel
 
 CACHE_KEY_CONTACT_PAGE = "contact_page"
 
-# Tarifs dégressifs du livre dédicacé. Montants en centimes = source de vérité
-# unique (formulaire, page /merci/, line items Stripe, email de notification).
+# Tarifs dégressifs du livre. Montants en centimes = source de vérité unique
+# (formulaire, page /merci/, line items Stripe, email de notification).
 PRODUITS = {
-    1: {"label": "1 exemplaire dédicacé", "montant_cents": 2410},
-    2: {"label": "2 exemplaires dédicacés", "montant_cents": 4599},
+    1: {"label": "1 exemplaire", "montant_cents": 2410},
+    2: {"label": "2 exemplaires", "montant_cents": 4599},
 }
 
 
@@ -63,7 +63,7 @@ class Message(TimestampedModel):
     SUJET_PRESSE = "presse"
     SUJET_AUTRE = "autre"
     SUJET_CHOICES = [
-        (SUJET_COMMANDE, "Commande dédicacée"),
+        (SUJET_COMMANDE, "Commande"),
         (SUJET_QUESTION, "Question"),
         (SUJET_PRESSE, "Demande presse"),
         (SUJET_AUTRE, "Autre"),
@@ -78,10 +78,19 @@ class Message(TimestampedModel):
         (PAIEMENT_VIREMENT, "Virement"),
     ]
 
+    LIVRAISON_POINT_RELAIS = "point_relais"
+    LIVRAISON_LOCKER = "locker"
+    LIVRAISON_DOMICILE = "domicile"
+    LIVRAISON_CHOICES = [
+        (LIVRAISON_POINT_RELAIS, "Point Relais"),
+        (LIVRAISON_LOCKER, "Locker (casier)"),
+        (LIVRAISON_DOMICILE, "Domicile"),
+    ]
+
     nom = models.CharField("Nom", max_length=120)
     email = models.EmailField("Email")
     telephone = models.CharField("Téléphone", max_length=30, blank=True)
-    adresse_postale = models.TextField("Adresse postale de destination", blank=True)
+    adresse_postale = models.TextField("Adresse postale", blank=True)
     sujet = models.CharField("Sujet", max_length=20, choices=SUJET_CHOICES, default=SUJET_COMMANDE)
     mode_paiement = models.CharField(
         "Mode de paiement", max_length=20, choices=PAIEMENT_CHOICES, blank=True
@@ -89,10 +98,22 @@ class Message(TimestampedModel):
     # null pour les sujets non-commande (question, presse, autre).
     nb_exemplaires = models.PositiveSmallIntegerField(
         "Nombre d'exemplaires",
-        choices=[(n, montant_euros(p["montant_cents"])) for n, p in PRODUITS.items()],
+        choices=[
+            (n, f"{n} exemplaire{'s' if n > 1 else ''} — {montant_euros(p['montant_cents'])}")
+            for n, p in PRODUITS.items()
+        ],
         null=True,
         blank=True,
     )
+    mode_livraison = models.CharField(
+        "Mode de livraison", max_length=20, choices=LIVRAISON_CHOICES, blank=True
+    )
+    # Renseignés par le widget Mondial Relay (point relais / locker uniquement) ;
+    # le domicile utilise `adresse_postale` en texte libre.
+    point_relais_id = models.CharField("ID point relais", max_length=20, blank=True)
+    point_relais_libelle = models.CharField("Point relais choisi", max_length=255, blank=True)
+    dedicace = models.BooleanField("Dédicace souhaitée", default=True)
+    prenom_dedicace = models.CharField("Prénom pour la dédicace", max_length=100, blank=True)
     contenu = models.TextField("Message")
     lu = models.BooleanField("Lu", default=False)
     archive = models.BooleanField("Archivé", default=False)

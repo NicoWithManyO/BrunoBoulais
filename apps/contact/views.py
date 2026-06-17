@@ -262,15 +262,16 @@ def commande(request):
             "paiement_cb": Message.PAIEMENT_CB,
             "paiement_cheque": Message.PAIEMENT_CHEQUE,
             "paiement_virement": Message.PAIEMENT_VIREMENT,
+            "livraison_domicile": Message.LIVRAISON_DOMICILE,
+            "livraison_point_relais": Message.LIVRAISON_POINT_RELAIS,
+            "livraison_locker": Message.LIVRAISON_LOCKER,
+            "mondial_relay_brand": settings.MONDIAL_RELAY_BRAND,
             "rate_limited": rate_limited,
             "ip_unresolved": ip_unresolved,
             **seo(
                 request,
-                title="Contact & commande dédicacée · Bruno Boulais",
-                description=(
-                    "Commander le livre avec une dédicace personnalisée ou écrire"
-                    " à Bruno Boulais."
-                ),
+                title="Contact & commande · Bruno Boulais",
+                description="Commander le livre ou écrire à Bruno Boulais.",
             ),
         },
     )
@@ -378,18 +379,25 @@ def paiement_webhook(request):
         return HttpResponse(status=400)
 
     if event["type"] == "checkout.session.completed":
+        # NB : `session` est un StripeObject, pas un dict — il n'expose pas `.get()`.
+        # On lit par sous-script (clés toujours présentes sur une session complétée),
+        # ce qui fonctionne aussi pour le dict utilisé dans les tests.
         session = event["data"]["object"]
         # On ne marque payé que si le paiement est réellement abouti : pour une
         # méthode asynchrone, `completed` peut arriver avec payment_status != paid.
-        if session.get("payment_status") != "paid":
+        if session["payment_status"] != "paid":
             return HttpResponse(status=200)
-        ref = session.get("client_reference_id")
+        ref = session["client_reference_id"]
+        montant = montant_euros(session["amount_total"])
         # filter(paye=False) = idempotent : un re-delivery Stripe ne renotifie pas.
         updated = Message.objects.filter(pk=ref, paye=False).update(paye=True)
         if updated:
             send_mail(
-                subject=f"[jacques-bertin.manyo.dev] Paiement reçu — commande #{ref}",
-                message=f"Le paiement par carte de la commande #{ref} a bien été reçu.\n",
+                subject=f"[jacques-bertin.manyo.dev] Paiement reçu — commande #{ref} — {montant}",
+                message=(
+                    f"Le paiement par carte de la commande #{ref} "
+                    f"({montant}) a bien été reçu.\n"
+                ),
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[settings.CONTACT_EMAIL],
                 fail_silently=True,

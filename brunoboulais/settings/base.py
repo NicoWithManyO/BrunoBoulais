@@ -209,14 +209,19 @@ X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 
-# CSP — relâché ici, prod resserre
+# CSP — relâché ici, prod resserre.
+# Le widget point relais Mondial Relay (page commande) charge son script depuis
+# widget.mondialrelay.com, interroge la même origine (connect) et affiche une carte
+# Leaflet dont les tuiles viennent d'OpenStreetMap. jQuery/Leaflet sont self-hostés.
+_MONDIAL_RELAY_HOST = "https://widget.mondialrelay.com"
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ("'self'",),
-        "script-src": ("'self'", "'unsafe-inline'"),
-        "style-src": ("'self'", "'unsafe-inline'"),
+        "script-src": ("'self'", "'unsafe-inline'", _MONDIAL_RELAY_HOST),
+        "style-src": ("'self'", "'unsafe-inline'", _MONDIAL_RELAY_HOST),
         "font-src": ("'self'",),
-        "img-src": ("'self'", "data:", "blob:"),
+        "img-src": ("'self'", "data:", "blob:", _MONDIAL_RELAY_HOST, "https://*.tile.openstreetmap.org"),
+        "connect-src": ("'self'", _MONDIAL_RELAY_HOST),
         "media-src": ("'self'",),
         # Embed YouTube (no-cookie) pour la Discothèque.
         "frame-src": ("https://www.youtube-nocookie.com",),
@@ -234,6 +239,11 @@ CONTACT_EMAIL = env("CONTACT_EMAIL", default="boulaisbruno@free.fr")
 # sont nécessaires — pas de clé publique (aucun Stripe.js côté front).
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
 STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
+
+# --- Mondial Relay -------------------------------------------------------
+# Code enseigne du widget point relais. "BDTEST " = compte de démonstration
+# public (affiche un bandeau de test) ; la vraie enseigne de Bruno en prod.
+MONDIAL_RELAY_BRAND = env("MONDIAL_RELAY_BRAND", default="BDTEST ")
 
 # --- Logging -------------------------------------------------------------
 
