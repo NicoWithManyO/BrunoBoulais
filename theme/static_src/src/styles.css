@@ -529,6 +529,12 @@
     @apply text-base font-semibold;
   }
 
+  /* --- Point relais Mondial Relay : déborde la colonne prose pour laisser respirer la carte --- */
+  [data-livraison-relais] {
+    width: min(56rem, 92vw);
+    margin-inline: calc((100% - min(56rem, 92vw)) / 2);
+  }
+
   /* --- Carte éditoriale --- */
   .card-edito {
     background: rgba(255, 252, 244, 0.6);
@@ -661,6 +667,19 @@
     background: #fffdf7;
   }
   .pform textarea { min-height: 9rem; }
+
+  /* Le widget Mondial Relay apporte sa propre grille : on neutralise nos règles .pform
+     sur ses champs internes, sinon les inputs Ville/CP sont forcés en pleine largeur. */
+  #mr-widget input,
+  #mr-widget select {
+    display: revert;
+    width: revert;
+    padding: revert;
+    border: revert;
+    background: revert;
+    font: revert;
+    color: revert;
+  }
 
   /* --- Navigation --- */
   .nav-link {
