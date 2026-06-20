@@ -219,7 +219,15 @@
                 adrInput.required = isCommande && isDomicile;
                 if (isPoint) {
                     initMrWidget();
-                    if (mrReady) jQuery('#mr-widget').trigger('MR_SetParams', { ColLivMod: colLivMod() });
+                    if (mrReady) {
+                        const $w = jQuery('#mr-widget');
+                        $w.trigger('MR_SetParams', { ColLivMod: colLivMod() });
+                        // MR_SetParams ne fait que mémoriser le filtre : on relance la
+                        // recherche avec le CP/Ville déjà saisis pour rafraîchir la liste.
+                        const cp = $w.find('input.Arg2').val();
+                        const ville = $w.find('input.Arg1').val();
+                        if (cp || ville) $w.trigger('MR_DoSearch', [cp, ville]);
+                    }
                 }
             }
             function sync() {
