@@ -7,7 +7,7 @@ from django.test import Client
 
 from apps.contact import forms as contact_forms
 from apps.contact.forms import CommandeForm, ContactForm
-from apps.contact.models import Message
+from apps.contact.models import Message, montant_total_cents
 
 forms_logger = contact_forms.logger
 
@@ -217,6 +217,26 @@ class TestContactNotificationHardening:
         assert Message.objects.get(pk=msg.pk).notified is True
 
 
+class TestMontantTotal:
+    """Tarif total = livres (20 € pièce) + frais de port selon quantité et mode."""
+
+    @pytest.mark.parametrize(
+        "nb, mode, attendu",
+        [
+            (1, Message.LIVRAISON_POINT_RELAIS, 2415),
+            (1, Message.LIVRAISON_DOMICILE, 2749),
+            (2, Message.LIVRAISON_POINT_RELAIS, 4599),
+            (2, Message.LIVRAISON_DOMICILE, 4949),
+        ],
+    )
+    def test_combinaisons_tarifees(self, nb, mode, attendu):
+        assert montant_total_cents(nb, mode) == attendu
+
+    def test_combinaison_inconnue_renvoie_none(self):
+        assert montant_total_cents(3, Message.LIVRAISON_DOMICILE) is None
+        assert montant_total_cents(1, "") is None
+
+
 def _commande_data(**overrides):
     # Commande « point relais » par défaut (point sélectionné via le widget).
     data = {
@@ -328,6 +348,7 @@ class TestCommandeMerci:
             "sujet": Message.SUJET_COMMANDE,
             "mode_paiement": Message.PAIEMENT_CB,
             "nb_exemplaires": 1,
+            "mode_livraison": Message.LIVRAISON_POINT_RELAIS,
             "contenu": "Commande",
         }
         defaults.update(overrides)
@@ -366,6 +387,7 @@ class TestPaiementCheckout:
             "sujet": Message.SUJET_COMMANDE,
             "mode_paiement": Message.PAIEMENT_CB,
             "nb_exemplaires": 1,
+            "mode_livraison": Message.LIVRAISON_POINT_RELAIS,
             "contenu": "Commande",
         }
         defaults.update(overrides)
@@ -493,4 +515,79 @@ class TestPaiementWebhook:
         ), mock.patch("apps.contact.views.send_mail") as send:
             response = self._post(Client())
         assert response.status_code == 200
+        assert not send.called
+
+    def test_session_without_reference_is_acknowledged(self):
+        # Session hors de notre flux (créée au dashboard, sans client_reference_id) :
+        # on accuse réception (200) sans planter ni rien marquer.
+        event = stripe.Event.construct_from(
+            {
+                "type": "checkout.session.completed",
+                "data": {"object": {
+                    "object": "checkout.session",
+                    "payment_status": "paid",
+                    "amount_total": 2410,
+                }},
+            },
+            "sk_test_dummy",
+        )
+        with mock.patch(
+            "apps.contact.views.stripe.Webhook.construct_event", return_value=event
+        ), mock.patch("apps.contact.views.send_mail") as send:
+            response = self._post(Client())
+        assert response.status_code == 200
+        assert not send.called
+
+    def test_notification_failure_is_logged_not_swallowed(self):
+        # L'envoi de la notif échoue : la commande reste marquée payée, on rend 200
+        # (pas de re-delivery Stripe en boucle) mais l'échec est tracé, pas avalé.
+        order = self._order()
+        with mock.patch(
+            "apps.contact.views.stripe.Webhook.construct_event", return_value=self._event(order)
+        ), mock.patch(
+            "apps.contact.views.send_mail", side_effect=OSError("smtp down")
+        ), mock.patch("apps.contact.views.logger") as log:
+            response = self._post(Client())
+        assert response.status_code == 200
+        order.refresh_from_db()
+        assert order.paye is True
+        assert log.error.called
+
+    def test_amount_total_none_does_not_crash(self):
+        # Session « payée » dont l'objet n'a pas de montant : la commande matchée est
+        # marquée payée et la notif part, sans 500 ni re-delivery Stripe en boucle.
+        order = self._order()
+        with mock.patch(
+            "apps.contact.views.stripe.Webhook.construct_event",
+            return_value=self._event(order, amount_total=None),
+        ), mock.patch("apps.contact.views.send_mail") as send:
+            response = self._post(Client())
+        assert response.status_code == 200
+        order.refresh_from_db()
+        assert order.paye is True
+        assert send.called
+
+    def test_non_numeric_reference_is_acknowledged(self):
+        # client_reference_id non numérique (session hors de notre flux) : on accuse
+        # réception (200) sans planter ni marquer quoi que ce soit.
+        order = self._order()
+        event = stripe.Event.construct_from(
+            {
+                "type": "checkout.session.completed",
+                "data": {"object": {
+                    "object": "checkout.session",
+                    "client_reference_id": "not-an-int",
+                    "payment_status": "paid",
+                    "amount_total": 2410,
+                }},
+            },
+            "sk_test_dummy",
+        )
+        with mock.patch(
+            "apps.contact.views.stripe.Webhook.construct_event", return_value=event
+        ), mock.patch("apps.contact.views.send_mail") as send:
+            response = self._post(Client())
+        assert response.status_code == 200
+        order.refresh_from_db()
+        assert order.paye is False
         assert not send.called

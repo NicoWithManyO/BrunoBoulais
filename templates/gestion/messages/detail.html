@@ -23,6 +23,61 @@
         <time class="text-xs text-slate-soft">{{ msg.created_at|date:"l j F Y · H:i" }}</time>
     </div>
 
+    {% if msg.sujet == commande_value %}
+    <div class="mt-6 rounded-md border border-mist-light bg-cream/40 p-4">
+        <div class="flex items-center justify-between gap-4 pb-3 mb-3 border-b border-mist-light">
+            <span class="text-xs uppercase tracking-widest text-slate">Commande</span>
+            {% if msg.paye %}
+            <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-800">🟢 Payé</span>
+            {% else %}
+            <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">🟠 En attente de règlement</span>
+            {% endif %}
+        </div>
+
+        <dl class="grid grid-cols-[auto,1fr] gap-x-6 gap-y-1.5 text-sm">
+            {% if msg.nb_exemplaires %}
+            <dt class="text-slate-soft">Exemplaires</dt>
+            <dd class="text-ink">{{ msg.get_nb_exemplaires_display }}{% if commande_montant %} — {{ msg.nb_exemplaires }} × {{ commande_montant.prix_livre }} = {{ commande_montant.livres }}{% endif %}</dd>
+            {% endif %}
+
+            {% if commande_montant.port %}
+            <dt class="text-slate-soft">Frais de port</dt>
+            <dd class="text-ink">{{ commande_montant.port }}</dd>
+            {% endif %}
+
+            {% if commande_montant.total %}
+            <dt class="text-slate-soft font-medium">Total</dt>
+            <dd class="text-ink font-medium">{{ commande_montant.total }}</dd>
+            {% endif %}
+
+            {% if msg.mode_livraison %}
+            <dt class="text-slate-soft">Livraison</dt>
+            <dd class="text-ink">
+                {{ msg.get_mode_livraison_display }}
+                {% if msg.mode_livraison == livraison_domicile %}
+                — <span class="whitespace-pre-line">{{ msg.adresse_postale|default:"(adresse manquante)" }}</span>
+                {% elif msg.point_relais_libelle %}
+                — {{ msg.point_relais_libelle }} (ID {{ msg.point_relais_id|default:"—" }})
+                {% endif %}
+            </dd>
+            {% endif %}
+
+            <dt class="text-slate-soft">Dédicace</dt>
+            <dd class="text-ink">{% if msg.dedicace %}Oui{% if msg.prenom_dedicace %} — prénom : {{ msg.prenom_dedicace }}{% endif %}{% else %}Non{% endif %}</dd>
+
+            {% if msg.mode_paiement %}
+            <dt class="text-slate-soft">Paiement</dt>
+            <dd class="text-ink">{{ msg.get_mode_paiement_display }}</dd>
+            {% endif %}
+
+            {% if not msg.notified %}
+            <dt class="text-terracotta-deep">Notification</dt>
+            <dd class="text-terracotta-deep">Email non envoyé — à traiter manuellement</dd>
+            {% endif %}
+        </dl>
+    </div>
+    {% endif %}
+
     <div class="py-6 font-serif text-base whitespace-pre-line leading-relaxed">{{ msg.contenu }}</div>
 
     <form method="post" class="flex flex-wrap items-center gap-2 pt-4 border-t border-mist-light">

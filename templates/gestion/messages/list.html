@@ -37,7 +37,16 @@
                 </div>
                 <p class="text-xs text-slate-soft">{{ m.email }}</p>
             </td>
-            <td class="text-xs">{{ m.get_sujet_display }}</td>
+            <td class="text-xs whitespace-nowrap">
+                {{ m.get_sujet_display }}
+                {% if m.sujet == commande_value %}
+                    {% if m.paye %}
+                    <span class="ml-1 inline-block px-1.5 py-0.5 rounded-full bg-green-100 text-green-800">Payé</span>
+                    {% else %}
+                    <span class="ml-1 inline-block px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800">En attente</span>
+                    {% endif %}
+                {% endif %}
+            </td>
             <td class="text-xs text-slate-soft max-w-md truncate">{{ m.contenu|truncatechars:100 }}</td>
             <td class="text-xs whitespace-nowrap">{{ m.created_at|date:"d M Y H:i" }}</td>
             <td class="text-right">

@@ -33,7 +33,11 @@ from apps.actualites.models import (
     ActualitesPage,
 )
 from apps.carnet.models import Billet, BilletImageContenu
-from apps.contact.models import ContactPage, Message
+from apps.contact.models import (
+    ContactPage,
+    Message,
+    montant_detail,
+)
 from apps.core.images import strip_exif
 from apps.core.templatetags.richtext import richtext_plain
 from apps.core.validators import IMAGE_VALIDATORS
@@ -568,6 +572,7 @@ def messages_liste(request):
     return render(request, "gestion/messages/list.html", {
         "messages_list": qs,
         "filtre": show,
+        "commande_value": Message.SUJET_COMMANDE,
     })
 
 
@@ -604,7 +609,19 @@ def message_detail(request, pk):
         msg.lu = True
         msg.save(update_fields=["lu"])
 
-    return render(request, "gestion/messages/detail.html", {"msg": msg})
+    # Détail chiffré d'une commande (livres + port + total), formaté côté vue
+    # pour garder le template sans logique. None hors commande / tarif inconnu.
+    commande_montant = None
+    if msg.sujet == Message.SUJET_COMMANDE and msg.nb_exemplaires:
+        # None si tarif inconnu (combo incohérente) : pas de décomposition partielle.
+        commande_montant = montant_detail(msg.nb_exemplaires, msg.mode_livraison)
+
+    return render(request, "gestion/messages/detail.html", {
+        "msg": msg,
+        "commande_montant": commande_montant,
+        "commande_value": Message.SUJET_COMMANDE,
+        "livraison_domicile": Message.LIVRAISON_DOMICILE,
+    })
 
 
 # ---- Page /contact/ (singleton) ---------------------------------------------

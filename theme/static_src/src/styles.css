@@ -680,6 +680,58 @@
     font: revert;
     color: revert;
   }
+  /* Le logo Mondial Relay est une image de fond de la barre (avec un padding-left
+     de 95px pour le loger) : on le retire et on récupère la place. Le widget charge
+     son thème en CSS non-layered, qui bat nos @layer : d'où !important. */
+  #mr-widget .MRW-Search {
+    background-image: none !important;
+    padding-left: 10px !important;
+    /* contexte d'empilement au-dessus de la carte/liste (z-index 1110 du thème),
+       sinon le menu déroulant des pays passe derrière la carte. */
+    position: relative !important;
+    z-index: 9000 !important;
+  }
+  /* Drapeau pays déplacé en tête de ligne (avant Ville), centré et à la hauteur
+     des champs Ville/CP. La ligne est en `block` dans le thème : on la passe en flex. */
+  #mr-widget .MRW-Search .MRW-Line {
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+  /* !important partout : le thème impose `.MRW-Container{display:inline-block}` en CSS
+     non-layered, qui bat nos @layer ; sans !important le centrage ne s'applique pas. */
+  #mr-widget .MRW-CountryContainer {
+    order: -1;
+    margin: 0 !important;
+    /* flex : le nœud texte `&nbsp;` après le drapeau se range à côté, pas en dessous,
+       sinon il rallonge le conteneur et le drapeau se colle en haut de la ligne. */
+    display: flex !important;
+    align-items: center !important;
+  }
+  /* Ville/CP : label + champ centrés verticalement (sinon l'alignement baseline
+     pousse le champ vers le bas et le drapeau paraît plus haut que la ligne). */
+  #mr-widget .MRW-CityContainer,
+  #mr-widget .MRW-CPContainer {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px;
+  }
+  #mr-widget .MRW-Search .MRW-Line input[type="text"] {
+    height: 2.25rem;
+    box-sizing: border-box;
+  }
+  #mr-widget .MRW-flag {
+    height: 1.5rem;
+    width: auto;
+    display: block;
+    cursor: pointer;
+  }
+  /* Menu déroulant des pays : au-dessus de la carte (le conteneur n'a plus
+     overflow:hidden, donc il n'est plus rogné). */
+  #mr-widget .MRW-fl-Select {
+    z-index: 9999 !important;
+  }
 
   /* --- Navigation --- */
   .nav-link {
@@ -1163,6 +1215,57 @@
     @apply mr-2 align-middle;
     width: auto;
     accent-color: var(--color-terracotta);
+  }
+
+  /* Pills de choix (ex. nombre d'exemplaires) : radio masqué, label cliquable. */
+  .pform .pill-group {
+    @apply flex flex-wrap gap-2 mt-1;
+  }
+  .pform .pill-choice {
+    @apply cursor-pointer mt-0;
+  }
+  .pform .pill-choice input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+  }
+  .pform .pill-choice > span {
+    @apply inline-block px-5 py-2 font-sans text-sm;
+    border: 1px solid var(--color-mist);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--color-ink);
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .pform .pill-choice:hover > span {
+    border-color: var(--color-terracotta);
+  }
+  .pform .pill-choice input[type="radio"]:checked + span {
+    background: var(--color-terracotta);
+    border-color: var(--color-terracotta);
+    color: #fff;
+  }
+  .pform .pill-choice input[type="radio"]:focus-visible + span {
+    outline: 2px solid var(--color-terracotta);
+    outline-offset: 2px;
+  }
+
+  /* Récapitulatif de prix (page commande), affiché quand quantité + mode choisis. */
+  .pform .recap {
+    @apply mt-1 px-4 py-3;
+    border: 1px solid var(--color-mist);
+    border-radius: 4px;
+    background: #fffdf7;
+  }
+  .pform .recap__row {
+    @apply flex justify-between gap-4 font-sans text-sm py-1;
+    color: var(--color-ink);
+  }
+  .pform .recap__total {
+    @apply mt-1 pt-2 font-semibold;
+    border-top: 1px solid var(--color-mist);
   }
 
   /* Inline image row (formset edit UI for OrderedImage children) */

@@ -7,11 +7,15 @@ from apps.core.models import TimestampedModel
 
 CACHE_KEY_CONTACT_PAGE = "contact_page"
 
-# Tarifs dégressifs du livre. Montants en centimes = source de vérité unique
-# (formulaire, page /merci/, line items Stripe, email de notification).
+# Tarifs du livre. Prix unitaire fixe ; les frais de port dépendent du nombre
+# d'exemplaires ET du mode de livraison (cf. FRAIS_PORT_CENTS, défini après
+# Message pour réutiliser ses constantes LIVRAISON_*). Montants en centimes =
+# source de vérité unique (pills, page /merci/, line items Stripe, email).
+PRIX_LIVRE_CENTS = 2000
+
 PRODUITS = {
-    1: {"label": "1 exemplaire", "montant_cents": 2410},
-    2: {"label": "2 exemplaires", "montant_cents": 4599},
+    1: {"label": "1 exemplaire"},
+    2: {"label": "2 exemplaires"},
 }
 
 
@@ -79,11 +83,11 @@ class Message(TimestampedModel):
     ]
 
     LIVRAISON_POINT_RELAIS = "point_relais"
-    LIVRAISON_LOCKER = "locker"
     LIVRAISON_DOMICILE = "domicile"
     LIVRAISON_CHOICES = [
-        (LIVRAISON_POINT_RELAIS, "Point Relais"),
-        (LIVRAISON_LOCKER, "Locker (casier)"),
+        # Le widget Mondial Relay ne sait pas filtrer les lockers à part : relais
+        # et casiers sortent ensemble sur la carte, d'où une seule option.
+        (LIVRAISON_POINT_RELAIS, "Point Relais ou Locker"),
         (LIVRAISON_DOMICILE, "Domicile"),
     ]
 
@@ -98,17 +102,14 @@ class Message(TimestampedModel):
     # null pour les sujets non-commande (question, presse, autre).
     nb_exemplaires = models.PositiveSmallIntegerField(
         "Nombre d'exemplaires",
-        choices=[
-            (n, f"{n} exemplaire{'s' if n > 1 else ''} — {montant_euros(p['montant_cents'])}")
-            for n, p in PRODUITS.items()
-        ],
+        choices=[(n, p["label"]) for n, p in PRODUITS.items()],
         null=True,
         blank=True,
     )
     mode_livraison = models.CharField(
         "Mode de livraison", max_length=20, choices=LIVRAISON_CHOICES, blank=True
     )
-    # Renseignés par le widget Mondial Relay (point relais / locker uniquement) ;
+    # Renseignés par le widget Mondial Relay (point relais ou locker) ;
     # le domicile utilise `adresse_postale` en texte libre.
     point_relais_id = models.CharField("ID point relais", max_length=20, blank=True)
     point_relais_libelle = models.CharField("Point relais choisi", max_length=255, blank=True)
@@ -131,3 +132,45 @@ class Message(TimestampedModel):
 
     def __str__(self):
         return f"{self.nom} — {self.get_sujet_display()}"
+
+
+# Frais de port en centimes selon (nb exemplaires, mode de livraison). Défini
+# après Message pour réutiliser ses constantes LIVRAISON_*. Couvre exactement
+# les combinaisons proposées (1 ou 2 ex, point relais ou domicile).
+FRAIS_PORT_CENTS = {
+    (1, Message.LIVRAISON_POINT_RELAIS): 415,
+    (1, Message.LIVRAISON_DOMICILE): 749,
+    (2, Message.LIVRAISON_POINT_RELAIS): 599,
+    (2, Message.LIVRAISON_DOMICILE): 949,
+}
+
+
+def montant_total_cents(nb_exemplaires, mode_livraison):
+    """Total commande en centimes : livres (20 € pièce) + frais de port.
+
+    Retourne ``None`` si la combinaison (quantité, mode) n'a pas de tarif
+    (donnée legacy/incohérente) : le caller décide quoi en faire.
+    """
+    port = FRAIS_PORT_CENTS.get((nb_exemplaires, mode_livraison))
+    if port is None:
+        return None
+    return nb_exemplaires * PRIX_LIVRE_CENTS + port
+
+
+def montant_detail(nb_exemplaires, mode_livraison):
+    """Décomposition chiffrée d'une commande, déjà formatée FR pour l'affichage.
+
+    Retourne ``None`` si la combinaison (quantité, mode) n'a pas de tarif (donnée
+    legacy/incohérente) : on ne livre jamais une décomposition partielle. Sinon
+    un dict ``{prix_livre, livres, port, total}`` de montants type « 24,15 € ».
+    """
+    total = montant_total_cents(nb_exemplaires, mode_livraison)
+    if total is None:
+        return None
+    port = FRAIS_PORT_CENTS[(nb_exemplaires, mode_livraison)]
+    return {
+        "prix_livre": montant_euros(PRIX_LIVRE_CENTS),
+        "livres": montant_euros(nb_exemplaires * PRIX_LIVRE_CENTS),
+        "port": montant_euros(port),
+        "total": montant_euros(total),
+    }

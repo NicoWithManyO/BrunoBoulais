@@ -7,6 +7,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from apps.carnet.models import Billet, BilletImageContenu
+from apps.contact.models import Message
 
 # Uploads de test isolés dans un répertoire jetable (nettoyé en fin de classe).
 _MEDIA_ROOT = tempfile.mkdtemp()
@@ -96,3 +97,56 @@ class BilletPreviewTests(TestCase):
         image.refresh_from_db()
         self.assertEqual(image.largeur, "100")
         self.assertEqual(image.alignement, "center")
+
+
+@override_settings(STORAGES={
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+})
+class MessageDetailCommandeTests(TestCase):
+    """Le détail d'un message de commande montre montant, livraison et état du paiement."""
+
+    def setUp(self):
+        user = get_user_model().objects.create_user("staff", is_staff=True)
+        self.client.force_login(user)
+
+    def test_commande_domicile_non_payee(self):
+        order = Message.objects.create(
+            nom="Alice", email="a@b.fr", sujet=Message.SUJET_COMMANDE,
+            nb_exemplaires=2, mode_livraison=Message.LIVRAISON_DOMICILE,
+            adresse_postale="1 rue X\n40000 Ville", mode_paiement=Message.PAIEMENT_CB,
+            paye=False, contenu="Bonjour",
+        )
+        body = self.client.get(
+            reverse("gestion:message_detail", args=[order.pk])
+        ).content.decode()
+        self.assertIn("En attente de règlement", body)
+        self.assertIn("49,49", body)  # total 2 ex domicile
+        self.assertIn("9,49", body)   # frais de port domicile
+        self.assertIn("Domicile", body)
+        self.assertIn("1 rue X", body)
+        self.assertIn("Carte bancaire", body)
+
+    def test_commande_relais_payee(self):
+        order = Message.objects.create(
+            nom="Bob", email="b@b.fr", sujet=Message.SUJET_COMMANDE,
+            nb_exemplaires=1, mode_livraison=Message.LIVRAISON_POINT_RELAIS,
+            point_relais_id="FR-123", point_relais_libelle="Tabac, 40000 MDM",
+            dedicace=False, mode_paiement=Message.PAIEMENT_CHEQUE, paye=True, contenu="x",
+        )
+        body = self.client.get(
+            reverse("gestion:message_detail", args=[order.pk])
+        ).content.decode()
+        self.assertIn("Payé", body)
+        self.assertIn("24,15", body)  # total 1 ex relais
+        self.assertIn("Tabac, 40000 MDM", body)
+        self.assertIn("FR-123", body)
+
+    def test_message_simple_sans_bloc_commande(self):
+        msg = Message.objects.create(
+            nom="Carl", email="c@b.fr", sujet=Message.SUJET_QUESTION, contenu="Question ?",
+        )
+        body = self.client.get(
+            reverse("gestion:message_detail", args=[msg.pk])
+        ).content.decode()
+        self.assertNotIn("En attente de règlement", body)

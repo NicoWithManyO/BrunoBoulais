@@ -17,7 +17,16 @@ from apps.core.middleware import _client_ip
 from apps.core.seo import seo
 
 from .forms import CommandeForm, ContactForm
-from .models import PRODUITS, ContactPage, Message, montant_euros
+from .models import (
+    FRAIS_PORT_CENTS,
+    PRIX_LIVRE_CENTS,
+    PRODUITS,
+    ContactPage,
+    Message,
+    montant_detail,
+    montant_euros,
+    montant_total_cents,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -263,9 +272,14 @@ def commande(request):
             "paiement_cheque": Message.PAIEMENT_CHEQUE,
             "paiement_virement": Message.PAIEMENT_VIREMENT,
             "livraison_domicile": Message.LIVRAISON_DOMICILE,
-            "livraison_point_relais": Message.LIVRAISON_POINT_RELAIS,
-            "livraison_locker": Message.LIVRAISON_LOCKER,
             "mondial_relay_brand": settings.MONDIAL_RELAY_BRAND,
+            # Tarifs pour le récap calculé côté navigateur (source = centimes Python).
+            "tarifs": {
+                "prixLivreCents": PRIX_LIVRE_CENTS,
+                "fraisPortCents": {
+                    f"{nb}|{mode}": cents for (nb, mode), cents in FRAIS_PORT_CENTS.items()
+                },
+            },
             "rate_limited": rate_limited,
             "ip_unresolved": ip_unresolved,
             **seo(
@@ -296,14 +310,14 @@ def commande_merci(request):
     if order and (order.paye or paiement == "succes"):
         request.session.pop("order_ref", None)
 
-    produit = PRODUITS.get(order.nb_exemplaires) if order else None
+    detail = montant_detail(order.nb_exemplaires, order.mode_livraison) if order else None
     return render(
         request,
         "contact/commande_merci.html",
         {
             "page": ContactPage.get_solo(),
             "order": order,
-            "montant": montant_euros(produit["montant_cents"]) if produit else "",
+            "montant": detail["total"] if detail else "",
             "paiement": paiement,
             "paiement_cb": Message.PAIEMENT_CB,
             "paiement_cheque": Message.PAIEMENT_CHEQUE,
@@ -322,17 +336,19 @@ def paiement_checkout(request):
     if not order or order.mode_paiement != Message.PAIEMENT_CB or order.paye:
         return redirect(reverse("contact:commande_merci"))
 
-    produit = PRODUITS.get(order.nb_exemplaires)
     merci_url = request.build_absolute_uri(reverse("contact:commande_merci"))
-    if produit is None:
-        # Quantité absente/incohérente (donnée legacy, admin) : pas de montant
-        # à facturer, on ne lance pas Stripe et on retourne proprement.
+    total = montant_total_cents(order.nb_exemplaires, order.mode_livraison)
+    if total is None:
+        # Quantité/mode absent ou incohérent (donnée legacy, admin) : pas de
+        # montant à facturer, on ne lance pas Stripe et on retourne proprement.
         logger.error(
-            "Stripe: commande #%s sans quantité valide (nb_exemplaires=%r).",
+            "Stripe: commande #%s sans tarif valide (nb_exemplaires=%r, mode_livraison=%r).",
             order.pk,
             order.nb_exemplaires,
+            order.mode_livraison,
         )
         return redirect(f"{merci_url}?paiement=erreur")
+    label = f"{PRODUITS[order.nb_exemplaires]['label']} — livraison {order.get_mode_livraison_display()}"
     stripe.api_key = settings.STRIPE_SECRET_KEY
     try:
         session = stripe.checkout.Session.create(
@@ -341,8 +357,8 @@ def paiement_checkout(request):
                 {
                     "price_data": {
                         "currency": "eur",
-                        "product_data": {"name": produit["label"]},
-                        "unit_amount": produit["montant_cents"],
+                        "product_data": {"name": label},
+                        "unit_amount": total,
                     },
                     "quantity": 1,
                 }
@@ -379,27 +395,58 @@ def paiement_webhook(request):
         return HttpResponse(status=400)
 
     if event["type"] == "checkout.session.completed":
-        # NB : `session` est un StripeObject, pas un dict — il n'expose pas `.get()`.
-        # On lit par sous-script (clés toujours présentes sur une session complétée),
-        # ce qui fonctionne aussi pour le dict utilisé dans les tests.
+        # `session` est un StripeObject (pas un dict, pas de `.get()`) : lecture par
+        # sous-script. Une session hors de notre flux (créée au dashboard) peut ne
+        # pas porter ces clés → KeyError attrapé, on accuse réception (200).
         session = event["data"]["object"]
+        try:
+            payment_status = session["payment_status"]
+            ref = session["client_reference_id"]
+            amount_total = session["amount_total"]
+        except KeyError:
+            logger.warning(
+                "Stripe: checkout.session.completed sans les clés attendues — ignoré."
+            )
+            return HttpResponse(status=200)
         # On ne marque payé que si le paiement est réellement abouti : pour une
         # méthode asynchrone, `completed` peut arriver avec payment_status != paid.
-        if session["payment_status"] != "paid":
+        if payment_status != "paid":
             return HttpResponse(status=200)
-        ref = session["client_reference_id"]
-        montant = montant_euros(session["amount_total"])
-        # filter(paye=False) = idempotent : un re-delivery Stripe ne renotifie pas.
-        updated = Message.objects.filter(pk=ref, paye=False).update(paye=True)
-        if updated:
-            send_mail(
-                subject=f"[jacques-bertin.manyo.dev] Paiement reçu — commande #{ref} — {montant}",
-                message=(
-                    f"Le paiement par carte de la commande #{ref} "
-                    f"({montant}) a bien été reçu.\n"
-                ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[settings.CONTACT_EMAIL],
-                fail_silently=True,
+        # `client_reference_id` = pk de notre commande (cf. paiement_checkout). Une
+        # session étrangère peut porter une réf. nulle/non numérique : on accuse
+        # réception sans rien marquer plutôt que de lever (et faire boucler Stripe).
+        try:
+            order_pk = int(ref)
+        except (TypeError, ValueError):
+            logger.warning(
+                "Stripe: client_reference_id absent ou non numérique (%r) — ignoré.", ref
             )
+            return HttpResponse(status=200)
+        # filter(paye=False) = idempotent : un re-delivery Stripe ne renotifie pas.
+        updated = Message.objects.filter(pk=order_pk, paye=False).update(paye=True)
+        if updated:
+            # amount_total est toujours présent sur nos sessions ; garde défensive
+            # pour ne pas planter (et boucler) si une session étrangère l'omet.
+            montant = montant_euros(amount_total) if amount_total is not None else "montant inconnu"
+            try:
+                send_mail(
+                    subject=f"[jacques-bertin.manyo.dev] Paiement reçu — commande #{ref} — {montant}",
+                    message=(
+                        f"Le paiement par carte de la commande #{ref} "
+                        f"({montant}) a bien été reçu.\n"
+                    ),
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[settings.CONTACT_EMAIL],
+                    fail_silently=False,
+                )
+            except Exception:
+                # La commande est déjà marquée payée (source de vérité = admin) :
+                # on ne renvoie pas d'erreur à Stripe (sinon re-delivery en boucle),
+                # mais on trace pour que Bruno sache que la notif n'est pas partie.
+                logger.error(
+                    "Stripe: paiement de la commande #%s confirmé mais notification "
+                    "non envoyée — à vérifier manuellement.",
+                    ref,
+                    exc_info=True,
+                )
     return HttpResponse(status=200)

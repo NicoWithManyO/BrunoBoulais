@@ -4,7 +4,13 @@ from django import forms
 from django.conf import settings
 from django.core.mail import EmailMessage
 
-from .models import PRODUITS, Message, montant_euros
+from .models import (
+    PRIX_LIVRE_CENTS,
+    PRODUITS,
+    Message,
+    montant_detail,
+    montant_euros,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -63,9 +69,16 @@ class ContactForm(forms.ModelForm):
         # n'existent que via CommandeForm ; absents, on n'ajoute rien).
         if msg.sujet == Message.SUJET_COMMANDE:
             if msg.nb_exemplaires:
-                produit = PRODUITS[msg.nb_exemplaires]
-                lines.append(f"Exemplaires : {produit['label']}")
-                lines.append(f"Montant : {montant_euros(produit['montant_cents'])}")
+                # Ligne exemplaires toujours présente (mail interne) ; port/total
+                # seulement si le tarif est connu (cf. montant_detail).
+                lines.append(
+                    f"Exemplaires : {msg.nb_exemplaires} × {montant_euros(PRIX_LIVRE_CENTS)} "
+                    f"= {montant_euros(msg.nb_exemplaires * PRIX_LIVRE_CENTS)}"
+                )
+                detail = montant_detail(msg.nb_exemplaires, msg.mode_livraison)
+                if detail:
+                    lines.append(f"Frais de port ({msg.get_mode_livraison_display()}) : {detail['port']}")
+                    lines.append(f"Montant total : {detail['total']}")
             lines.append("État : en attente de règlement")
             if msg.mode_livraison == Message.LIVRAISON_DOMICILE:
                 lines.append(f"Livraison : Domicile — {msg.adresse_postale or '—'}")
@@ -126,17 +139,23 @@ class CommandeForm(ContactForm):
         ]
         widgets = {
             **ContactForm.Meta.widgets,
+            # Pills (un bouton radio par quantité) plutôt qu'un menu déroulant.
+            "nb_exemplaires": forms.RadioSelect(),
             # Renseignés par le widget Mondial Relay côté navigateur.
             "point_relais_id": forms.HiddenInput(),
             "point_relais_libelle": forms.HiddenInput(),
         }
 
-    # Modes de livraison qui passent par un point Mondial Relay (vs domicile).
-    _MODES_POINT = (Message.LIVRAISON_POINT_RELAIS, Message.LIVRAISON_LOCKER)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # RadioSelect : on retire l'option vide « --------- » ajoutée par défaut
+        # pour un champ optionnel (la quantité reste non requise hors commande,
+        # l'exigence est gérée dans clean()).
+        self.fields["nb_exemplaires"].choices = [(n, p["label"]) for n, p in PRODUITS.items()]
 
     def _adresse_postale_required(self, cleaned):
         # L'adresse libre n'est exigée qu'en livraison à domicile ; pour un point
-        # relais/locker c'est `point_relais_id` qui fait foi (voir clean()).
+        # Mondial Relay c'est `point_relais_id` qui fait foi (voir clean()).
         return cleaned.get("mode_livraison") == Message.LIVRAISON_DOMICILE
 
     def clean(self):
@@ -147,6 +166,6 @@ class CommandeForm(ContactForm):
             mode_livraison = cleaned.get("mode_livraison")
             if not mode_livraison:
                 self.add_error("mode_livraison", "Merci d'indiquer un mode de livraison.")
-            elif mode_livraison in self._MODES_POINT and not cleaned.get("point_relais_id"):
+            elif mode_livraison == Message.LIVRAISON_POINT_RELAIS and not cleaned.get("point_relais_id"):
                 self.add_error("point_relais_id", "Merci de sélectionner un point relais sur la carte.")
         return cleaned
