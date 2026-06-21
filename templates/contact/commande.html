@@ -53,6 +53,7 @@
                 {% for radio in form.nb_exemplaires %}
                 <label class="pill-choice">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
                 {% endfor %}
+                <span class="self-center text-xs text-slate-soft">Pour plus d'exemplaires, me contacter.</span>
             </div>
         </div>
         <div data-livraison-wrap aria-live="polite"{% if form.sujet.value != commande_value %} hidden{% endif %}>

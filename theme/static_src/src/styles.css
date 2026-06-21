@@ -718,7 +718,9 @@
     gap: 4px;
   }
   #mr-widget .MRW-Search .MRW-Line input[type="text"] {
-    height: 2.25rem;
+    height: 1.875rem;
+    padding-top: 0;
+    padding-bottom: 0;
     box-sizing: border-box;
   }
   #mr-widget .MRW-flag {
