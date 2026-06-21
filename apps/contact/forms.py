@@ -152,6 +152,16 @@ class CommandeForm(ContactForm):
         # pour un champ optionnel (la quantité reste non requise hors commande,
         # l'exigence est gérée dans clean()).
         self.fields["nb_exemplaires"].choices = [(n, p["label"]) for n, p in PRODUITS.items()]
+        # Libellé explicite pour l'option vide des menus déroulants (au lieu du
+        # « --------- » par défaut de Django).
+        self.fields["mode_livraison"].choices = [
+            ("", "Sélectionner un mode de livraison"),
+            *Message.LIVRAISON_CHOICES,
+        ]
+        self.fields["mode_paiement"].choices = [
+            ("", "Sélectionner un mode de paiement"),
+            *Message.PAIEMENT_CHOICES,
+        ]
 
     def _adresse_postale_required(self, cleaned):
         # L'adresse libre n'est exigée qu'en livraison à domicile ; pour un point

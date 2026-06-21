@@ -12,7 +12,7 @@
         {% endif %}
     </div>
 
-    <form method="post" action="{% url 'contact:commande' %}" class="pform mt-12 space-y-6">
+    <form method="post" action="{% url 'contact:form' %}" class="pform mt-12 space-y-6">
         {% csrf_token %}
         <div class="hp-field" aria-hidden="true">
             <label for="{{ form.website.id_for_label }}">Champ anti-spam (ne pas remplir)</label>
@@ -47,7 +47,7 @@
         <div data-exemplaires-wrap aria-live="polite"{% if form.sujet.value != commande_value %} hidden{% endif %}>
             <span class="field-label">
                 Nombre d'exemplaires
-                <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire pour une commande)</span>
+                <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire)</span>
             </span>
             <div class="pill-group" role="radiogroup" aria-label="Nombre d'exemplaires">
                 {% for radio in form.nb_exemplaires %}
@@ -58,7 +58,7 @@
         <div data-livraison-wrap aria-live="polite"{% if form.sujet.value != commande_value %} hidden{% endif %}>
             <label class="field-label" for="{{ form.mode_livraison.id_for_label }}">
                 Mode de livraison
-                <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire pour une commande)</span>
+                <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire)</span>
             </label>
             {{ form.mode_livraison }}
             <p data-livraison-hint-point class="mt-1 text-xs text-slate-soft" hidden>Point Relais ou Locker&nbsp;: choisissez sur la carte un commerce (selon ses horaires) ou un casier accessible 24&nbsp;h/24.</p>
@@ -75,7 +75,9 @@
             <p class="mt-1 text-xs text-slate-soft">Indiquez vos nom et prénom et votre adresse complète. Toutes les adresses ne sont pas encore éligibles à la livraison à domicile&nbsp;; je vous recontacte si besoin.</p>
         </div>
         <div data-livraison-relais aria-live="polite" hidden>
-            <span class="field-label">Choisissez votre point de retrait</span>
+            <span class="field-label">Choisissez votre point de retrait
+                <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire)</span>
+            </span>
             {{ form.point_relais_id }}
             {{ form.point_relais_libelle }}
             <div id="mr-widget" class="mt-2 rounded-md border border-mist-light" style="min-height:420px"></div>
@@ -104,14 +106,9 @@
         <div data-paiement-wrap aria-live="polite"{% if form.sujet.value != commande_value %} hidden{% endif %}>
             <label class="field-label" for="{{ form.mode_paiement.id_for_label }}">
                 Mode de paiement
-                <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire pour une commande)</span>
+                <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire)</span>
             </label>
             {{ form.mode_paiement }}
-
-            {# Carte bancaire : le règlement Stripe se fait sur la page suivante après l'envoi #}
-            <div data-paiement-panel="{{ paiement_cb }}" class="mt-4 text-ink/80 leading-relaxed"{% if form.mode_paiement.value != paiement_cb %} hidden{% endif %}>
-                <p>Le règlement par carte s'effectue juste après la validation de votre commande.</p>
-            </div>
 
             {# Chèque : envoi postal à l'auteur #}
             <div data-paiement-panel="{{ paiement_cheque }}" class="mt-4 text-ink/80 leading-relaxed"{% if form.mode_paiement.value != paiement_cheque %} hidden{% endif %}>
@@ -160,7 +157,7 @@
         </ul>
         {% endif %}
 
-        <button type="submit" class="btn btn-primary" data-submit-btn>{% if form.sujet.value == commande_value %}Envoyer la commande &amp; Payer{% else %}Envoyer le message{% endif %}</button>
+        <button type="submit" class="btn btn-primary" data-submit-btn>{% if form.sujet.value == commande_value %}Envoyer la commande{% else %}Envoyer le message{% endif %}</button>
 
         {{ tarifs|json_script:"tarifs-data" }}
 
@@ -327,7 +324,7 @@
                 dedicaceWrap.hidden = !isCommande;
                 paiementWrap.hidden = !isCommande;
                 paiementSelect.required = isCommande;
-                submitBtn.textContent = isCommande ? 'Envoyer la commande & Payer' : 'Envoyer le message';
+                submitBtn.textContent = isCommande ? 'Envoyer la commande' : 'Envoyer le message';
                 syncPaiement();
                 syncPrenom();
                 syncLivraison();
@@ -337,7 +334,22 @@
             livraisonSelect.addEventListener('change', function () { syncLivraison(); syncRecap(); });
             paiementSelect.addEventListener('change', syncPaiement);
             dedicaceCheck.addEventListener('change', syncPrenom);
-            exemplairesRadios.forEach((r) => r.addEventListener('change', syncRecap));
+            // Décocher une pill en recliquant dessus (le radio natif ne le permet pas) :
+            // on suit la pill cochée et on la décoche au reclic. Robuste quel que soit
+            // l'endroit cliqué (texte de la pill ou bouton radio).
+            let exemplaireLast = exemplairesWrap.querySelector('input[type="radio"]:checked') || null;
+            exemplairesRadios.forEach((r) => {
+                r.addEventListener('change', syncRecap);
+                r.addEventListener('click', function () {
+                    if (exemplaireLast === this) {
+                        this.checked = false;
+                        exemplaireLast = null;
+                    } else {
+                        exemplaireLast = this;
+                    }
+                    syncRecap();
+                });
+            });
             sync();
         })();
         </script>

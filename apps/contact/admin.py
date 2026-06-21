@@ -12,4 +12,4 @@ class MessageAdmin(admin.ModelAdmin):
     list_editable = ("paye",)  # Bruno coche « Payé » à la main pour chèque/virement.
     list_filter = ("paye", "notified", "sujet", "mode_paiement", "mode_livraison", "lu", "archive")
     search_fields = ("nom", "email", "contenu")
-    readonly_fields = ("created_at", "updated_at", "stripe_session_id", "point_relais_id")
+    readonly_fields = ("created_at", "updated_at", "point_relais_id")

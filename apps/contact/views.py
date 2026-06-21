@@ -2,30 +2,22 @@ import ipaddress
 import logging
 import math
 
-import stripe
 from django.conf import settings
 from django.core.cache import cache
-from django.core.mail import send_mail
-from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
 from django_ratelimit.core import get_usage
 
 from apps.core.middleware import _client_ip
 from apps.core.seo import seo
 
-from .forms import CommandeForm, ContactForm
+from .forms import CommandeForm
 from .models import (
     FRAIS_PORT_CENTS,
     PRIX_LIVRE_CENTS,
-    PRODUITS,
     ContactPage,
     Message,
     montant_detail,
-    montant_euros,
-    montant_total_cents,
 )
 
 logger = logging.getLogger(__name__)
@@ -99,146 +91,21 @@ def _log_ip_unresolved_dedup(request):
         )
 
 
-def contact(request):
-    rate_limited = False
-    ip_unresolved = False
-    retry_after = None
-    if request.method == "POST":
-        form = ContactForm(request.POST)
-        # Honeypot trip = bot. On burn le bucket (pénaliser) puis on
-        # redirect /merci/ pour ne pas révéler qu'on a détecté le piège
-        # (anti-fingerprint). Check sur request.POST brut pour éviter de
-        # déclencher form.full_clean() avant la décision.
-        if (request.POST.get("website") or "").strip():
-            bucket = _ratelimit_bucket(request)
-            if bucket is None:
-                # Même path forensique que la branche fail-closed : un bot
-                # qui combine honeypot trip + IP strippée doit laisser une
-                # trace (dédupliquée), sinon il passe sous radar.
-                _log_ip_unresolved_dedup(request)
-            else:
-                _bucket_usage(request, bucket, increment=True)
-            return redirect(reverse("contact:merci"))
-        # Vraie validation : champs requis, cohérence commande, etc. Le
-        # quota n'est PAS consommé sur erreur de validation (typo user)
-        # ni sur fail save (DB/email transitoire) — uniquement sur
-        # succès complet (bump après save_and_notify).
-        if form.is_valid():
-            bucket = _ratelimit_bucket(request)
-            if bucket is None:
-                # Fail closed : on ne peut pas bucket-er, on bloque. Pas de
-                # Retry-After (attendre ne résout pas une IP absente) et
-                # 503 plutôt que 429 (ce n'est pas une rate limit, c'est
-                # une indisponibilité).
-                _log_ip_unresolved_dedup(request)
-                ip_unresolved = True
-            else:
-                usage = _bucket_usage(request, bucket, increment=False)
-                if usage is not None and usage["count"] >= usage["limit"]:
-                    rate_limited = True
-                    # max(1, ceil(...)) borne Retry-After à ≥ 1s :
-                    # - boundary (time_left=0, requête pile au tick de reset)
-                    #   sans floor donne "Retry-After: 0" = retry immédiat ;
-                    # - sentinel cache-fail de django-ratelimit (time_left=-1
-                    #   quand count=0/limit=0/should_limit=True) donnerait un
-                    #   Retry-After négatif, invalide RFC 7231.
-                    retry_after = max(1, math.ceil(usage["time_left"]))
-                else:
-                    msg = form.save_and_notify()
-                    _bucket_usage(request, bucket, increment=True)
-                    # Le paiement se règle à l'étape suivante (/merci/) : on
-                    # transmet le mode choisi via la session pour afficher la
-                    # bonne consigne (boutons Stripe pour CB, etc.).
-                    if msg.sujet == Message.SUJET_COMMANDE and msg.mode_paiement:
-                        request.session["order_paiement"] = {
-                            "mode": msg.mode_paiement,
-                            "ref": msg.pk,
-                        }
-                    else:
-                        request.session.pop("order_paiement", None)
-                    return redirect(reverse("contact:merci"))
-    else:
-        form = ContactForm()
-    response = render(
-        request,
-        "contact/form.html",
-        {
-            "form": form,
-            "page": ContactPage.get_solo(),
-            "commande_value": Message.SUJET_COMMANDE,
-            "paiement_cb": Message.PAIEMENT_CB,
-            "paiement_cheque": Message.PAIEMENT_CHEQUE,
-            "paiement_virement": Message.PAIEMENT_VIREMENT,
-            "rate_limited": rate_limited,
-            "ip_unresolved": ip_unresolved,
-            **seo(
-                request,
-                title="Contact & commande dédicacée · Bruno Boulais",
-                description=(
-                    "Commander le livre avec une dédicace personnalisée ou écrire"
-                    " à Bruno Boulais."
-                ),
-            ),
-        },
-    )
-    # Priorité ip_unresolved > rate_limited : fail-closed (503) prime sur
-    # rate-limit (429) si un refactor futur rend les deux flags True en
-    # même temps. Aujourd'hui ils s'excluent par control flow, mais on
-    # cadre la priorité pour ne pas dépendre de cet invariant implicite.
-    if ip_unresolved:
-        # 503 sans Retry-After (attendre ne résout pas l'IP absente) + no-store
-        # pour empêcher Cloudflare/CDN de cacher l'erreur au edge (RFC 7234 :
-        # 503 est cacheable par heuristique sans Cache-Control explicite).
-        response.status_code = 503
-        response["Cache-Control"] = "no-store"
-    elif rate_limited:
-        # HTTP 429 + Retry-After : non cacheable par les CDN, et bots/scripts
-        # voient l'erreur explicitement (au lieu d'un 200 qui ressemble à un
-        # succès et déclenche un re-submit qui ré-incrémente).
-        response.status_code = 429
-        response["Retry-After"] = str(retry_after)
-        response["Cache-Control"] = "no-store"
-    return response
-
-
-def merci(request):
-    # Consommé à l'affichage : la consigne de paiement ne s'affiche qu'une fois,
-    # pour ne pas reproposer de payer une commande déjà réglée (les liens Stripe
-    # statiques rechargeraient un paiement). Un rechargement de /merci/ retombe
-    # donc sur le simple remerciement.
-    order_paiement = request.session.pop("order_paiement", None)
-    return render(
-        request,
-        "contact/merci.html",
-        {
-            "page": ContactPage.get_solo(),
-            "order_paiement": order_paiement,
-            "paiement_cb": Message.PAIEMENT_CB,
-            "paiement_cheque": Message.PAIEMENT_CHEQUE,
-            "paiement_virement": Message.PAIEMENT_VIREMENT,
-            **seo(request, title="Message envoyé · Bruno Boulais"),
-        },
-    )
-
-
-# --- Nouvelle page de commande (page de travail /contact/v2/, swap à venir) ---
-# Réutilise les helpers de rate-limit ci-dessus. La similarité d'orchestration
-# avec `contact` est temporaire : l'ancienne page disparaît au swap.
-
-
 def commande(request):
     rate_limited = False
     ip_unresolved = False
     retry_after = None
     if request.method == "POST":
         form = CommandeForm(request.POST)
+        # Honeypot trip = bot. On burn le bucket (pénaliser) puis on redirect
+        # /merci/ pour ne pas révéler qu'on a détecté le piège (anti-fingerprint).
         if (request.POST.get("website") or "").strip():
             bucket = _ratelimit_bucket(request)
             if bucket is None:
                 _log_ip_unresolved_dedup(request)
             else:
                 _bucket_usage(request, bucket, increment=True)
-            return redirect(reverse("contact:commande_merci"))
+            return redirect(reverse("contact:merci"))
         if form.is_valid():
             bucket = _ratelimit_bucket(request)
             if bucket is None:
@@ -252,13 +119,13 @@ def commande(request):
                 else:
                     msg = form.save_and_notify()
                     _bucket_usage(request, bucket, increment=True)
-                    # On ne garde que la référence : mode et quantité se relisent
-                    # depuis le Message (pas de duplication en session).
+                    # Référence conservée pour afficher le récap + la consigne de
+                    # paiement sur /merci/ (mode/quantité relus depuis le Message).
                     if msg.sujet == Message.SUJET_COMMANDE and msg.mode_paiement:
                         request.session["order_ref"] = msg.pk
                     else:
                         request.session.pop("order_ref", None)
-                    return redirect(reverse("contact:commande_merci"))
+                    return redirect(reverse("contact:merci"))
     else:
         form = CommandeForm()
     response = render(
@@ -268,7 +135,6 @@ def commande(request):
             "form": form,
             "page": ContactPage.get_solo(),
             "commande_value": Message.SUJET_COMMANDE,
-            "paiement_cb": Message.PAIEMENT_CB,
             "paiement_cheque": Message.PAIEMENT_CHEQUE,
             "paiement_virement": Message.PAIEMENT_VIREMENT,
             "livraison_domicile": Message.LIVRAISON_DOMICILE,
@@ -300,16 +166,10 @@ def commande(request):
 
 
 def commande_merci(request):
-    # On garde `order_ref` en session tant que la commande n'est pas réglée :
-    # le client doit pouvoir relancer un paiement annulé. On le purge dès que
-    # la commande est payée (ou au retour « succès » de Stripe).
-    ref = request.session.get("order_ref")
+    # Référence lue une seule fois (consigne de paiement affichée au retour du
+    # formulaire) : un rechargement retombe sur le simple remerciement.
+    ref = request.session.pop("order_ref", None)
     order = Message.objects.filter(pk=ref).first() if ref else None
-    paiement = request.GET.get("paiement")  # succes | annule | erreur
-
-    if order and (order.paye or paiement == "succes"):
-        request.session.pop("order_ref", None)
-
     detail = montant_detail(order.nb_exemplaires, order.mode_livraison) if order else None
     return render(
         request,
@@ -318,135 +178,8 @@ def commande_merci(request):
             "page": ContactPage.get_solo(),
             "order": order,
             "montant": detail["total"] if detail else "",
-            "paiement": paiement,
-            "paiement_cb": Message.PAIEMENT_CB,
             "paiement_cheque": Message.PAIEMENT_CHEQUE,
             "paiement_virement": Message.PAIEMENT_VIREMENT,
             **seo(request, title="Message envoyé · Bruno Boulais"),
         },
     )
-
-
-@require_POST
-def paiement_checkout(request):
-    """Crée une Checkout Session Stripe pour la commande CB en cours de session."""
-    ref = request.session.get("order_ref")
-    order = Message.objects.filter(pk=ref).first() if ref else None
-    # Garde : commande CB non encore payée. Sinon, rien à payer → retour /merci/.
-    if not order or order.mode_paiement != Message.PAIEMENT_CB or order.paye:
-        return redirect(reverse("contact:commande_merci"))
-
-    merci_url = request.build_absolute_uri(reverse("contact:commande_merci"))
-    total = montant_total_cents(order.nb_exemplaires, order.mode_livraison)
-    if total is None:
-        # Quantité/mode absent ou incohérent (donnée legacy, admin) : pas de
-        # montant à facturer, on ne lance pas Stripe et on retourne proprement.
-        logger.error(
-            "Stripe: commande #%s sans tarif valide (nb_exemplaires=%r, mode_livraison=%r).",
-            order.pk,
-            order.nb_exemplaires,
-            order.mode_livraison,
-        )
-        return redirect(f"{merci_url}?paiement=erreur")
-    label = f"{PRODUITS[order.nb_exemplaires]['label']} — livraison {order.get_mode_livraison_display()}"
-    stripe.api_key = settings.STRIPE_SECRET_KEY
-    try:
-        session = stripe.checkout.Session.create(
-            mode="payment",
-            line_items=[
-                {
-                    "price_data": {
-                        "currency": "eur",
-                        "product_data": {"name": label},
-                        "unit_amount": total,
-                    },
-                    "quantity": 1,
-                }
-            ],
-            customer_email=order.email,
-            client_reference_id=str(order.pk),
-            success_url=f"{merci_url}?paiement=succes",
-            cancel_url=f"{merci_url}?paiement=annule",
-        )
-    except stripe.error.StripeError:
-        logger.error(
-            "Stripe: échec de création de la Checkout Session pour la commande #%s.",
-            order.pk,
-            exc_info=True,
-        )
-        return redirect(f"{merci_url}?paiement=erreur")
-
-    order.stripe_session_id = session.id
-    order.save(update_fields=["stripe_session_id"])
-    return redirect(session.url)
-
-
-@csrf_exempt
-@require_POST
-def paiement_webhook(request):
-    """Webhook Stripe : confirme le paiement d'une commande (checkout.session.completed)."""
-    try:
-        event = stripe.Webhook.construct_event(
-            request.body,
-            request.META.get("HTTP_STRIPE_SIGNATURE", ""),
-            settings.STRIPE_WEBHOOK_SECRET,
-        )
-    except (ValueError, stripe.error.SignatureVerificationError):
-        return HttpResponse(status=400)
-
-    if event["type"] == "checkout.session.completed":
-        # `session` est un StripeObject (pas un dict, pas de `.get()`) : lecture par
-        # sous-script. Une session hors de notre flux (créée au dashboard) peut ne
-        # pas porter ces clés → KeyError attrapé, on accuse réception (200).
-        session = event["data"]["object"]
-        try:
-            payment_status = session["payment_status"]
-            ref = session["client_reference_id"]
-            amount_total = session["amount_total"]
-        except KeyError:
-            logger.warning(
-                "Stripe: checkout.session.completed sans les clés attendues — ignoré."
-            )
-            return HttpResponse(status=200)
-        # On ne marque payé que si le paiement est réellement abouti : pour une
-        # méthode asynchrone, `completed` peut arriver avec payment_status != paid.
-        if payment_status != "paid":
-            return HttpResponse(status=200)
-        # `client_reference_id` = pk de notre commande (cf. paiement_checkout). Une
-        # session étrangère peut porter une réf. nulle/non numérique : on accuse
-        # réception sans rien marquer plutôt que de lever (et faire boucler Stripe).
-        try:
-            order_pk = int(ref)
-        except (TypeError, ValueError):
-            logger.warning(
-                "Stripe: client_reference_id absent ou non numérique (%r) — ignoré.", ref
-            )
-            return HttpResponse(status=200)
-        # filter(paye=False) = idempotent : un re-delivery Stripe ne renotifie pas.
-        updated = Message.objects.filter(pk=order_pk, paye=False).update(paye=True)
-        if updated:
-            # amount_total est toujours présent sur nos sessions ; garde défensive
-            # pour ne pas planter (et boucler) si une session étrangère l'omet.
-            montant = montant_euros(amount_total) if amount_total is not None else "montant inconnu"
-            try:
-                send_mail(
-                    subject=f"[jacques-bertin.manyo.dev] Paiement reçu — commande #{ref} — {montant}",
-                    message=(
-                        f"Le paiement par carte de la commande #{ref} "
-                        f"({montant}) a bien été reçu.\n"
-                    ),
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[settings.CONTACT_EMAIL],
-                    fail_silently=False,
-                )
-            except Exception:
-                # La commande est déjà marquée payée (source de vérité = admin) :
-                # on ne renvoie pas d'erreur à Stripe (sinon re-delivery en boucle),
-                # mais on trace pour que Bruno sache que la notif n'est pas partie.
-                logger.error(
-                    "Stripe: paiement de la commande #%s confirmé mais notification "
-                    "non envoyée — à vérifier manuellement.",
-                    ref,
-                    exc_info=True,
-                )
-    return HttpResponse(status=200)

@@ -1,7 +1,6 @@
 from unittest import mock
 
 import pytest
-import stripe
 from django.core.cache import cache
 from django.test import Client
 
@@ -62,7 +61,7 @@ class TestContactIpUnresolved:
 
 @pytest.mark.django_db
 class TestContactPaiementValidation:
-    """Le mode de paiement est requis uniquement pour une commande dédicacée."""
+    """Le mode de paiement (chèque/virement) est requis uniquement pour une commande."""
 
     def _data(self, **overrides):
         data = {
@@ -71,7 +70,7 @@ class TestContactPaiementValidation:
             "email": "alice@example.com",
             "telephone": "0612345678",
             "adresse_postale": "1 rue du Livre, 40000 Mont-de-Marsan",
-            "mode_paiement": Message.PAIEMENT_CB,
+            "mode_paiement": Message.PAIEMENT_CHEQUE,
             "contenu": "Je commande un exemplaire dédicacé.",
             "website": "",
         }
@@ -100,78 +99,8 @@ class TestContactPaiementValidation:
 
 
 @pytest.mark.django_db
-class TestContactPaiementFlow:
-    """La commande est capturée d'abord, le paiement vient ensuite sur /merci/.
-
-    Régression check sur la refonte : un POST commande valide enregistre le
-    Message et redirige vers /merci/ en passant le mode de paiement en session
-    (pas de paiement déclenché depuis le formulaire).
-    """
-
-    def _data(self, **overrides):
-        data = {
-            "nom": "Alice",
-            "sujet": Message.SUJET_COMMANDE,
-            "email": "alice@example.com",
-            "telephone": "0612345678",
-            "adresse_postale": "1 rue du Livre, 40000 Mont-de-Marsan",
-            "mode_paiement": Message.PAIEMENT_CB,
-            "contenu": "Je commande un exemplaire dédicacé.",
-            "website": "",
-        }
-        data.update(overrides)
-        return data
-
-    def test_commande_saves_then_redirects_with_session(self):
-        client = Client()
-        response = client.post("/contact/", data=self._data(), REMOTE_ADDR="1.2.3.4")
-        assert response.status_code == 302
-        assert response["Location"] == "/contact/merci/"
-        assert Message.objects.count() == 1
-        assert client.session["order_paiement"]["mode"] == Message.PAIEMENT_CB
-
-    def test_non_commande_clears_payment_session(self):
-        client = Client()
-        # Une session contenant un ancien paiement ne doit pas survivre à un
-        # message non-commande.
-        session = client.session
-        session["order_paiement"] = {"mode": Message.PAIEMENT_CB, "ref": 1}
-        session.save()
-        response = client.post(
-            "/contact/",
-            data=self._data(
-                sujet=Message.SUJET_QUESTION,
-                mode_paiement="",
-                telephone="",
-                adresse_postale="",
-            ),
-            REMOTE_ADDR="1.2.3.4",
-        )
-        assert response.status_code == 302
-        assert "order_paiement" not in client.session
-
-    def test_merci_renders_stripe_buttons_for_cb(self):
-        client = Client()
-        session = client.session
-        session["order_paiement"] = {"mode": Message.PAIEMENT_CB, "ref": 42}
-        session.save()
-        response = client.get("/contact/merci/")
-        assert response.status_code == 200
-        assert b"buy.stripe.com" in response.content
-        # Consommé à l'affichage : un rechargement ne repropose plus de payer.
-        reload = client.get("/contact/merci/")
-        assert b"buy.stripe.com" not in reload.content
-
-    def test_merci_without_session_has_no_stripe(self):
-        client = Client()
-        response = client.get("/contact/merci/")
-        assert response.status_code == 200
-        assert b"buy.stripe.com" not in response.content
-
-
-@pytest.mark.django_db
 class TestContactNotificationHardening:
-    """Finding 9 : un échec d'envoi du mail ne doit pas perdre la commande."""
+    """Un échec d'envoi du mail ne doit pas perdre la commande."""
 
     def test_save_succeeds_and_logs_when_email_fails(self):
         form = ContactForm(
@@ -181,7 +110,7 @@ class TestContactNotificationHardening:
                 "email": "alice@example.com",
                 "telephone": "0612345678",
                 "adresse_postale": "1 rue du Livre, 40000 Mont-de-Marsan",
-                "mode_paiement": Message.PAIEMENT_CB,
+                "mode_paiement": Message.PAIEMENT_CHEQUE,
                 "contenu": "Je commande un exemplaire dédicacé.",
                 "website": "",
             }
@@ -206,7 +135,7 @@ class TestContactNotificationHardening:
                 "email": "alice@example.com",
                 "telephone": "0612345678",
                 "adresse_postale": "1 rue du Livre, 40000 Mont-de-Marsan",
-                "mode_paiement": Message.PAIEMENT_CB,
+                "mode_paiement": Message.PAIEMENT_CHEQUE,
                 "contenu": "Je commande un exemplaire dédicacé.",
                 "website": "",
             }
@@ -244,7 +173,7 @@ def _commande_data(**overrides):
         "sujet": Message.SUJET_COMMANDE,
         "email": "alice@example.com",
         "telephone": "0612345678",
-        "mode_paiement": Message.PAIEMENT_CB,
+        "mode_paiement": Message.PAIEMENT_CHEQUE,
         "nb_exemplaires": 1,
         "mode_livraison": Message.LIVRAISON_POINT_RELAIS,
         "point_relais_id": "FR-12345",
@@ -305,14 +234,14 @@ class TestCommandeForm:
 
 @pytest.mark.django_db
 class TestCommandeFlow:
-    """Page de travail /contact/v2/ : la commande est capturée puis le paiement suit."""
+    """Page principale /contact/ : la commande est capturée puis redirige vers /merci/."""
 
     def test_commande_saves_then_redirects_with_session(self):
         client = Client()
         with mock.patch("apps.contact.forms.EmailMessage.send"):
-            response = client.post("/contact/v2/", data=_commande_data(), REMOTE_ADDR="1.2.3.4")
+            response = client.post("/contact/", data=_commande_data(), REMOTE_ADDR="1.2.3.4")
         assert response.status_code == 302
-        assert response["Location"] == "/contact/v2/merci/"
+        assert response["Location"] == "/contact/merci/"
         assert Message.objects.count() == 1
         assert client.session["order_ref"] == Message.objects.get().pk
 
@@ -323,7 +252,7 @@ class TestCommandeFlow:
         session.save()
         with mock.patch("apps.contact.forms.EmailMessage.send"):
             response = client.post(
-                "/contact/v2/",
+                "/contact/",
                 data=_commande_data(
                     sujet=Message.SUJET_QUESTION,
                     mode_paiement="",
@@ -339,53 +268,14 @@ class TestCommandeFlow:
 
 @pytest.mark.django_db
 class TestCommandeMerci:
-    """La page /merci/ propose le règlement CB tant que la commande n'est pas payée."""
+    """La page /merci/ récapitule la commande et la consigne de paiement, une seule fois."""
 
     def _order(self, **overrides):
         defaults = {
             "nom": "Alice",
             "email": "alice@example.com",
             "sujet": Message.SUJET_COMMANDE,
-            "mode_paiement": Message.PAIEMENT_CB,
-            "nb_exemplaires": 1,
-            "mode_livraison": Message.LIVRAISON_POINT_RELAIS,
-            "contenu": "Commande",
-        }
-        defaults.update(overrides)
-        return Message.objects.create(**defaults)
-
-    def test_cb_unpaid_shows_pay_form(self):
-        order = self._order()
-        client = Client()
-        session = client.session
-        session["order_ref"] = order.pk
-        session.save()
-        response = client.get("/contact/v2/merci/")
-        assert response.status_code == 200
-        assert b'action="/contact/paiement/"' in response.content
-        assert b"buy.stripe.com" not in response.content
-
-    def test_paid_hides_pay_form(self):
-        order = self._order(paye=True)
-        client = Client()
-        session = client.session
-        session["order_ref"] = order.pk
-        session.save()
-        response = client.get("/contact/v2/merci/")
-        assert response.status_code == 200
-        assert b'action="/contact/paiement/"' not in response.content
-
-
-@pytest.mark.django_db
-class TestPaiementCheckout:
-    """Création de la Checkout Session Stripe (lib mickée, aucune clé requise)."""
-
-    def _order(self, **overrides):
-        defaults = {
-            "nom": "Alice",
-            "email": "alice@example.com",
-            "sujet": Message.SUJET_COMMANDE,
-            "mode_paiement": Message.PAIEMENT_CB,
+            "mode_paiement": Message.PAIEMENT_CHEQUE,
             "nb_exemplaires": 1,
             "mode_livraison": Message.LIVRAISON_POINT_RELAIS,
             "contenu": "Commande",
@@ -400,194 +290,25 @@ class TestPaiementCheckout:
         session.save()
         return client
 
-    def test_creates_session_and_redirects(self):
+    def test_shows_recap_and_cheque_instructions(self):
+        order = self._order()
+        response = self._client_with_order(order).get("/contact/merci/")
+        assert response.status_code == 200
+        body = response.content.decode()
+        assert str(order.pk) in body
+        assert "Chemin Orossen" in body  # consigne chèque
+        assert "24,15" in body  # total 1 ex point relais
+
+    def test_reference_consumed_after_display(self):
         order = self._order()
         client = self._client_with_order(order)
-        fake = mock.Mock(id="cs_test_123", url="https://checkout.stripe.com/c/pay/cs_test_123")
-        with mock.patch(
-            "apps.contact.views.stripe.checkout.Session.create", return_value=fake
-        ) as create:
-            response = client.post("/contact/paiement/")
-        assert create.called
-        assert response.status_code == 302
-        assert response["Location"] == "https://checkout.stripe.com/c/pay/cs_test_123"
-        order.refresh_from_db()
-        assert order.stripe_session_id == "cs_test_123"
+        first = client.get("/contact/merci/")
+        assert "Chemin Orossen" in first.content.decode()
+        # La référence est consommée : un rechargement ne réaffiche plus la commande.
+        reloaded = client.get("/contact/merci/")
+        assert "Chemin Orossen" not in reloaded.content.decode()
 
-    def test_no_order_in_session_skips_stripe(self):
-        client = Client()
-        with mock.patch("apps.contact.views.stripe.checkout.Session.create") as create:
-            response = client.post("/contact/paiement/")
-        assert not create.called
-        assert response.status_code == 302
-        assert response["Location"] == "/contact/v2/merci/"
-
-    def test_already_paid_skips_stripe(self):
-        order = self._order(paye=True)
-        client = self._client_with_order(order)
-        with mock.patch("apps.contact.views.stripe.checkout.Session.create") as create:
-            response = client.post("/contact/paiement/")
-        assert not create.called
-        assert response.status_code == 302
-
-
-@pytest.mark.django_db
-class TestPaiementWebhook:
-    """Webhook Stripe : confirme le paiement, idempotent, rejette une signature invalide."""
-
-    def _order(self, **overrides):
-        defaults = {
-            "nom": "Alice",
-            "email": "alice@example.com",
-            "sujet": Message.SUJET_COMMANDE,
-            "mode_paiement": Message.PAIEMENT_CB,
-            "nb_exemplaires": 1,
-            "contenu": "Commande",
-        }
-        defaults.update(overrides)
-        return Message.objects.create(**defaults)
-
-    def _post(self, client):
-        return client.post(
-            "/contact/paiement/webhook/",
-            data="{}",
-            content_type="application/json",
-            HTTP_STRIPE_SIGNATURE="t=1,v1=deadbeef",
-        )
-
-    def _event(self, order, *, payment_status="paid", amount_total=2410):
-        # Vrai StripeObject (comme construct_event en prod), PAS un dict : c'est ce
-        # qui a révélé le bug `.get()` → on teste désormais l'objet réel.
-        return stripe.Event.construct_from(
-            {
-                "type": "checkout.session.completed",
-                "data": {
-                    "object": {
-                        "object": "checkout.session",
-                        "client_reference_id": str(order.pk),
-                        "payment_status": payment_status,
-                        "amount_total": amount_total,
-                    }
-                },
-            },
-            "sk_test_dummy",
-        )
-
-    def test_completed_marks_paid_and_notifies(self):
-        order = self._order()
-        with mock.patch(
-            "apps.contact.views.stripe.Webhook.construct_event", return_value=self._event(order)
-        ), mock.patch("apps.contact.views.send_mail") as send:
-            response = self._post(Client())
+    def test_without_session_is_plain_thanks(self):
+        response = Client().get("/contact/merci/")
         assert response.status_code == 200
-        order.refresh_from_db()
-        assert order.paye is True
-        assert send.called
-
-    def test_bad_signature_returns_400(self):
-        order = self._order()
-        with mock.patch(
-            "apps.contact.views.stripe.Webhook.construct_event",
-            side_effect=stripe.error.SignatureVerificationError("bad sig", "sig"),
-        ):
-            response = self._post(Client())
-        assert response.status_code == 400
-        order.refresh_from_db()
-        assert order.paye is False
-
-    def test_completed_but_unpaid_does_not_mark_paid(self):
-        order = self._order()
-        with mock.patch(
-            "apps.contact.views.stripe.Webhook.construct_event",
-            return_value=self._event(order, payment_status="unpaid"),
-        ), mock.patch("apps.contact.views.send_mail") as send:
-            response = self._post(Client())
-        assert response.status_code == 200
-        order.refresh_from_db()
-        assert order.paye is False
-        assert not send.called
-
-    def test_idempotent_no_double_notify(self):
-        # Commande déjà payée : un re-delivery ne doit pas renotifier.
-        order = self._order(paye=True)
-        with mock.patch(
-            "apps.contact.views.stripe.Webhook.construct_event", return_value=self._event(order)
-        ), mock.patch("apps.contact.views.send_mail") as send:
-            response = self._post(Client())
-        assert response.status_code == 200
-        assert not send.called
-
-    def test_session_without_reference_is_acknowledged(self):
-        # Session hors de notre flux (créée au dashboard, sans client_reference_id) :
-        # on accuse réception (200) sans planter ni rien marquer.
-        event = stripe.Event.construct_from(
-            {
-                "type": "checkout.session.completed",
-                "data": {"object": {
-                    "object": "checkout.session",
-                    "payment_status": "paid",
-                    "amount_total": 2410,
-                }},
-            },
-            "sk_test_dummy",
-        )
-        with mock.patch(
-            "apps.contact.views.stripe.Webhook.construct_event", return_value=event
-        ), mock.patch("apps.contact.views.send_mail") as send:
-            response = self._post(Client())
-        assert response.status_code == 200
-        assert not send.called
-
-    def test_notification_failure_is_logged_not_swallowed(self):
-        # L'envoi de la notif échoue : la commande reste marquée payée, on rend 200
-        # (pas de re-delivery Stripe en boucle) mais l'échec est tracé, pas avalé.
-        order = self._order()
-        with mock.patch(
-            "apps.contact.views.stripe.Webhook.construct_event", return_value=self._event(order)
-        ), mock.patch(
-            "apps.contact.views.send_mail", side_effect=OSError("smtp down")
-        ), mock.patch("apps.contact.views.logger") as log:
-            response = self._post(Client())
-        assert response.status_code == 200
-        order.refresh_from_db()
-        assert order.paye is True
-        assert log.error.called
-
-    def test_amount_total_none_does_not_crash(self):
-        # Session « payée » dont l'objet n'a pas de montant : la commande matchée est
-        # marquée payée et la notif part, sans 500 ni re-delivery Stripe en boucle.
-        order = self._order()
-        with mock.patch(
-            "apps.contact.views.stripe.Webhook.construct_event",
-            return_value=self._event(order, amount_total=None),
-        ), mock.patch("apps.contact.views.send_mail") as send:
-            response = self._post(Client())
-        assert response.status_code == 200
-        order.refresh_from_db()
-        assert order.paye is True
-        assert send.called
-
-    def test_non_numeric_reference_is_acknowledged(self):
-        # client_reference_id non numérique (session hors de notre flux) : on accuse
-        # réception (200) sans planter ni marquer quoi que ce soit.
-        order = self._order()
-        event = stripe.Event.construct_from(
-            {
-                "type": "checkout.session.completed",
-                "data": {"object": {
-                    "object": "checkout.session",
-                    "client_reference_id": "not-an-int",
-                    "payment_status": "paid",
-                    "amount_total": 2410,
-                }},
-            },
-            "sk_test_dummy",
-        )
-        with mock.patch(
-            "apps.contact.views.stripe.Webhook.construct_event", return_value=event
-        ), mock.patch("apps.contact.views.send_mail") as send:
-            response = self._post(Client())
-        assert response.status_code == 200
-        order.refresh_from_db()
-        assert order.paye is False
-        assert not send.called
+        assert "Chemin Orossen" not in response.content.decode()

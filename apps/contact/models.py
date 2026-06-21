@@ -10,7 +10,7 @@ CACHE_KEY_CONTACT_PAGE = "contact_page"
 # Tarifs du livre. Prix unitaire fixe ; les frais de port dépendent du nombre
 # d'exemplaires ET du mode de livraison (cf. FRAIS_PORT_CENTS, défini après
 # Message pour réutiliser ses constantes LIVRAISON_*). Montants en centimes =
-# source de vérité unique (pills, page /merci/, line items Stripe, email).
+# source de vérité unique (pills, récap navigateur, page /merci/, email).
 PRIX_LIVRE_CENTS = 2000
 
 PRODUITS = {
@@ -73,11 +73,9 @@ class Message(TimestampedModel):
         (SUJET_AUTRE, "Autre"),
     ]
 
-    PAIEMENT_CB = "cb"
     PAIEMENT_CHEQUE = "cheque"
     PAIEMENT_VIREMENT = "virement"
     PAIEMENT_CHOICES = [
-        (PAIEMENT_CB, "Carte bancaire"),
         (PAIEMENT_CHEQUE, "Chèque"),
         (PAIEMENT_VIREMENT, "Virement"),
     ]
@@ -121,9 +119,8 @@ class Message(TimestampedModel):
     # False = la commande est enregistrée mais l'email de notification n'est pas
     # parti : à traiter manuellement (visible/filtrable dans l'admin).
     notified = models.BooleanField("Notifié", default=True)
-    # Posé par le webhook Stripe (CB) ou coché à la main par Bruno (chèque/virement).
+    # Coché à la main par Bruno quand il reçoit le chèque ou le virement.
     paye = models.BooleanField("Payé", default=False)
-    stripe_session_id = models.CharField("Session Stripe", max_length=255, blank=True)
 
     class Meta:
         ordering = ["-created_at"]

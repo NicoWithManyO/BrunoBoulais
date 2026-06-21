@@ -114,7 +114,7 @@ class MessageDetailCommandeTests(TestCase):
         order = Message.objects.create(
             nom="Alice", email="a@b.fr", sujet=Message.SUJET_COMMANDE,
             nb_exemplaires=2, mode_livraison=Message.LIVRAISON_DOMICILE,
-            adresse_postale="1 rue X\n40000 Ville", mode_paiement=Message.PAIEMENT_CB,
+            adresse_postale="1 rue X\n40000 Ville", mode_paiement=Message.PAIEMENT_CHEQUE,
             paye=False, contenu="Bonjour",
         )
         body = self.client.get(
@@ -125,7 +125,7 @@ class MessageDetailCommandeTests(TestCase):
         self.assertIn("9,49", body)   # frais de port domicile
         self.assertIn("Domicile", body)
         self.assertIn("1 rue X", body)
-        self.assertIn("Carte bancaire", body)
+        self.assertIn("Chèque", body)
 
     def test_commande_relais_payee(self):
         order = Message.objects.create(
