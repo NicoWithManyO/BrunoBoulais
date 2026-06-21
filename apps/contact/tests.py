@@ -178,6 +178,7 @@ def _commande_data(**overrides):
         "mode_livraison": Message.LIVRAISON_POINT_RELAIS,
         "point_relais_id": "FR-12345",
         "point_relais_libelle": "Tabac de la Poste, 40000 Mont-de-Marsan",
+        "adresse_postale": "Alice Martin, 1 rue du Livre, 40000 Mont-de-Marsan",
         "contenu": "Je commande un exemplaire.",
         "website": "",
     }
@@ -187,7 +188,7 @@ def _commande_data(**overrides):
 
 @pytest.mark.django_db
 class TestCommandeForm:
-    """Exemplaires, mode de livraison et point/adresse requis selon le mode."""
+    """Exemplaires, mode de livraison, point relais et adresse requis pour une commande."""
 
     def test_commande_requires_nb_exemplaires(self):
         form = CommandeForm(data=_commande_data(nb_exemplaires=""))
@@ -203,6 +204,12 @@ class TestCommandeForm:
         form = CommandeForm(data=_commande_data(point_relais_id=""))
         assert not form.is_valid()
         assert "point_relais_id" in form.errors
+
+    def test_relais_requires_adresse(self):
+        # Mondial Relay exige une adresse destinataire même en point relais.
+        form = CommandeForm(data=_commande_data(adresse_postale=""))
+        assert not form.is_valid()
+        assert "adresse_postale" in form.errors
 
     def test_domicile_requires_adresse(self):
         form = CommandeForm(

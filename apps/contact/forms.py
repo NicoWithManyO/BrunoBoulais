@@ -38,18 +38,15 @@ class ContactForm(forms.ModelForm):
             "adresse_postale": forms.Textarea(attrs={"rows": 3}),
         }
 
-    def _adresse_postale_required(self, cleaned):
-        # Base : l'adresse est toujours requise pour une commande. Surchargeable
-        # (CommandeForm ne l'exige qu'en livraison à domicile).
-        return True
-
     def clean(self):
         cleaned = super().clean()
         sujet = cleaned.get("sujet")
         if sujet == Message.SUJET_COMMANDE:
             if not (cleaned.get("telephone") or "").strip():
                 self.add_error("telephone", "Numéro de téléphone requis pour une commande.")
-            if self._adresse_postale_required(cleaned) and not (cleaned.get("adresse_postale") or "").strip():
+            # Adresse du destinataire toujours requise : Mondial Relay exige une
+            # adresse destinataire pour l'envoi, même en point relais/locker.
+            if not (cleaned.get("adresse_postale") or "").strip():
                 self.add_error("adresse_postale", "Adresse de destination requise pour une commande.")
             if not cleaned.get("mode_paiement"):
                 self.add_error("mode_paiement", "Merci d'indiquer un mode de paiement.")
@@ -162,11 +159,6 @@ class CommandeForm(ContactForm):
             ("", "Sélectionner un mode de paiement"),
             *Message.PAIEMENT_CHOICES,
         ]
-
-    def _adresse_postale_required(self, cleaned):
-        # L'adresse libre n'est exigée qu'en livraison à domicile ; pour un point
-        # Mondial Relay c'est `point_relais_id` qui fait foi (voir clean()).
-        return cleaned.get("mode_livraison") == Message.LIVRAISON_DOMICILE
 
     def clean(self):
         cleaned = super().clean()
