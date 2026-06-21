@@ -34,6 +34,7 @@
                     <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire)</span>
                 </label>
                 {{ form.email }}
+                <p data-email-hint-extra class="mt-1 text-xs text-slate-soft"{% if form.sujet.value != commande_value %} hidden{% endif %}>Pour le suivi du colis.</p>
             </div>
             <div>
                 <label class="field-label" for="{{ form.telephone.id_for_label }}">
@@ -51,7 +52,7 @@
                 <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire)</span>
             </label>
             {{ form.adresse_postale }}
-            <p class="mt-1 text-xs text-slate-soft">Nom, prénom et adresse complète du destinataire du colis (nécessaire à l'envoi, même en point relais ou locker).</p>
+            <p class="mt-1 text-xs text-slate-soft">Nom, prénom et adresse complète du destinataire du colis (nécessaire à l'envoi, même en point relais ou locker). Pour le suivi du colis.</p>
         </div>
         <div data-exemplaires-wrap aria-live="polite"{% if form.sujet.value != commande_value %} hidden{% endif %}>
             <span class="field-label">
@@ -174,6 +175,7 @@
             const telInput = document.getElementById('{{ form.telephone.id_for_label }}');
             const telHint = document.querySelector('[data-telephone-hint]');
             const telHintExtra = document.querySelector('[data-telephone-hint-extra]');
+            const emailHintExtra = document.querySelector('[data-email-hint-extra]');
             const exemplairesWrap = document.querySelector('[data-exemplaires-wrap]');
             const exemplairesRadios = exemplairesWrap.querySelectorAll('input[type="radio"]');
             const livraisonWrap = document.querySelector('[data-livraison-wrap]');
@@ -201,7 +203,7 @@
             const tarifsNode = document.getElementById('tarifs-data');
             const mrWidget = document.getElementById('mr-widget');
             const submitBtn = document.querySelector('[data-submit-btn]');
-            if (!sujet || !telInput || !telHint || !telHintExtra || !exemplairesWrap
+            if (!sujet || !telInput || !telHint || !telHintExtra || !emailHintExtra || !exemplairesWrap
                 || !exemplairesRadios.length || !livraisonWrap || !livraisonSelect || !adrWrap
                 || !relaisWrap || !adrInput || !pointId || !pointLibelle || !mrSelected
                 || !hintPoint || !hintDomicile
@@ -317,6 +319,7 @@
                 telHint.classList.toggle('text-terracotta-deep', isCommande);
                 telHint.classList.toggle('text-slate-soft', !isCommande);
                 telHintExtra.hidden = !isCommande;
+                emailHintExtra.hidden = !isCommande;
                 adrWrap.hidden = !isCommande;
                 adrInput.required = isCommande;
                 exemplairesWrap.hidden = !isCommande;

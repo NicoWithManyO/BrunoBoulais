@@ -223,6 +223,20 @@ class TestCommandeForm:
         assert not form.is_valid()
         assert "adresse_postale" in form.errors
 
+    def test_domicile_strips_leftover_point_relais(self):
+        # Bascule relais → domicile : aucun point fantôme ne doit subsister.
+        form = CommandeForm(
+            data=_commande_data(
+                mode_livraison=Message.LIVRAISON_DOMICILE,
+                adresse_postale="1 rue du Livre, 40000 Mont-de-Marsan",
+                point_relais_id="FR-99999",
+                point_relais_libelle="Ancien point relais",
+            )
+        )
+        assert form.is_valid(), form.errors
+        assert form.cleaned_data["point_relais_id"] == ""
+        assert form.cleaned_data["point_relais_libelle"] == ""
+
     def test_domicile_with_adresse_is_valid(self):
         form = CommandeForm(
             data=_commande_data(
@@ -251,6 +265,22 @@ class TestCommandeFlow:
         assert response["Location"] == "/contact/merci/"
         assert Message.objects.count() == 1
         assert client.session["order_ref"] == Message.objects.get().pk
+
+    def test_honeypot_clears_stale_order_ref(self):
+        # Piège déclenché : redirige vers /merci/ sans réafficher une commande résiduelle.
+        client = Client()
+        session = client.session
+        session["order_ref"] = 1
+        session.save()
+        response = client.post(
+            "/contact/",
+            data=_commande_data(website="http://spam.example"),
+            REMOTE_ADDR="1.2.3.4",
+        )
+        assert response.status_code == 302
+        assert response["Location"] == "/contact/merci/"
+        assert "order_ref" not in client.session
+        assert Message.objects.count() == 0
 
     def test_non_commande_clears_session(self):
         client = Client()

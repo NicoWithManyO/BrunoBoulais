@@ -105,6 +105,9 @@ def commande(request):
                 _log_ip_unresolved_dedup(request)
             else:
                 _bucket_usage(request, bucket, increment=True)
+            # Purge d'une éventuelle commande résiduelle : le piège ne doit pas
+            # réafficher le récap d'une commande précédente sur /merci/.
+            request.session.pop("order_ref", None)
             return redirect(reverse("contact:merci"))
         if form.is_valid():
             bucket = _ratelimit_bucket(request)
