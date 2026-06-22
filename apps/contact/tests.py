@@ -200,10 +200,10 @@ class TestCommandeForm:
         assert not form.is_valid()
         assert "mode_livraison" in form.errors
 
-    def test_relais_requires_point_relais_id(self):
-        form = CommandeForm(data=_commande_data(point_relais_id=""))
-        assert not form.is_valid()
-        assert "point_relais_id" in form.errors
+    def test_relais_without_point_is_valid(self):
+        # Point relais non sélectionné : autorisé (Bruno le règle en direct avec le client).
+        form = CommandeForm(data=_commande_data(point_relais_id="", point_relais_libelle=""))
+        assert form.is_valid(), form.errors
 
     def test_relais_requires_adresse(self):
         # Mondial Relay exige une adresse destinataire même en point relais.

@@ -168,12 +168,11 @@ class CommandeForm(ContactForm):
             mode_livraison = cleaned.get("mode_livraison")
             if not mode_livraison:
                 self.add_error("mode_livraison", "Merci d'indiquer un mode de livraison.")
-            elif mode_livraison == Message.LIVRAISON_POINT_RELAIS:
-                if not cleaned.get("point_relais_id"):
-                    self.add_error("point_relais_id", "Merci de sélectionner un point relais sur la carte.")
-            else:
+            elif mode_livraison != Message.LIVRAISON_POINT_RELAIS:
                 # Hors point relais (domicile) : pas de point à conserver, sinon un
                 # id fantôme persiste en base quand on bascule relais → domicile.
                 cleaned["point_relais_id"] = ""
                 cleaned["point_relais_libelle"] = ""
+            # Point relais sans sélection : autorisé, Bruno le règle en direct
+            # avec le client.
         return cleaned
