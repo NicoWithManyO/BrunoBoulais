@@ -54,7 +54,19 @@
             {{ form.adresse_postale }}
             <p class="mt-1 text-xs text-slate-soft">Nom, prénom et adresse complète du destinataire du colis (nécessaire à l'envoi, même en point relais ou locker). Pour le suivi du colis.</p>
         </div>
-        <div data-exemplaires-wrap aria-live="polite"{% if form.sujet.value != commande_value %} hidden{% endif %}>
+        <div data-produit-wrap aria-live="polite"{% if form.sujet.value != commande_value %} hidden{% endif %}>
+            <span class="field-label">
+                Que voulez-vous commander&nbsp;?
+                <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire)</span>
+            </span>
+            <div class="pill-group" role="radiogroup" aria-label="Offre">
+                {% for radio in form.produit %}
+                <label class="pill-choice">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
+                {% endfor %}
+            </div>
+        </div>
+        {# Quantité : uniquement pour l'offre « Le livre » (affichage piloté en JS). #}
+        <div data-exemplaires-wrap aria-live="polite" hidden>
             <span class="field-label">
                 Nombre d'exemplaires
                 <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire)</span>
@@ -64,6 +76,31 @@
                 <label class="pill-choice">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
                 {% endfor %}
                 <span class="self-center text-xs text-slate-soft">Pour plus d'exemplaires, me contacter.</span>
+            </div>
+        </div>
+        {# Volumes : uniquement pour l'offre « Volume(s) à l'unité » (1 ou 2 ; 3 = Intégrale). #}
+        <div data-volumes-wrap aria-live="polite" hidden>
+            <span class="field-label">
+                Choisissez vos volumes
+                <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(1 ou 2)</span>
+            </span>
+            <div class="pill-group" role="group" aria-label="Volumes">
+                {% for cb in form.volumes %}
+                <div class="vol-choice">
+                    <label class="pill-choice">{{ cb.tag }}<span>{{ cb.choice_label }}</span></label>
+                    <button type="button" class="vol-voir" data-voir-contenu="{{ cb.data.value }}">voir le contenu</button>
+                </div>
+                {% endfor %}
+                <span class="self-center text-xs text-slate-soft">3&nbsp;volumes = Intégrale.</span>
+            </div>
+        </div>
+        {# Contenu des 3 volumes : consultable pour l'Intégrale et le Pack (offres complètes). #}
+        <div data-contenu-wrap aria-live="polite" hidden>
+            <span class="field-label">Contenu de l'intégrale</span>
+            <div class="flex flex-wrap items-center gap-x-6 gap-y-1">
+                {% for num, vol in volumes_contenu.items %}
+                <button type="button" class="vol-voir" data-voir-contenu="{{ num }}">Vol.&nbsp;{{ num }}&nbsp;— voir le contenu</button>
+                {% endfor %}
             </div>
         </div>
         <div data-livraison-wrap aria-live="polite"{% if form.sujet.value != commande_value %} hidden{% endif %}>
@@ -90,8 +127,8 @@
             <span class="field-label">Récapitulatif</span>
             <div class="recap">
                 <div class="recap__row">
-                    <span data-recap-livres-label></span>
-                    <span data-recap-livres-montant></span>
+                    <span data-recap-articles-label></span>
+                    <span data-recap-articles-montant></span>
                 </div>
                 <div class="recap__row">
                     <span data-recap-port-label></span>
@@ -160,6 +197,49 @@
 
         <button type="submit" class="btn btn-primary" data-submit-btn>{% if form.sujet.value == commande_value %}Envoyer la commande{% else %}Envoyer le message{% endif %}</button>
 
+        {# Modales « voir le contenu » des volumes (overlay masqué, ouvert en JS). #}
+        {% for num, vol in volumes_contenu.items %}
+        <div class="contenu-modal" data-contenu-modal="{{ num }}" hidden role="dialog" aria-modal="true" aria-label="Contenu du volume {{ num }}">
+            <div class="contenu-modal__box">
+                <button type="button" class="contenu-modal__close" data-contenu-close aria-label="Fermer">×</button>
+                <h2 class="contenu-modal__title">Volume {{ num }}</h2>
+                <p class="contenu-modal__subtitle">{{ vol.sous_titre }}</p>
+                {% for cd_titre, titres in vol.cds %}
+                <h3 class="contenu-modal__cd">{{ cd_titre }}</h3>
+                <ol class="contenu-modal__tracks">
+                    {% for t in titres %}<li>{{ t }}</li>{% endfor %}
+                </ol>
+                {% endfor %}
+                {% if vol.note %}<p class="contenu-modal__note">{{ vol.note }}</p>{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        <script>
+        // Modales de contenu des volumes : indépendantes de la logique du
+        // formulaire (IIFE séparée) pour rester robustes l'une sans l'autre.
+        (function () {
+            const modals = document.querySelectorAll('[data-contenu-modal]');
+            if (!modals.length) return;
+            function close() {
+                modals.forEach((m) => { m.hidden = true; });
+                document.body.style.overflow = '';
+            }
+            function open(num) {
+                modals.forEach((m) => { m.hidden = m.dataset.contenuModal !== num; });
+                document.body.style.overflow = 'hidden';
+            }
+            document.querySelectorAll('[data-voir-contenu]').forEach((b) => {
+                b.addEventListener('click', () => open(b.dataset.voirContenu));
+            });
+            modals.forEach((m) => {
+                // Clic sur le fond (hors boîte) ou sur la croix : fermeture.
+                m.addEventListener('click', (e) => { if (e.target === m) close(); });
+                m.querySelector('[data-contenu-close]').addEventListener('click', close);
+            });
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+        })();
+        </script>
+
         {{ tarifs|json_script:"tarifs-data" }}
 
         {# Widget point relais Mondial Relay : jQuery + Leaflet (self-hostés) puis le plugin MR #}
@@ -174,8 +254,13 @@
             const telHint = document.querySelector('[data-telephone-hint]');
             const telHintExtra = document.querySelector('[data-telephone-hint-extra]');
             const emailHintExtra = document.querySelector('[data-email-hint-extra]');
+            const produitWrap = document.querySelector('[data-produit-wrap]');
+            const produitRadios = produitWrap.querySelectorAll('input[type="radio"]');
             const exemplairesWrap = document.querySelector('[data-exemplaires-wrap]');
             const exemplairesRadios = exemplairesWrap.querySelectorAll('input[type="radio"]');
+            const volumesWrap = document.querySelector('[data-volumes-wrap]');
+            const volumesChecks = volumesWrap.querySelectorAll('input[type="checkbox"]');
+            const contenuWrap = document.querySelector('[data-contenu-wrap]');
             const livraisonWrap = document.querySelector('[data-livraison-wrap]');
             const livraisonSelect = document.getElementById('{{ form.mode_livraison.id_for_label }}');
             const adrWrap = document.querySelector('[data-adresse-wrap]');
@@ -193,16 +278,19 @@
             const paiementSelect = document.getElementById('{{ form.mode_paiement.id_for_label }}');
             const paiementPanels = document.querySelectorAll('[data-paiement-panel]');
             const recapWrap = document.querySelector('[data-recap-wrap]');
-            const recapLivresLabel = document.querySelector('[data-recap-livres-label]');
-            const recapLivresMontant = document.querySelector('[data-recap-livres-montant]');
+            const recapArticlesLabel = document.querySelector('[data-recap-articles-label]');
+            const recapArticlesMontant = document.querySelector('[data-recap-articles-montant]');
             const recapPortLabel = document.querySelector('[data-recap-port-label]');
             const recapPortMontant = document.querySelector('[data-recap-port-montant]');
             const recapTotal = document.querySelector('[data-recap-total]');
             const tarifsNode = document.getElementById('tarifs-data');
             const mrWidget = document.getElementById('mr-widget');
             const submitBtn = document.querySelector('[data-submit-btn]');
-            if (!sujet || !telInput || !telHint || !telHintExtra || !emailHintExtra || !exemplairesWrap
-                || !exemplairesRadios.length || !livraisonWrap || !livraisonSelect || !adrWrap
+            if (!sujet || !telInput || !telHint || !telHintExtra || !emailHintExtra
+                || !produitWrap || !produitRadios.length || !exemplairesWrap
+                || !exemplairesRadios.length || !volumesWrap || !volumesChecks.length
+                || !contenuWrap
+                || !livraisonWrap || !livraisonSelect || !adrWrap
                 || !relaisWrap || !adrInput || !pointId || !pointLibelle || !mrSelected
                 || !hintPoint || !hintDomicile
                 || !dedicaceWrap || !dedicaceCheck || !prenomWrap
@@ -214,30 +302,76 @@
             function formatEuros(cents) {
                 return (cents / 100).toFixed(2).replace('.', ',') + ' €';
             }
+            function selectedProduit() {
+                const checked = produitWrap.querySelector('input[type="radio"]:checked');
+                return checked ? checked.value : null;
+            }
             function selectedNb() {
                 const checked = exemplairesWrap.querySelector('input[type="radio"]:checked');
                 return checked ? parseInt(checked.value, 10) : null;
             }
+            function countVolumes() {
+                return volumesWrap.querySelectorAll('input[type="checkbox"]:checked').length;
+            }
+            function produitLabel(produit) {
+                const input = produitWrap.querySelector('input[value="' + produit + '"]');
+                const span = input ? input.closest('.pill-choice').querySelector('span') : null;
+                return span ? span.textContent : '';
+            }
+            // Décrit les articles de l'offre sélectionnée : {label, cents, variante},
+            // ou null si l'offre est incomplète (quantité ou volumes manquants). La
+            // variante sert de clé de frais de port (cf. fraisPortCents).
+            function articlesInfo(produit) {
+                if (produit === P_LIVRE) {
+                    const nb = selectedNb();
+                    if (!nb) return null;
+                    return {
+                        label: nb + ' exemplaire' + (nb > 1 ? 's' : '') + ' × ' + formatEuros(TARIFS.prixUniteCents),
+                        cents: nb * TARIFS.prixUniteCents,
+                        variante: P_LIVRE + '_' + nb,
+                    };
+                }
+                if (produit === P_VOLUMES) {
+                    const n = countVolumes();
+                    if (n < 1 || n > 2) return null;
+                    return {
+                        label: n + ' volume' + (n > 1 ? 's' : '') + ' × ' + formatEuros(TARIFS.prixUniteCents),
+                        cents: n * TARIFS.prixUniteCents,
+                        variante: P_VOLUMES + '_' + n,
+                    };
+                }
+                const cents = TARIFS.prixOffreCents[produit];
+                if (cents === undefined) return null;
+                return { label: produitLabel(produit), cents: cents, variante: produit };
+            }
             function syncRecap() {
                 const isCommande = sujet.value === COMMANDE;
-                const nb = selectedNb();
+                const produit = selectedProduit();
                 const mode = livraisonSelect.value;
-                const port = nb && mode ? TARIFS.fraisPortCents[nb + '|' + mode] : undefined;
-                if (!isCommande || !nb || port === undefined) {
+                const info = produit ? articlesInfo(produit) : null;
+                if (!isCommande || !info || !mode) {
                     recapWrap.hidden = true;
                     return;
                 }
-                const montantLivres = nb * TARIFS.prixLivreCents;
                 const modeLabel = livraisonSelect.options[livraisonSelect.selectedIndex].text;
-                recapLivresLabel.textContent =
-                    nb + ' exemplaire' + (nb > 1 ? 's' : '') + ' × ' + formatEuros(TARIFS.prixLivreCents);
-                recapLivresMontant.textContent = formatEuros(montantLivres);
+                const port = TARIFS.fraisPortCents[info.variante + '|' + mode];
+                recapArticlesLabel.textContent = info.label;
+                recapArticlesMontant.textContent = formatEuros(info.cents);
                 recapPortLabel.textContent = 'Frais de port (' + modeLabel + ')';
-                recapPortMontant.textContent = formatEuros(port);
-                recapTotal.textContent = formatEuros(montantLivres + port);
+                if (port === undefined) {
+                    // Tarif domicile CD pas encore renseigné par Bruno : pas de total inventé.
+                    recapPortMontant.textContent = 'à confirmer';
+                    recapTotal.textContent = 'à confirmer';
+                } else {
+                    recapPortMontant.textContent = formatEuros(port);
+                    recapTotal.textContent = formatEuros(info.cents + port);
+                }
                 recapWrap.hidden = false;
             }
             const COMMANDE = '{{ commande_value|escapejs }}';
+            const P_LIVRE = '{{ produit_livre|escapejs }}';
+            const P_VOLUMES = '{{ produit_volumes|escapejs }}';
+            const P_PACK = '{{ produit_pack|escapejs }}';
             const LIV_DOMICILE = '{{ livraison_domicile|escapejs }}';
             const MR_BRAND = '{{ mondial_relay_brand|escapejs }}';
 
@@ -320,11 +454,20 @@
                 emailHintExtra.hidden = !isCommande;
                 adrWrap.hidden = !isCommande;
                 adrInput.required = isCommande;
-                exemplairesWrap.hidden = !isCommande;
-                exemplairesRadios.forEach((r) => { r.required = isCommande; });
+                const produit = selectedProduit();
+                produitWrap.hidden = !isCommande;
+                // Sous-contrôles selon l'offre : exemplaires pour le livre, cases volumes
+                // pour « Volume(s) à l'unité ».
+                exemplairesWrap.hidden = !(isCommande && produit === P_LIVRE);
+                exemplairesRadios.forEach((r) => { r.required = isCommande && produit === P_LIVRE; });
+                volumesWrap.hidden = !(isCommande && produit === P_VOLUMES);
+                // Intégrale/Pack : pas de sous-contrôle, mais on donne accès au
+                // contenu des 3 volumes (offres qui les incluent tous).
+                contenuWrap.hidden = !(isCommande && produit && produit !== P_LIVRE && produit !== P_VOLUMES);
                 livraisonWrap.hidden = !isCommande;
                 livraisonSelect.required = isCommande;
-                dedicaceWrap.hidden = !isCommande;
+                // Dédicace : seulement pour les offres incluant le livre (livre, pack).
+                dedicaceWrap.hidden = !(isCommande && (produit === P_LIVRE || produit === P_PACK));
                 paiementWrap.hidden = !isCommande;
                 paiementSelect.required = isCommande;
                 submitBtn.textContent = isCommande ? 'Envoyer la commande' : 'Envoyer le message';
@@ -350,6 +493,28 @@
                     } else {
                         exemplaireLast = this;
                     }
+                    syncRecap();
+                });
+            });
+            // Pills d'offre : changer d'offre montre/masque les sous-contrôles (sync),
+            // avec la même déselection au reclic que les autres pills.
+            let produitLast = produitWrap.querySelector('input[type="radio"]:checked') || null;
+            produitRadios.forEach((r) => {
+                r.addEventListener('change', sync);
+                r.addEventListener('click', function () {
+                    if (produitLast === this) {
+                        this.checked = false;
+                        produitLast = null;
+                    } else {
+                        produitLast = this;
+                    }
+                    sync();
+                });
+            });
+            // Cases volumes : 1 ou 2 maximum (3 volumes = Intégrale).
+            volumesChecks.forEach((c) => {
+                c.addEventListener('change', function () {
+                    if (countVolumes() > 2) this.checked = false;
                     syncRecap();
                 });
             });

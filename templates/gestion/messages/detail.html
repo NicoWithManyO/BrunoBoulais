@@ -35,9 +35,24 @@
         </div>
 
         <dl class="grid grid-cols-[auto,1fr] gap-x-6 gap-y-1.5 text-sm">
+            {% if msg.produit %}
+            <dt class="text-slate-soft">Offre</dt>
+            <dd class="text-ink">{{ msg.get_produit_display }}</dd>
+            {% endif %}
+
             {% if msg.nb_exemplaires %}
             <dt class="text-slate-soft">Exemplaires</dt>
-            <dd class="text-ink">{{ msg.get_nb_exemplaires_display }}{% if commande_montant %} — {{ msg.nb_exemplaires }} × {{ commande_montant.prix_livre }} = {{ commande_montant.livres }}{% endif %}</dd>
+            <dd class="text-ink">{{ msg.get_nb_exemplaires_display }}</dd>
+            {% endif %}
+
+            {% if msg.volumes %}
+            <dt class="text-slate-soft">Volumes</dt>
+            <dd class="text-ink">{{ msg.get_volumes_display }}</dd>
+            {% endif %}
+
+            {% if commande_montant.articles %}
+            <dt class="text-slate-soft">Articles</dt>
+            <dd class="text-ink">{{ commande_montant.articles }}</dd>
             {% endif %}
 
             {% if commande_montant.port %}

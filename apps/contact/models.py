@@ -7,16 +7,30 @@ from apps.core.models import TimestampedModel
 
 CACHE_KEY_CONTACT_PAGE = "contact_page"
 
-# Tarifs du livre. Prix unitaire fixe ; les frais de port dépendent du nombre
-# d'exemplaires ET du mode de livraison (cf. FRAIS_PORT_CENTS, défini après
-# Message pour réutiliser ses constantes LIVRAISON_*). Montants en centimes =
-# source de vérité unique (pills, récap navigateur, page /merci/, email).
-PRIX_LIVRE_CENTS = 2000
+# Catalogue et tarifs. Montants en centimes = source de vérité unique (pills,
+# récap navigateur, page /contact/merci/, email). Le livre et chaque volume CD
+# sont vendus à l'unité (PRIX_UNITE_CENTS) ; l'intégrale et le pack ont un prix
+# fixe (PRIX_OFFRE_CENTS, le pack incluant déjà la remise de 5 €). Les frais de
+# port dépendent de l'offre/quantité ET du mode de livraison (cf.
+# FRAIS_PORT_CENTS, défini après Message pour réutiliser ses constantes LIVRAISON_*).
+PRIX_UNITE_CENTS = 2000  # livre OU volume à l'unité : 20 €
 
-PRODUITS = {
-    1: {"label": "1 exemplaire"},
-    2: {"label": "2 exemplaires"},
-}
+PRODUIT_LIVRE = "livre"
+PRODUIT_VOLUMES = "volumes"
+PRODUIT_INTEGRALE = "integrale"
+PRODUIT_PACK = "pack"
+PRODUIT_CHOICES = [
+    (PRODUIT_LIVRE, "Le livre"),
+    (PRODUIT_VOLUMES, "Volume(s) à l'unité"),
+    (PRODUIT_INTEGRALE, "Intégrale (3 volumes — 15 CD)"),
+    (PRODUIT_PACK, "Pack Intégrale + Livre"),
+]
+PRIX_OFFRE_CENTS = {PRODUIT_INTEGRALE: 6000, PRODUIT_PACK: 7500}
+
+# Quantité d'exemplaires du livre (offre « Le livre »).
+EXEMPLAIRES_CHOICES = [(1, "1 exemplaire"), (2, "2 exemplaires")]
+# Volumes de l'intégrale achetables à l'unité (1 ou 2 ; 3 = intégrale).
+VOLUMES_CHOICES = [(1, "Volume 1"), (2, "Volume 2"), (3, "Volume 3")]
 
 
 def montant_euros(cents):
@@ -93,17 +107,24 @@ class Message(TimestampedModel):
     email = models.EmailField("Email")
     telephone = models.CharField("Téléphone", max_length=30, blank=True)
     adresse_postale = models.TextField("Adresse postale", blank=True)
-    sujet = models.CharField("Sujet", max_length=20, choices=SUJET_CHOICES, default=SUJET_COMMANDE)
+    sujet = models.CharField("Sujet", max_length=20, choices=SUJET_CHOICES)
     mode_paiement = models.CharField(
         "Mode de paiement", max_length=20, choices=PAIEMENT_CHOICES, blank=True
     )
-    # null pour les sujets non-commande (question, presse, autre).
+    # Offre commandée (livre, volumes à l'unité, intégrale, pack). Vide hors
+    # commande.
+    produit = models.CharField("Offre", max_length=20, choices=PRODUIT_CHOICES, blank=True)
+    # null pour les sujets non-commande (question, presse, autre). Ne concerne
+    # que l'offre « Le livre ».
     nb_exemplaires = models.PositiveSmallIntegerField(
         "Nombre d'exemplaires",
-        choices=[(n, p["label"]) for n, p in PRODUITS.items()],
+        choices=EXEMPLAIRES_CHOICES,
         null=True,
         blank=True,
     )
+    # Volumes choisis pour l'offre « Volume(s) à l'unité » : CSV des numéros,
+    # ex. "1,3". Vide pour les autres offres.
+    volumes = models.CharField("Volumes choisis", max_length=20, blank=True)
     mode_livraison = models.CharField(
         "Mode de livraison", max_length=20, choices=LIVRAISON_CHOICES, blank=True
     )
@@ -130,44 +151,92 @@ class Message(TimestampedModel):
     def __str__(self):
         return f"{self.nom} — {self.get_sujet_display()}"
 
+    def get_volumes_display(self):
+        """Libellés des volumes choisis : "1,3" → "Volume 1, Volume 3"."""
+        noms = dict(VOLUMES_CHOICES)
+        return ", ".join(noms.get(int(v), v) for v in self.volumes.split(",") if v)
 
-# Frais de port en centimes selon (nb exemplaires, mode de livraison). Défini
-# après Message pour réutiliser ses constantes LIVRAISON_*. Couvre exactement
-# les combinaisons proposées (1 ou 2 ex, point relais ou domicile).
+
+# Frais de port en centimes selon (variante, mode de livraison). La variante est
+# l'offre quantifiée pour le livre/les volumes (ex. "livre_2", "volumes_1"),
+# sinon l'offre seule. Défini après Message pour réutiliser ses constantes
+# LIVRAISON_*.
 FRAIS_PORT_CENTS = {
-    (1, Message.LIVRAISON_POINT_RELAIS): 415,
-    (1, Message.LIVRAISON_DOMICILE): 749,
-    (2, Message.LIVRAISON_POINT_RELAIS): 599,
-    (2, Message.LIVRAISON_DOMICILE): 949,
+    (f"{PRODUIT_LIVRE}_1", Message.LIVRAISON_POINT_RELAIS): 415,
+    (f"{PRODUIT_LIVRE}_1", Message.LIVRAISON_DOMICILE): 749,
+    (f"{PRODUIT_LIVRE}_2", Message.LIVRAISON_POINT_RELAIS): 599,
+    (f"{PRODUIT_LIVRE}_2", Message.LIVRAISON_DOMICILE): 949,
+    (f"{PRODUIT_VOLUMES}_1", Message.LIVRAISON_POINT_RELAIS): 415,
+    (f"{PRODUIT_VOLUMES}_1", Message.LIVRAISON_DOMICILE): 749,
+    (f"{PRODUIT_VOLUMES}_2", Message.LIVRAISON_POINT_RELAIS): 415,
+    (f"{PRODUIT_VOLUMES}_2", Message.LIVRAISON_DOMICILE): 749,
+    (PRODUIT_INTEGRALE, Message.LIVRAISON_POINT_RELAIS): 415,
+    (PRODUIT_INTEGRALE, Message.LIVRAISON_DOMICILE): 749,
+    (PRODUIT_PACK, Message.LIVRAISON_POINT_RELAIS): 599,
+    (PRODUIT_PACK, Message.LIVRAISON_DOMICILE): 949,
 }
 
 
-def montant_total_cents(nb_exemplaires, mode_livraison):
-    """Total commande en centimes : livres (20 € pièce) + frais de port.
+def _variante_port(produit, quantite):
+    """Clé de frais de port : offre quantifiée (livre/volumes) ou offre seule."""
+    if produit in (PRODUIT_LIVRE, PRODUIT_VOLUMES):
+        return f"{produit}_{quantite}"
+    return produit
 
-    Retourne ``None`` si la combinaison (quantité, mode) n'a pas de tarif
-    (donnée legacy/incohérente) : le caller décide quoi en faire.
+
+def quantite_articles(produit, nb_exemplaires, volumes):
+    """Quantité facturée : exemplaires (livre), nombre de volumes, sinon None.
+
+    ``volumes`` est le CSV stocké sur Message (ex. "1,3"). L'intégrale et le pack
+    sont des offres uniques : pas de quantité (None).
     """
-    port = FRAIS_PORT_CENTS.get((nb_exemplaires, mode_livraison))
-    if port is None:
+    if produit == PRODUIT_LIVRE:
+        return nb_exemplaires
+    if produit == PRODUIT_VOLUMES:
+        return len([v for v in (volumes or "").split(",") if v])
+    return None
+
+
+def montant_articles_cents(produit, quantite):
+    """Prix des articles (hors port) en centimes, ou ``None`` si indéterminable.
+
+    Livre et volumes : prix unitaire × quantité. Intégrale et pack : prix fixe.
+    """
+    if produit in (PRODUIT_LIVRE, PRODUIT_VOLUMES):
+        return quantite * PRIX_UNITE_CENTS if quantite else None
+    return PRIX_OFFRE_CENTS.get(produit)
+
+
+def montant_total_cents(produit, quantite, mode_livraison):
+    """Total commande en centimes : articles + frais de port.
+
+    Retourne ``None`` si le prix des articles OU le port est inconnu (offre
+    incomplète, ou tarif domicile CD pas encore renseigné) : le caller décide.
+    """
+    articles = montant_articles_cents(produit, quantite)
+    port = FRAIS_PORT_CENTS.get((_variante_port(produit, quantite), mode_livraison))
+    if articles is None or port is None:
         return None
-    return nb_exemplaires * PRIX_LIVRE_CENTS + port
+    return articles + port
 
 
-def montant_detail(nb_exemplaires, mode_livraison):
+def montant_detail(produit, quantite, mode_livraison):
     """Décomposition chiffrée d'une commande, déjà formatée FR pour l'affichage.
 
-    Retourne ``None`` si la combinaison (quantité, mode) n'a pas de tarif (donnée
-    legacy/incohérente) : on ne livre jamais une décomposition partielle. Sinon
-    un dict ``{prix_livre, livres, port, total}`` de montants type « 24,15 € ».
+    Retourne ``None`` si le prix des articles est inconnu (offre/quantité
+    absente) : rien à afficher. Si les articles sont connus mais le port absent
+    de la grille (combinaison non tarifée), renvoie ``port="à confirmer"`` et
+    ``total=""`` plutôt que d'inventer un montant.
+    Sinon un dict ``{articles, port, total}`` de montants type « 24,15 € ».
     """
-    total = montant_total_cents(nb_exemplaires, mode_livraison)
-    if total is None:
+    articles = montant_articles_cents(produit, quantite)
+    if articles is None:
         return None
-    port = FRAIS_PORT_CENTS[(nb_exemplaires, mode_livraison)]
+    port = FRAIS_PORT_CENTS.get((_variante_port(produit, quantite), mode_livraison))
+    if port is None:
+        return {"articles": montant_euros(articles), "port": "à confirmer", "total": ""}
     return {
-        "prix_livre": montant_euros(PRIX_LIVRE_CENTS),
-        "livres": montant_euros(nb_exemplaires * PRIX_LIVRE_CENTS),
+        "articles": montant_euros(articles),
         "port": montant_euros(port),
-        "total": montant_euros(total),
+        "total": montant_euros(articles + port),
     }

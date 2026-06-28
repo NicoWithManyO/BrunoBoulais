@@ -1219,14 +1219,15 @@
     accent-color: var(--color-terracotta);
   }
 
-  /* Pills de choix (ex. nombre d'exemplaires) : radio masqué, label cliquable. */
+  /* Pills de choix (offre, nombre d'exemplaires, volumes) : input masqué, label
+     cliquable. Couvre radio ET checkbox (cases volumes). */
   .pform .pill-group {
     @apply flex flex-wrap gap-2 mt-1;
   }
   .pform .pill-choice {
     @apply cursor-pointer mt-0;
   }
-  .pform .pill-choice input[type="radio"] {
+  .pform .pill-choice input {
     position: absolute;
     opacity: 0;
     width: 1px;
@@ -1244,14 +1245,99 @@
   .pform .pill-choice:hover > span {
     border-color: var(--color-terracotta);
   }
-  .pform .pill-choice input[type="radio"]:checked + span {
+  .pform .pill-choice input:checked + span {
     background: var(--color-terracotta);
     border-color: var(--color-terracotta);
     color: #fff;
   }
-  .pform .pill-choice input[type="radio"]:focus-visible + span {
+  .pform .pill-choice input:focus-visible + span {
     outline: 2px solid var(--color-terracotta);
     outline-offset: 2px;
+  }
+  /* Volume : pill + lien « voir le contenu » empilés. */
+  .pform .vol-choice {
+    @apply flex flex-col items-center gap-1;
+  }
+  .pform .vol-voir {
+    @apply font-sans text-xs underline cursor-pointer mt-0;
+    background: none;
+    border: 0;
+    padding: 0;
+    color: var(--color-slate-soft);
+    transition: color 0.15s;
+  }
+  .pform .vol-voir:hover,
+  .pform .vol-voir:focus-visible {
+    color: var(--color-terracotta);
+  }
+
+  /* Modale « voir le contenu » d'un volume : overlay masqué, ouvert en JS. */
+  .contenu-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(20, 18, 14, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+  .contenu-modal[hidden] { display: none; }
+  .contenu-modal__box {
+    position: relative;
+    background: var(--color-cream);
+    max-width: min(760px, 95vw);
+    max-height: 88vh;
+    overflow-y: auto;
+    border-radius: 8px;
+    padding: 2rem 1.75rem;
+  }
+  .contenu-modal__close {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.85rem;
+    background: none;
+    border: 0;
+    font-size: 1.7rem;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--color-ink);
+  }
+  .contenu-modal__title {
+    @apply font-serif text-2xl;
+    margin: 0;
+    padding-right: 1.5rem;
+  }
+  .contenu-modal__subtitle {
+    @apply font-sans text-sm;
+    color: var(--color-slate-soft);
+    margin: 0.25rem 0 1.25rem;
+  }
+  .contenu-modal__cd {
+    @apply font-sans text-xs uppercase tracking-widest;
+    color: var(--color-terracotta-deep);
+    margin: 1.4rem 0 0.5rem;
+  }
+  .contenu-modal__tracks {
+    margin: 0;
+    padding-left: 1.4rem;
+    columns: 2;
+    column-gap: 2rem;
+  }
+  .contenu-modal__tracks li {
+    @apply font-serif text-sm;
+    break-inside: avoid;
+    margin-bottom: 0.15rem;
+  }
+  .contenu-modal__note {
+    @apply font-sans text-xs italic;
+    color: var(--color-slate-soft);
+    margin-top: 1.25rem;
+  }
+  @media (max-width: 640px) {
+    .contenu-modal { padding: 0.75rem; }
+    .contenu-modal__box { padding: 1.5rem 1.25rem; }
+    .contenu-modal__tracks { columns: 1; }
   }
 
   /* Récapitulatif de prix (page commande), affiché quand quantité + mode choisis. */

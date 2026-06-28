@@ -6,7 +6,14 @@ from django.test import Client
 
 from apps.contact import forms as contact_forms
 from apps.contact.forms import CommandeForm, ContactForm
-from apps.contact.models import Message, montant_total_cents
+from apps.contact.models import (
+    PRODUIT_INTEGRALE,
+    PRODUIT_LIVRE,
+    PRODUIT_PACK,
+    PRODUIT_VOLUMES,
+    Message,
+    montant_total_cents,
+)
 
 forms_logger = contact_forms.logger
 
@@ -147,33 +154,42 @@ class TestContactNotificationHardening:
 
 
 class TestMontantTotal:
-    """Tarif total = livres (20 € pièce) + frais de port selon quantité et mode."""
+    """Tarif total = articles (livre/volume 20 € pièce, intégrale/pack fixes) + port."""
 
     @pytest.mark.parametrize(
-        "nb, mode, attendu",
+        "produit, quantite, mode, attendu",
         [
-            (1, Message.LIVRAISON_POINT_RELAIS, 2415),
-            (1, Message.LIVRAISON_DOMICILE, 2749),
-            (2, Message.LIVRAISON_POINT_RELAIS, 4599),
-            (2, Message.LIVRAISON_DOMICILE, 4949),
+            (PRODUIT_LIVRE, 1, Message.LIVRAISON_POINT_RELAIS, 2415),
+            (PRODUIT_LIVRE, 1, Message.LIVRAISON_DOMICILE, 2749),
+            (PRODUIT_LIVRE, 2, Message.LIVRAISON_POINT_RELAIS, 4599),
+            (PRODUIT_LIVRE, 2, Message.LIVRAISON_DOMICILE, 4949),
+            (PRODUIT_VOLUMES, 1, Message.LIVRAISON_POINT_RELAIS, 2415),
+            (PRODUIT_VOLUMES, 1, Message.LIVRAISON_DOMICILE, 2749),
+            (PRODUIT_VOLUMES, 2, Message.LIVRAISON_POINT_RELAIS, 4415),
+            (PRODUIT_VOLUMES, 2, Message.LIVRAISON_DOMICILE, 4749),
+            (PRODUIT_INTEGRALE, None, Message.LIVRAISON_POINT_RELAIS, 6415),
+            (PRODUIT_INTEGRALE, None, Message.LIVRAISON_DOMICILE, 6749),
+            (PRODUIT_PACK, None, Message.LIVRAISON_POINT_RELAIS, 8099),
+            (PRODUIT_PACK, None, Message.LIVRAISON_DOMICILE, 8449),
         ],
     )
-    def test_combinaisons_tarifees(self, nb, mode, attendu):
-        assert montant_total_cents(nb, mode) == attendu
+    def test_combinaisons_tarifees(self, produit, quantite, mode, attendu):
+        assert montant_total_cents(produit, quantite, mode) == attendu
 
     def test_combinaison_inconnue_renvoie_none(self):
-        assert montant_total_cents(3, Message.LIVRAISON_DOMICILE) is None
-        assert montant_total_cents(1, "") is None
+        assert montant_total_cents(PRODUIT_LIVRE, None, Message.LIVRAISON_DOMICILE) is None
+        assert montant_total_cents(PRODUIT_LIVRE, 1, "") is None
 
 
 def _commande_data(**overrides):
-    # Commande « point relais » par défaut (point sélectionné via le widget).
+    # Commande « Le livre, 1 ex, point relais » par défaut (point via le widget).
     data = {
         "nom": "Alice",
         "sujet": Message.SUJET_COMMANDE,
         "email": "alice@example.com",
         "telephone": "0612345678",
         "mode_paiement": Message.PAIEMENT_CHEQUE,
+        "produit": PRODUIT_LIVRE,
         "nb_exemplaires": 1,
         "mode_livraison": Message.LIVRAISON_POINT_RELAIS,
         "point_relais_id": "FR-12345",
@@ -188,12 +204,73 @@ def _commande_data(**overrides):
 
 @pytest.mark.django_db
 class TestCommandeForm:
-    """Exemplaires, mode de livraison, point relais et adresse requis pour une commande."""
+    """Offre, quantité/volumes, mode de livraison, point relais et adresse selon l'offre."""
 
-    def test_commande_requires_nb_exemplaires(self):
+    def test_commande_requires_produit(self):
+        form = CommandeForm(data=_commande_data(produit=""))
+        assert not form.is_valid()
+        assert "produit" in form.errors
+
+    def test_livre_requires_nb_exemplaires(self):
         form = CommandeForm(data=_commande_data(nb_exemplaires=""))
         assert not form.is_valid()
         assert "nb_exemplaires" in form.errors
+
+    def test_volumes_requires_one_or_two(self):
+        # 0 volume → invalide.
+        form = CommandeForm(data=_commande_data(produit=PRODUIT_VOLUMES, volumes=[]))
+        assert not form.is_valid()
+        assert "volumes" in form.errors
+        # 3 volumes (= Intégrale) → invalide.
+        form = CommandeForm(data=_commande_data(produit=PRODUIT_VOLUMES, volumes=["1", "2", "3"]))
+        assert not form.is_valid()
+        assert "volumes" in form.errors
+
+    def test_volumes_one_or_two_is_valid(self):
+        form = CommandeForm(data=_commande_data(produit=PRODUIT_VOLUMES, volumes=["1", "3"]))
+        assert form.is_valid(), form.errors
+
+    def test_integrale_valide_sans_sous_controle(self):
+        # Intégrale / pack : pas d'exemplaires ni de volumes à fournir.
+        form = CommandeForm(data=_commande_data(produit=PRODUIT_INTEGRALE, nb_exemplaires="", volumes=[]))
+        assert form.is_valid(), form.errors
+
+    def test_pack_valide_sans_sous_controle(self):
+        form = CommandeForm(data=_commande_data(produit=PRODUIT_PACK, nb_exemplaires="", volumes=[]))
+        assert form.is_valid(), form.errors
+
+    def test_offre_sans_sous_controle_purge_les_residus(self):
+        # Bascule livre/volumes → intégrale : ni exemplaires ni volumes ne subsistent.
+        form = CommandeForm(
+            data=_commande_data(produit=PRODUIT_INTEGRALE, nb_exemplaires=2, volumes=["1", "2"])
+        )
+        assert form.is_valid(), form.errors
+        assert form.cleaned_data["nb_exemplaires"] is None
+        assert form.cleaned_data["volumes"] == []
+
+    def test_offre_sans_livre_purge_la_dedicace(self):
+        # CD seuls (intégrale, volumes) : pas de dédicace de livre à conserver.
+        form = CommandeForm(
+            data=_commande_data(
+                produit=PRODUIT_INTEGRALE, nb_exemplaires="", volumes=[],
+                dedicace=True, prenom_dedicace="Léa",
+            )
+        )
+        assert form.is_valid(), form.errors
+        assert form.cleaned_data["dedicace"] is False
+        assert form.cleaned_data["prenom_dedicace"] == ""
+
+    def test_pack_conserve_la_dedicace(self):
+        # Le pack inclut le livre : la dédicace reste possible.
+        form = CommandeForm(
+            data=_commande_data(
+                produit=PRODUIT_PACK, nb_exemplaires="", volumes=[],
+                dedicace=True, prenom_dedicace="Léa",
+            )
+        )
+        assert form.is_valid(), form.errors
+        assert form.cleaned_data["dedicace"] is True
+        assert form.cleaned_data["prenom_dedicace"] == "Léa"
 
     def test_commande_requires_mode_livraison(self):
         form = CommandeForm(data=_commande_data(mode_livraison=""))
@@ -313,6 +390,7 @@ class TestCommandeMerci:
             "email": "alice@example.com",
             "sujet": Message.SUJET_COMMANDE,
             "mode_paiement": Message.PAIEMENT_CHEQUE,
+            "produit": PRODUIT_LIVRE,
             "nb_exemplaires": 1,
             "mode_livraison": Message.LIVRAISON_POINT_RELAIS,
             "contenu": "Commande",

@@ -12,12 +12,18 @@ from apps.core.middleware import _client_ip
 from apps.core.seo import seo
 
 from .forms import CommandeForm
+from .integrale import VOLUMES_CONTENU
 from .models import (
     FRAIS_PORT_CENTS,
-    PRIX_LIVRE_CENTS,
+    PRIX_OFFRE_CENTS,
+    PRIX_UNITE_CENTS,
+    PRODUIT_LIVRE,
+    PRODUIT_PACK,
+    PRODUIT_VOLUMES,
     ContactPage,
     Message,
     montant_detail,
+    quantite_articles,
 )
 
 logger = logging.getLogger(__name__)
@@ -138,15 +144,21 @@ def commande(request):
             "form": form,
             "page": ContactPage.get_solo(),
             "commande_value": Message.SUJET_COMMANDE,
+            "produit_livre": PRODUIT_LIVRE,
+            "produit_volumes": PRODUIT_VOLUMES,
+            "produit_pack": PRODUIT_PACK,
+            "volumes_contenu": VOLUMES_CONTENU,
             "paiement_cheque": Message.PAIEMENT_CHEQUE,
             "paiement_virement": Message.PAIEMENT_VIREMENT,
             "livraison_domicile": Message.LIVRAISON_DOMICILE,
             "mondial_relay_brand": settings.MONDIAL_RELAY_BRAND,
             # Tarifs pour le récap calculé côté navigateur (source = centimes Python).
             "tarifs": {
-                "prixLivreCents": PRIX_LIVRE_CENTS,
+                "prixUniteCents": PRIX_UNITE_CENTS,
+                "prixOffreCents": PRIX_OFFRE_CENTS,
                 "fraisPortCents": {
-                    f"{nb}|{mode}": cents for (nb, mode), cents in FRAIS_PORT_CENTS.items()
+                    f"{variante}|{mode}": cents
+                    for (variante, mode), cents in FRAIS_PORT_CENTS.items()
                 },
             },
             "rate_limited": rate_limited,
@@ -173,7 +185,15 @@ def commande_merci(request):
     # formulaire) : un rechargement retombe sur le simple remerciement.
     ref = request.session.pop("order_ref", None)
     order = Message.objects.filter(pk=ref).first() if ref else None
-    detail = montant_detail(order.nb_exemplaires, order.mode_livraison) if order else None
+    detail = (
+        montant_detail(
+            order.produit,
+            quantite_articles(order.produit, order.nb_exemplaires, order.volumes),
+            order.mode_livraison,
+        )
+        if order
+        else None
+    )
     return render(
         request,
         "contact/commande_merci.html",

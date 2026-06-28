@@ -5,11 +5,15 @@ from django.conf import settings
 from django.core.mail import EmailMessage
 
 from .models import (
-    PRIX_LIVRE_CENTS,
-    PRODUITS,
+    EXEMPLAIRES_CHOICES,
+    PRODUIT_CHOICES,
+    PRODUIT_LIVRE,
+    PRODUIT_PACK,
+    PRODUIT_VOLUMES,
+    VOLUMES_CHOICES,
     Message,
     montant_detail,
-    montant_euros,
+    quantite_articles,
 )
 
 logger = logging.getLogger(__name__)
@@ -65,16 +69,20 @@ class ContactForm(forms.ModelForm):
         # Détails spécifiques à une commande (les champs livraison/dédicace
         # n'existent que via CommandeForm ; absents, on n'ajoute rien).
         if msg.sujet == Message.SUJET_COMMANDE:
-            if msg.nb_exemplaires:
-                # Ligne exemplaires toujours présente (mail interne) ; port/total
-                # seulement si le tarif est connu (cf. montant_detail).
-                lines.append(
-                    f"Exemplaires : {msg.nb_exemplaires} × {montant_euros(PRIX_LIVRE_CENTS)} "
-                    f"= {montant_euros(msg.nb_exemplaires * PRIX_LIVRE_CENTS)}"
-                )
-                detail = montant_detail(msg.nb_exemplaires, msg.mode_livraison)
-                if detail:
-                    lines.append(f"Frais de port ({msg.get_mode_livraison_display()}) : {detail['port']}")
+            if msg.produit:
+                lines.append(f"Offre : {msg.get_produit_display()}")
+            if msg.produit == PRODUIT_LIVRE and msg.nb_exemplaires:
+                lines.append(f"Quantité : {msg.nb_exemplaires} exemplaire(s)")
+            elif msg.produit == PRODUIT_VOLUMES and msg.volumes:
+                lines.append(f"Volumes : {msg.get_volumes_display()}")
+            quantite = quantite_articles(msg.produit, msg.nb_exemplaires, msg.volumes)
+            detail = montant_detail(msg.produit, quantite, msg.mode_livraison)
+            if detail:
+                # Port/total seulement si le tarif est connu (cf. montant_detail :
+                # port="à confirmer"/total="" pour une combinaison non tarifée).
+                lines.append(f"Articles : {detail['articles']}")
+                lines.append(f"Frais de port ({msg.get_mode_livraison_display()}) : {detail['port']}")
+                if detail["total"]:
                     lines.append(f"Montant total : {detail['total']}")
             lines.append("État : en attente de règlement")
             if msg.mode_livraison == Message.LIVRAISON_DOMICILE:
@@ -119,14 +127,25 @@ class ContactForm(forms.ModelForm):
 
 
 class CommandeForm(ContactForm):
-    """Formulaire de la nouvelle page de commande : ajoute le nombre d'exemplaires.
+    """Formulaire de la page de commande : ajoute l'offre, la quantité/volumes,
+    le mode de livraison et la dédicace.
 
     Sous-classe pour ne pas toucher ``ContactForm`` (encore utilisé par la page
     /contact/ live) tant que le swap n'est pas fait.
     """
 
+    # Géré hors ModelForm : les cases cochées sont jointes en CSV sur l'instance
+    # dans save(). Le champ modèle `volumes` n'est donc pas dans Meta.fields.
+    volumes = forms.MultipleChoiceField(
+        choices=VOLUMES_CHOICES,
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="Volumes",
+    )
+
     class Meta(ContactForm.Meta):
         fields = ContactForm.Meta.fields + [
+            "produit",
             "nb_exemplaires",
             "mode_livraison",
             "point_relais_id",
@@ -136,7 +155,8 @@ class CommandeForm(ContactForm):
         ]
         widgets = {
             **ContactForm.Meta.widgets,
-            # Pills (un bouton radio par quantité) plutôt qu'un menu déroulant.
+            # Pills (un bouton radio par offre / par quantité) plutôt qu'un menu.
+            "produit": forms.RadioSelect(),
             "nb_exemplaires": forms.RadioSelect(),
             # Renseignés par le widget Mondial Relay côté navigateur.
             "point_relais_id": forms.HiddenInput(),
@@ -145,10 +165,14 @@ class CommandeForm(ContactForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Placeholder explicite en tête : aucun sujet présélectionné, on force un
+        # choix conscient (le champ modèle n'a plus de default).
+        self.fields["sujet"].choices = [("", "Choisissez un sujet"), *Message.SUJET_CHOICES]
         # RadioSelect : on retire l'option vide « --------- » ajoutée par défaut
-        # pour un champ optionnel (la quantité reste non requise hors commande,
+        # pour un champ optionnel (offre/quantité non requis hors commande,
         # l'exigence est gérée dans clean()).
-        self.fields["nb_exemplaires"].choices = [(n, p["label"]) for n, p in PRODUITS.items()]
+        self.fields["produit"].choices = PRODUIT_CHOICES
+        self.fields["nb_exemplaires"].choices = EXEMPLAIRES_CHOICES
         # Libellé explicite pour l'option vide des menus déroulants (au lieu du
         # « --------- » par défaut de Django).
         self.fields["mode_livraison"].choices = [
@@ -163,8 +187,27 @@ class CommandeForm(ContactForm):
     def clean(self):
         cleaned = super().clean()
         if cleaned.get("sujet") == Message.SUJET_COMMANDE:
-            if not cleaned.get("nb_exemplaires"):
-                self.add_error("nb_exemplaires", "Merci d'indiquer le nombre d'exemplaires.")
+            produit = cleaned.get("produit")
+            if not produit:
+                self.add_error("produit", "Merci de choisir une offre.")
+            # Quantité d'exemplaires : requise pour « Le livre », sinon on purge
+            # (pas d'exemplaire fantôme quand on change d'offre).
+            if produit == PRODUIT_LIVRE:
+                if not cleaned.get("nb_exemplaires"):
+                    self.add_error("nb_exemplaires", "Merci d'indiquer le nombre d'exemplaires.")
+            else:
+                cleaned["nb_exemplaires"] = None
+            # Volumes : 1 ou 2 cochés pour « Volume(s) à l'unité », sinon on purge.
+            if produit == PRODUIT_VOLUMES:
+                if not 1 <= len(cleaned.get("volumes") or []) <= 2:
+                    self.add_error("volumes", "Choisissez 1 ou 2 volumes (3 volumes = Intégrale).")
+            else:
+                cleaned["volumes"] = []
+            # Dédicace : seulement pour les offres incluant le livre (livre, pack) ;
+            # sinon on purge (pas de dédicace fantôme sur une commande de CD seuls).
+            if produit not in (PRODUIT_LIVRE, PRODUIT_PACK):
+                cleaned["dedicace"] = False
+                cleaned["prenom_dedicace"] = ""
             mode_livraison = cleaned.get("mode_livraison")
             if not mode_livraison:
                 self.add_error("mode_livraison", "Merci d'indiquer un mode de livraison.")
@@ -176,3 +219,9 @@ class CommandeForm(ContactForm):
             # Point relais sans sélection : autorisé, Bruno le règle en direct
             # avec le client.
         return cleaned
+
+    def save(self, commit=True):
+        # Le champ `volumes` (cases à cocher) est géré hors ModelForm : on écrit
+        # le CSV des numéros choisis sur l'instance avant la sauvegarde.
+        self.instance.volumes = ",".join(self.cleaned_data.get("volumes") or [])
+        return super().save(commit=commit)

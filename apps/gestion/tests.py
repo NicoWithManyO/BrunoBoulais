@@ -7,7 +7,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from apps.carnet.models import Billet, BilletImageContenu
-from apps.contact.models import Message
+from apps.contact.models import PRODUIT_LIVRE, Message
 
 # Uploads de test isolés dans un répertoire jetable (nettoyé en fin de classe).
 _MEDIA_ROOT = tempfile.mkdtemp()
@@ -113,7 +113,7 @@ class MessageDetailCommandeTests(TestCase):
     def test_commande_domicile_non_payee(self):
         order = Message.objects.create(
             nom="Alice", email="a@b.fr", sujet=Message.SUJET_COMMANDE,
-            nb_exemplaires=2, mode_livraison=Message.LIVRAISON_DOMICILE,
+            produit=PRODUIT_LIVRE, nb_exemplaires=2, mode_livraison=Message.LIVRAISON_DOMICILE,
             adresse_postale="1 rue X\n40000 Ville", mode_paiement=Message.PAIEMENT_CHEQUE,
             paye=False, contenu="Bonjour",
         )
@@ -130,7 +130,7 @@ class MessageDetailCommandeTests(TestCase):
     def test_commande_relais_payee(self):
         order = Message.objects.create(
             nom="Bob", email="b@b.fr", sujet=Message.SUJET_COMMANDE,
-            nb_exemplaires=1, mode_livraison=Message.LIVRAISON_POINT_RELAIS,
+            produit=PRODUIT_LIVRE, nb_exemplaires=1, mode_livraison=Message.LIVRAISON_POINT_RELAIS,
             point_relais_id="FR-123", point_relais_libelle="Tabac, 40000 MDM",
             dedicace=False, mode_paiement=Message.PAIEMENT_CHEQUE, paye=True, contenu="x",
         )
