@@ -8,8 +8,8 @@ from .models import (
     EXEMPLAIRES_CHOICES,
     PRODUIT_CHOICES,
     PRODUIT_LIVRE,
-    PRODUIT_PACK,
     PRODUIT_VOLUMES,
+    PRODUITS_AVEC_LIVRE,
     VOLUMES_CHOICES,
     Message,
     montant_detail,
@@ -203,9 +203,9 @@ class CommandeForm(ContactForm):
                     self.add_error("volumes", "Choisissez 1 ou 2 volumes (3 volumes = Intégrale).")
             else:
                 cleaned["volumes"] = []
-            # Dédicace : seulement pour les offres incluant le livre (livre, pack) ;
-            # sinon on purge (pas de dédicace fantôme sur une commande de CD seuls).
-            if produit not in (PRODUIT_LIVRE, PRODUIT_PACK):
+            # Dédicace : seulement pour les offres incluant le livre ; sinon on
+            # purge (pas de dédicace fantôme sur une commande de CD seuls).
+            if produit not in PRODUITS_AVEC_LIVRE:
                 cleaned["dedicace"] = False
                 cleaned["prenom_dedicace"] = ""
             mode_livraison = cleaned.get("mode_livraison")

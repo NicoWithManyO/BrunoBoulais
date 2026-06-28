@@ -18,8 +18,9 @@ from .models import (
     PRIX_OFFRE_CENTS,
     PRIX_UNITE_CENTS,
     PRODUIT_LIVRE,
-    PRODUIT_PACK,
     PRODUIT_VOLUMES,
+    PRODUITS_AVEC_LIVRE,
+    PRODUITS_OFFRE_COMPLETE,
     ContactPage,
     Message,
     montant_detail,
@@ -146,7 +147,11 @@ def commande(request):
             "commande_value": Message.SUJET_COMMANDE,
             "produit_livre": PRODUIT_LIVRE,
             "produit_volumes": PRODUIT_VOLUMES,
-            "produit_pack": PRODUIT_PACK,
+            # Catégories d'offres pilotant l'affichage conditionnel côté navigateur.
+            "offres_categories": {
+                "avecLivre": list(PRODUITS_AVEC_LIVRE),
+                "offreComplete": list(PRODUITS_OFFRE_COMPLETE),
+            },
             "volumes_contenu": VOLUMES_CONTENU,
             "paiement_cheque": Message.PAIEMENT_CHEQUE,
             "paiement_virement": Message.PAIEMENT_VIREMENT,

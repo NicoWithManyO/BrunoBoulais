@@ -25,6 +25,11 @@ PRODUIT_CHOICES = [
     (PRODUIT_INTEGRALE, "Intégrale (3 volumes — 15 CD)"),
     (PRODUIT_PACK, "Pack Intégrale + Livre"),
 ]
+# Catégories d'offres, source unique partagée entre le serveur (purge dans
+# CommandeForm) et le navigateur (affichage conditionnel) : offres incluant le
+# livre (dédicace possible) et offres contenant les 3 volumes (contenu consultable).
+PRODUITS_AVEC_LIVRE = (PRODUIT_LIVRE, PRODUIT_PACK)
+PRODUITS_OFFRE_COMPLETE = (PRODUIT_INTEGRALE, PRODUIT_PACK)
 PRIX_OFFRE_CENTS = {PRODUIT_INTEGRALE: 6000, PRODUIT_PACK: 7500}
 
 # Quantité d'exemplaires du livre (offre « Le livre »).

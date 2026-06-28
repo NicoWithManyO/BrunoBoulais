@@ -241,6 +241,7 @@
         </script>
 
         {{ tarifs|json_script:"tarifs-data" }}
+        {{ offres_categories|json_script:"offres-data" }}
 
         {# Widget point relais Mondial Relay : jQuery + Leaflet (self-hostés) puis le plugin MR #}
         <link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
@@ -359,7 +360,7 @@
                 recapArticlesMontant.textContent = formatEuros(info.cents);
                 recapPortLabel.textContent = 'Frais de port (' + modeLabel + ')';
                 if (port === undefined) {
-                    // Tarif domicile CD pas encore renseigné par Bruno : pas de total inventé.
+                    // Garde défensive : combinaison hors grille (mode invalide), pas de total inventé.
                     recapPortMontant.textContent = 'à confirmer';
                     recapTotal.textContent = 'à confirmer';
                 } else {
@@ -371,7 +372,9 @@
             const COMMANDE = '{{ commande_value|escapejs }}';
             const P_LIVRE = '{{ produit_livre|escapejs }}';
             const P_VOLUMES = '{{ produit_volumes|escapejs }}';
-            const P_PACK = '{{ produit_pack|escapejs }}';
+            const offresCategories = JSON.parse(document.getElementById('offres-data').textContent);
+            const PRODUITS_AVEC_LIVRE = offresCategories.avecLivre;
+            const PRODUITS_OFFRE_COMPLETE = offresCategories.offreComplete;
             const LIV_DOMICILE = '{{ livraison_domicile|escapejs }}';
             const MR_BRAND = '{{ mondial_relay_brand|escapejs }}';
 
@@ -463,11 +466,11 @@
                 volumesWrap.hidden = !(isCommande && produit === P_VOLUMES);
                 // Intégrale/Pack : pas de sous-contrôle, mais on donne accès au
                 // contenu des 3 volumes (offres qui les incluent tous).
-                contenuWrap.hidden = !(isCommande && produit && produit !== P_LIVRE && produit !== P_VOLUMES);
+                contenuWrap.hidden = !(isCommande && PRODUITS_OFFRE_COMPLETE.includes(produit));
                 livraisonWrap.hidden = !isCommande;
                 livraisonSelect.required = isCommande;
-                // Dédicace : seulement pour les offres incluant le livre (livre, pack).
-                dedicaceWrap.hidden = !(isCommande && (produit === P_LIVRE || produit === P_PACK));
+                // Dédicace : seulement pour les offres incluant le livre.
+                dedicaceWrap.hidden = !(isCommande && PRODUITS_AVEC_LIVRE.includes(produit));
                 paiementWrap.hidden = !isCommande;
                 paiementSelect.required = isCommande;
                 submitBtn.textContent = isCommande ? 'Envoyer la commande' : 'Envoyer le message';
