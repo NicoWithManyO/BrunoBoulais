@@ -154,7 +154,9 @@ class Message(TimestampedModel):
     def get_volumes_display(self):
         """Libellés des volumes choisis : "1,3" → "Volume 1, Volume 3"."""
         noms = dict(VOLUMES_CHOICES)
-        return ", ".join(noms.get(int(v), v) for v in self.volumes.split(",") if v)
+        # `isdigit` plutôt que `if v` : un token non numérique en base (donnée
+        # corrompue / éditée à la main) ferait planter `int(v)` sinon.
+        return ", ".join(noms.get(int(v), v) for v in self.volumes.split(",") if v.isdigit())
 
 
 # Frais de port en centimes selon (variante, mode de livraison). La variante est
