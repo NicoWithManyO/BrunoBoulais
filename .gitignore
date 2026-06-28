@@ -110,6 +110,8 @@ logs/
 
 # ─── Sources brutes (matériel client, pas versionné) ─────────────────
 /sources/
+# Document-source des titres (saisi en dur dans apps/contact/integrale.py).
+/Titres des chansons de l'intégrale Bertin.*
 
 # ─── Claude / outils locaux ──────────────────────────────────────────
 .claude/
