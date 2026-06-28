@@ -272,6 +272,26 @@ class TestCommandeForm:
         assert form.cleaned_data["dedicace"] is True
         assert form.cleaned_data["prenom_dedicace"] == "Léa"
 
+    def test_sujet_non_commande_purge_les_champs_offre(self):
+        # Le formulaire sert tous les sujets : un POST forgé portant offre/volumes/
+        # dédicace sur un simple message ne doit rien persister de tout ça.
+        form = CommandeForm(
+            data=_commande_data(
+                sujet=Message.SUJET_QUESTION,
+                produit=PRODUIT_INTEGRALE, nb_exemplaires=2, volumes=["1", "2"],
+                dedicace=True, prenom_dedicace="Léa",
+            )
+        )
+        assert form.is_valid(), form.errors
+        assert form.cleaned_data["produit"] == ""
+        assert form.cleaned_data["nb_exemplaires"] is None
+        assert form.cleaned_data["volumes"] == []
+        assert form.cleaned_data["mode_livraison"] == ""
+        assert form.cleaned_data["point_relais_id"] == ""
+        assert form.cleaned_data["point_relais_libelle"] == ""
+        assert form.cleaned_data["dedicace"] is False
+        assert form.cleaned_data["prenom_dedicace"] == ""
+
     def test_commande_requires_mode_livraison(self):
         form = CommandeForm(data=_commande_data(mode_livraison=""))
         assert not form.is_valid()

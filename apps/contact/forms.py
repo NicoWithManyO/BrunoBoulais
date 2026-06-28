@@ -218,6 +218,19 @@ class CommandeForm(ContactForm):
                 cleaned["point_relais_libelle"] = ""
             # Point relais sans sélection : autorisé, Bruno le règle en direct
             # avec le client.
+        else:
+            # Hors commande : on purge tous les champs d'offre. Le formulaire sert
+            # tous les sujets de /contact/ ; un POST forgé (ou un bypass du JS qui
+            # masque ces champs) ne doit pas persister d'offre/volumes/dédicace
+            # fantômes sur un simple message.
+            cleaned["produit"] = ""
+            cleaned["nb_exemplaires"] = None
+            cleaned["volumes"] = []
+            cleaned["mode_livraison"] = ""
+            cleaned["point_relais_id"] = ""
+            cleaned["point_relais_libelle"] = ""
+            cleaned["dedicace"] = False
+            cleaned["prenom_dedicace"] = ""
         return cleaned
 
     def save(self, commit=True):
