@@ -486,34 +486,24 @@
             // Décocher une pill en recliquant dessus (le radio natif ne le permet pas) :
             // on suit la pill cochée et on la décoche au reclic. Robuste quel que soit
             // l'endroit cliqué (texte de la pill ou bouton radio).
-            let exemplaireLast = exemplairesWrap.querySelector('input[type="radio"]:checked') || null;
-            exemplairesRadios.forEach((r) => {
-                r.addEventListener('change', syncRecap);
-                r.addEventListener('click', function () {
-                    if (exemplaireLast === this) {
-                        this.checked = false;
-                        exemplaireLast = null;
-                    } else {
-                        exemplaireLast = this;
-                    }
-                    syncRecap();
+            function attachPillToggle(radios, onChange) {
+                let last = Array.from(radios).find((r) => r.checked) || null;
+                radios.forEach((r) => {
+                    r.addEventListener('change', onChange);
+                    r.addEventListener('click', function () {
+                        if (last === this) {
+                            this.checked = false;
+                            last = null;
+                        } else {
+                            last = this;
+                        }
+                        onChange();
+                    });
                 });
-            });
-            // Pills d'offre : changer d'offre montre/masque les sous-contrôles (sync),
-            // avec la même déselection au reclic que les autres pills.
-            let produitLast = produitWrap.querySelector('input[type="radio"]:checked') || null;
-            produitRadios.forEach((r) => {
-                r.addEventListener('change', sync);
-                r.addEventListener('click', function () {
-                    if (produitLast === this) {
-                        this.checked = false;
-                        produitLast = null;
-                    } else {
-                        produitLast = this;
-                    }
-                    sync();
-                });
-            });
+            }
+            // Exemplaires : recalcul du récap ; offre : montre/masque les sous-contrôles.
+            attachPillToggle(exemplairesRadios, syncRecap);
+            attachPillToggle(produitRadios, sync);
             // Cases volumes : 1 ou 2 maximum (3 volumes = Intégrale).
             volumesChecks.forEach((c) => {
                 c.addEventListener('change', function () {
