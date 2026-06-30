@@ -40,6 +40,11 @@ urlpatterns = [
     path("discotheque/ajouter/", views.chanson_form, name="chanson_ajouter"),
     path("discotheque/<int:pk>/", views.chanson_form, name="chanson_modifier"),
     path("discotheque/<int:pk>/supprimer/", views.chanson_supprimer, name="chanson_supprimer"),
+    # Boutique (produits)
+    path("boutique/", views.produits_liste, name="produits_liste"),
+    path("boutique/ajouter/", views.produit_form, name="produit_ajouter"),
+    path("boutique/<int:pk>/", views.produit_form, name="produit_modifier"),
+    path("boutique/<int:pk>/supprimer/", views.produit_supprimer, name="produit_supprimer"),
     # Témoignages
     path("temoignages/", views.temoignages_liste, name="temoignages_liste"),
     path("temoignages/ajouter/", views.temoignage_form, name="temoignage_ajouter"),

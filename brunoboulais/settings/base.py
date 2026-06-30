@@ -58,6 +58,7 @@ LOCAL_APPS = [
     "apps.galerie",
     "apps.discotheque",
     "apps.contact",
+    "apps.boutique",
     "apps.parametres",
     "apps.gestion",
 ]
@@ -106,6 +107,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "apps.core.context_processors.site_context",
                 "apps.gestion.context_processors.gestion_context",
+                "apps.boutique.context_processors.chapeau_context",
             ],
         },
     },
@@ -238,6 +240,15 @@ CONTACT_EMAIL = env("CONTACT_EMAIL", default="boulaisbruno@free.fr")
 # Code enseigne du widget point relais. "BDTEST " = compte de démonstration
 # public (affiche un bandeau de test) ; la vraie enseigne de Bruno en prod.
 MONDIAL_RELAY_BRAND = env("MONDIAL_RELAY_BRAND", default="BDTEST ")
+
+# --- Stripe --------------------------------------------------------------
+# Paiement CB de la boutique via Checkout Session hébergée. Vides en local tant
+# que les clés de test ne sont pas posées : la boutique reste utilisable en
+# chèque/virement, seul le bouton CB est inopérant. Le webhook vérifie sa
+# signature avec STRIPE_WEBHOOK_SECRET (jamais de confiance dans success_url).
+STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY", default="")
+STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
+STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
 
 # --- Logging -------------------------------------------------------------
 

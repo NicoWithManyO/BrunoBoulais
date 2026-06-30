@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load richtext %}
+
+{% block title %}Boutique — {{ SITE_NAME }}{% endblock %}
+{% block description %}Commander le livre, l'intégrale CD et les volumes de Jacques Bertin.{% endblock %}
+
+{% block content %}
+
+<section class="container-wide pt-16 lg:pt-24 pb-8">
+    {% if page.eyebrow %}<p class="eyebrow">{{ page.eyebrow }}</p>{% endif %}
+    <h1 class="title-display {% if page.eyebrow %}mt-6 {% endif %}text-5xl md:text-6xl">{{ page.titre|default:"La boutique" }}</h1>
+    {% if page.intro %}
+    <div class="mt-6 font-serif text-lg text-ink/80 max-w-2xl leading-relaxed [&>p+p]:mt-4">
+        {{ page.intro|richtext }}
+    </div>
+    {% endif %}
+</section>
+
+<section class="container-wide pb-24">
+    {% if produits %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-4">
+        {% for produit in produits %}
+        <article class="flex flex-col bg-cream-dark border border-mist/40 overflow-hidden transition-transform duration-300 hover:-translate-y-1">
+            <div class="aspect-[4/3] bg-sand/30 overflow-hidden">
+                {% if produit.illustration %}
+                <img src="{{ produit.illustration.url }}" alt="{{ produit.nom }}" class="w-full h-full object-cover">
+                {% else %}
+                <div class="w-full h-full flex items-center justify-center text-mist text-5xl font-serif">⬚</div>
+                {% endif %}
+            </div>
+            <div class="flex flex-col flex-1 p-5">
+                <h2 class="font-display text-xl text-brown leading-tight">{{ produit.nom }}</h2>
+                {% if produit.description %}
+                <div class="mt-2 text-sm text-ink/70 leading-relaxed [&>p+p]:mt-2">{{ produit.description|richtext }}</div>
+                {% endif %}
+                <p class="mt-4 font-serif text-lg text-terracotta">{{ produit.prix_euros }}</p>
+                <form method="post" action="{% url 'boutique:chapeau_ajouter' produit.pk %}" class="mt-4">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary w-full justify-center">Mettre au chapeau</button>
+                </form>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-center text-slate-soft italic py-16">La boutique sera bientôt garnie.</p>
+    {% endif %}
+</section>
+
+{% endblock %}

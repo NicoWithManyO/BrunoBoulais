@@ -32,6 +32,7 @@ from apps.actualites.models import (
     ActualiteImage,
     ActualitesPage,
 )
+from apps.boutique.models import BoutiquePage, Produit
 from apps.carnet.models import Billet, BilletImageContenu
 from apps.contact.models import (
     ContactPage,
@@ -58,9 +59,11 @@ from .forms import (
     ActualitesPageForm,
     BilletForm,
     BilletImageContenuFormSet,
+    BoutiquePageForm,
     ChansonForm,
     ContactPageForm,
     DiscothequePageForm,
+    ProduitForm,
     GaleriePageForm,
     LienAchatFormSet,
     LivreForm,
@@ -443,6 +446,66 @@ def chanson_supprimer(request, pk):
         "objet": obj,
         "label": "chanson",
         "retour_url": reverse("gestion:chansons_liste"),
+    })
+
+
+# ---- Boutique (produits) ----------------------------------------------------
+
+# Filtre publié : "1" = publiés, "0" = brouillons, "" = tous.
+BOUTIQUE_PUBLIE_FILTRES = {"1": True, "0": False}
+
+
+@gestion_required
+def produits_liste(request):
+    page_form = BoutiquePageForm(request.POST or None, instance=BoutiquePage.get_solo())
+    if request.method == "POST" and page_form.is_valid():
+        page_form.save()
+        messages.success(request, "En-tête de la page mis à jour.")
+        target = reverse("gestion:produits_liste")
+        qs_str = request.GET.urlencode()
+        return redirect(f"{target}?{qs_str}" if qs_str else target)
+
+    qs = Produit.objects.all()
+    publie_filter = request.GET.get("publie", "")
+    if publie_filter in BOUTIQUE_PUBLIE_FILTRES:
+        qs = qs.filter(publie=BOUTIQUE_PUBLIE_FILTRES[publie_filter])
+    return render(request, "gestion/boutique/list.html", {
+        "produits": qs,
+        "publie_filter": publie_filter,
+        "page_form": page_form,
+    })
+
+
+@gestion_required
+def produit_form(request, pk=None):
+    instance = get_object_or_404(Produit, pk=pk) if pk is not None else None
+    form = ProduitForm(request.POST or None, request.FILES or None, instance=instance)
+    if request.method == "POST" and form.is_valid():
+        obj = form.save()
+        messages.success(request, f"Produit « {obj} » enregistré.")
+        return redirect("gestion:produit_modifier", pk=obj.pk)
+    return render(request, "gestion/boutique/form.html", {
+        "form": form,
+        "instance": instance,
+    })
+
+
+@gestion_required
+def produit_supprimer(request, pk):
+    obj = get_object_or_404(Produit, pk=pk)
+    if request.method == "POST":
+        label = str(obj)
+        # Le fichier illustration n'est pas nettoyé par CASCADE : on le supprime
+        # explicitement.
+        if obj.illustration:
+            obj.illustration.delete(save=False)
+        obj.delete()
+        messages.success(request, f"Produit « {label} » supprimé.")
+        return redirect("gestion:produits_liste")
+    return render(request, "gestion/confirm_delete.html", {
+        "objet": obj,
+        "label": "produit",
+        "retour_url": reverse("gestion:produits_liste"),
     })
 
 

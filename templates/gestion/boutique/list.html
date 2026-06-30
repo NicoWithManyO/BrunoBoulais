@@ -1,0 +1,88 @@
+{% extends "gestion/_layout.html" %}
+
+{% block title %}Boutique · Gestion{% endblock %}
+{% block crumb %}Boutique{% endblock %}
+{% block heading %}Boutique{% endblock %}
+
+{% block header_actions %}
+    <a href="{% url 'gestion:produit_ajouter' %}" class="btn-sm btn-primary">+ Nouveau produit</a>
+{% endblock %}
+
+{% block content %}
+
+<details class="panel mb-6"{% if page_form.errors %} open{% endif %}>
+    <summary class="cursor-pointer font-display text-base text-brown select-none">
+        ✎ En-tête de la page publique
+        <span class="ml-2 text-xs text-slate-soft font-sans">surtitre · titre · introduction</span>
+    </summary>
+    <form method="post" class="gform mt-4 max-w-2xl">
+        {% csrf_token %}
+        {% include "gestion/_form.html" with form=page_form %}
+        <div class="mt-4">
+            <button type="submit" class="btn-sm btn-primary">Enregistrer l'en-tête</button>
+        </div>
+    </form>
+</details>
+
+<form method="get" class="flex items-end gap-3 mb-6 gform">
+    <div>
+        <label class="!mt-0">État</label>
+        <select name="publie">
+            <option value="">Tous</option>
+            <option value="1" {% if publie_filter == "1" %}selected{% endif %}>Publiés</option>
+            <option value="0" {% if publie_filter == "0" %}selected{% endif %}>Brouillons</option>
+        </select>
+    </div>
+    <button type="submit" class="btn-sm btn-ghost mb-[1px]">Filtrer</button>
+    {% if publie_filter %}
+    <a href="{% url 'gestion:produits_liste' %}" class="text-xs text-slate-soft mb-[1px]">Réinitialiser</a>
+    {% endif %}
+</form>
+
+<div class="panel-flat">
+<table class="table-admin">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Nom</th>
+            <th>Prix</th>
+            <th>Position</th>
+            <th>État</th>
+            <th class="text-right">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for p in produits %}
+        <tr>
+            <td class="w-14">
+                {% if p.illustration %}
+                <img src="{{ p.illustration.url }}" alt="" class="w-12 h-12 object-cover rounded">
+                {% else %}
+                <span class="inline-flex items-center justify-center w-12 h-12 bg-sand/30 rounded text-mist">⬚</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{% url 'gestion:produit_modifier' p.pk %}" class="font-medium text-brown no-underline hover:text-terracotta">{{ p.nom }}</a>
+                {% if p.reference %}<span class="block text-xs text-slate-soft">{{ p.reference }}</span>{% endif %}
+            </td>
+            <td class="text-xs">{{ p.prix_euros }}</td>
+            <td class="text-xs">{{ p.position }}</td>
+            <td>
+                {% if p.publie %}
+                <span class="badge badge-publie">Publié</span>
+                {% else %}
+                <span class="badge badge-brouillon">Brouillon</span>
+                {% endif %}
+            </td>
+            <td class="text-right whitespace-nowrap">
+                <a href="{% url 'gestion:produit_modifier' p.pk %}" class="btn-sm btn-ghost">Éditer</a>
+                <a href="{% url 'gestion:produit_supprimer' p.pk %}" class="btn-sm btn-danger">Supprimer</a>
+            </td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="6" class="text-center text-slate-soft italic py-12">Aucun produit.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

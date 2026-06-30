@@ -6,12 +6,14 @@ from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import UploadedFile
 from django.forms import inlineformset_factory
 from django.utils import timezone
+from django.utils.text import slugify
 
 from apps.actualites.models import (
     Actualite,
     ActualiteImage,
     ActualitesPage,
 )
+from apps.boutique.models import BoutiquePage, Produit
 from apps.carnet.models import Billet, BilletImageContenu
 from apps.contact.models import ContactPage
 from apps.core.images import strip_exif
@@ -249,6 +251,42 @@ class GaleriePageForm(forms.ModelForm):
 class DiscothequePageForm(forms.ModelForm):
     class Meta:
         model = DiscothequePage
+        fields = ["eyebrow", "titre", "intro"]
+
+
+class ProduitForm(StripExifMixin, forms.ModelForm):
+    exif_fields = ["illustration"]
+
+    class Meta:
+        model = Produit
+        fields = [
+            "nom", "slug", "reference", "prix_cents", "description",
+            "illustration", "volume_integrale", "dedicacable",
+            "position", "publie",
+        ]
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 3}),
+        }
+        help_texts = {
+            "slug": "Identifiant dans l'URL. Laisser vide pour le générer depuis le nom.",
+            "prix_cents": "En centimes : 2000 = 20,00 €.",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Slug auto-généré depuis le nom si laissé vide (confort de saisie).
+        self.fields["slug"].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        if not cleaned.get("slug") and cleaned.get("nom"):
+            cleaned["slug"] = slugify(cleaned["nom"])[:210]
+        return cleaned
+
+
+class BoutiquePageForm(forms.ModelForm):
+    class Meta:
+        model = BoutiquePage
         fields = ["eyebrow", "titre", "intro"]
 
 

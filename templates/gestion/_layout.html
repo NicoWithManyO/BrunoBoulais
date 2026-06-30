@@ -70,6 +70,10 @@
                class="gnav {% if 'chanson' in sec %}is-active{% endif %}">
                 <span class="gnav-ico">♬</span> Discothèque
             </a>
+            <a href="{% url 'gestion:produits_liste' %}"
+               class="gnav {% if 'produit' in sec %}is-active{% endif %}">
+                <span class="gnav-ico">⬚</span> Boutique
+            </a>
 
             <div class="pt-4 pb-1 px-3 text-[10px] uppercase tracking-widest text-slate-soft">Boîte de réception</div>
             <a href="{% url 'gestion:messages_liste' %}"

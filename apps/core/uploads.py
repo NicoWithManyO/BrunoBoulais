@@ -67,3 +67,7 @@ def discotheque_upload_to(instance, filename):
 
 def discotheque_audio_upload_to(instance, filename):
     return _slugged("discotheque/audio", filename)
+
+
+def boutique_upload_to(instance, filename):
+    return _slugged("boutique", filename)

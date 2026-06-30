@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% load boutique_extras %}
+
+{% block title %}Mon chapeau — {{ SITE_NAME }}{% endblock %}
+{% block description %}Les articles déposés dans votre chapeau.{% endblock %}
+
+{% block content %}
+
+<section class="container-wide pt-16 lg:pt-24 pb-24">
+    <h1 class="title-display text-4xl md:text-5xl">Mon chapeau</h1>
+
+    {% if lignes %}
+    <div class="mt-10 panel-flat">
+        <table class="table-admin">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Article</th>
+                    <th>Prix</th>
+                    <th>Quantité</th>
+                    <th class="text-right">Sous-total</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for ligne in lignes %}
+                <tr>
+                    <td class="w-16">
+                        {% if ligne.produit.illustration %}
+                        <img src="{{ ligne.produit.illustration.url }}" alt="" class="w-14 h-14 object-cover rounded">
+                        {% else %}
+                        <span class="inline-flex items-center justify-center w-14 h-14 bg-sand/30 rounded text-mist">⬚</span>
+                        {% endif %}
+                    </td>
+                    <td class="font-medium text-brown">{{ ligne.produit.nom }}</td>
+                    <td class="text-sm">{{ ligne.produit.prix_euros }}</td>
+                    <td>
+                        <form method="post" action="{% url 'boutique:chapeau_modifier' ligne.produit.pk %}" class="flex items-center gap-2">
+                            {% csrf_token %}
+                            <input type="number" name="quantite" value="{{ ligne.quantite }}" min="1" class="w-16 px-2 py-1 border border-mist/50 rounded">
+                            <button type="submit" class="btn-sm btn-ghost">OK</button>
+                        </form>
+                    </td>
+                    <td class="text-right text-sm">{{ ligne.sous_total_cents|euros }}</td>
+                    <td class="text-right">
+                        <form method="post" action="{% url 'boutique:chapeau_retirer' ligne.produit.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-sm btn-danger">Retirer</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <form method="post" action="{% url 'boutique:chapeau_vider' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn-sm btn-ghost">Vider le chapeau</button>
+        </form>
+        <div class="text-right">
+            <p class="font-serif text-xl text-brown">Sous-total : <span class="text-terracotta">{{ montant_articles }}</span></p>
+            <p class="text-xs text-slate-soft mt-1">Frais de port calculés à l'étape suivante.</p>
+        </div>
+    </div>
+
+    <div class="mt-8 flex flex-wrap gap-3">
+        <a href="{% url 'boutique:liste' %}" class="btn btn-ghost">← Continuer mes achats</a>
+        <a href="#" class="btn btn-primary ml-auto">Valider ma commande</a>
+    </div>
+
+    {% else %}
+    <p class="mt-10 text-center text-slate-soft italic py-16">Votre chapeau est vide.</p>
+    <div class="text-center">
+        <a href="{% url 'boutique:liste' %}" class="btn btn-primary">Découvrir la boutique</a>
+    </div>
+    {% endif %}
+</section>
+
+{% endblock %}

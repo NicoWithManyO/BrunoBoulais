@@ -6,6 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
+from apps.boutique.models import Produit
 from apps.carnet.models import Billet, BilletImageContenu
 from apps.contact.models import PRODUIT_LIVRE, Message
 
@@ -150,3 +151,53 @@ class MessageDetailCommandeTests(TestCase):
             reverse("gestion:message_detail", args=[msg.pk])
         ).content.decode()
         self.assertNotIn("En attente de règlement", body)
+
+
+@override_settings(MEDIA_ROOT=_MEDIA_ROOT, STORAGES={
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+})
+class ProduitCrudTests(TestCase):
+    """CRUD produit boutique : création avec illustration + suppression nettoyant le fichier."""
+
+    # PNG 2×2 réellement valide (le _PNG_1PX du module a un checksum IDAT
+    # cassé → rejeté par la validation ImageField/Pillow ; ici on en a besoin).
+    _PNG_OK = bytes.fromhex(
+        "89504e470d0a1a0a0000000d4948445200000002000000020802000000fdd49a73"
+        "0000001649444154789c633c91a2c1c0c0c0c4c0c0c0c0c0000010ba0158bb948b"
+        "e30000000049454e44ae426082"
+    )
+
+    def setUp(self):
+        user = get_user_model().objects.create_user("staff", is_staff=True)
+        self.client.force_login(user)
+
+    def test_creation_avec_illustration_et_slug_auto(self):
+        img = SimpleUploadedFile("Cover.png", self._PNG_OK, content_type="image/png")
+        resp = self.client.post(reverse("gestion:produit_ajouter"), {
+            "nom": "Le livre",
+            "slug": "",  # laissé vide → généré depuis le nom
+            "reference": "LIV",
+            "prix_cents": "2000",
+            "description": "",
+            "illustration": img,
+            "dedicacable": "on",
+            "position": "1",
+            "publie": "on",
+        })
+        self.assertEqual(resp.status_code, 302)
+        produit = Produit.objects.get()
+        self.assertEqual(produit.slug, "le-livre")
+        self.assertTrue(produit.illustration)
+        self.assertTrue(produit.illustration.storage.exists(produit.illustration.name))
+
+    def test_suppression_nettoie_le_fichier(self):
+        img = SimpleUploadedFile("c.png", self._PNG_OK, content_type="image/png")
+        produit = Produit.objects.create(nom="CD", slug="cd", prix_cents=1500, illustration=img)
+        name = produit.illustration.name
+        storage = produit.illustration.storage
+        self.assertTrue(storage.exists(name))
+        resp = self.client.post(reverse("gestion:produit_supprimer", args=[produit.pk]))
+        self.assertEqual(resp.status_code, 302)
+        self.assertFalse(Produit.objects.filter(pk=produit.pk).exists())
+        self.assertFalse(storage.exists(name))
