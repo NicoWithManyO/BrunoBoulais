@@ -245,6 +245,10 @@ def paiement_cb(request, pk):
     if pk != request.session.get("commande_ref"):
         return redirect("boutique:chapeau")
     commande = get_object_or_404(Commande, pk=pk)
+    # commande_ref est partagée avec le flux chèque/virement : on n'ouvre Stripe
+    # que pour une commande réellement en mode CB (pas de mélange de canaux).
+    if commande.mode_paiement != Commande.PAIEMENT_CB:
+        return redirect("boutique:chapeau")
     if commande.paye:
         return redirect("boutique:merci")
     try:
@@ -274,12 +278,22 @@ def paiement_success(request):
         try:
             session = stripe.checkout.Session.retrieve(session_id)
         except Exception:
+            logger.warning(
+                "Boutique: échec de récupération de la session Stripe %s au retour success.",
+                session_id,
+                exc_info=True,
+            )
             session = None
         if session and session.get("payment_status") == "paid":
             commande_id = (session.get("metadata") or {}).get("commande_id")
-            commande = Commande.objects.filter(pk=commande_id).first()
-            Chapeau(request).clear()
-            request.session.pop("commande_ref", None)
+            candidate = Commande.objects.filter(pk=commande_id).first()
+            # Lien à la session navigateur : on n'affiche/ne vide que si la session
+            # Stripe correspond à la commande de CE visiteur. Un session_id d'autrui
+            # (URL partagée/devinée) ne doit rien révéler ni vider son chapeau.
+            if candidate and candidate.pk == request.session.get("commande_ref"):
+                commande = candidate
+                Chapeau(request).clear()
+                request.session.pop("commande_ref", None)
     return render(
         request,
         "boutique/paiement_success.html",
@@ -327,14 +341,13 @@ def webhook_stripe(request):
         session = event["data"]["object"]
         if session.get("payment_status") == "paid":
             commande_id = (session.get("metadata") or {}).get("commande_id")
-            # Bascule atomique : parmi des rejeux (éventuellement concurrents),
-            # une seule requête voit ``updated == 1`` et notifie — les autres
-            # trouvent la commande déjà « payée » et ne re-notifient pas.
-            updated = (
-                Commande.objects.filter(pk=commande_id)
-                .exclude(statut=Commande.STATUT_PAYE)
-                .update(statut=Commande.STATUT_PAYE)
-            )
+            # Bascule atomique, restreinte à une CB en attente : parmi des rejeux
+            # (éventuellement concurrents) une seule requête voit ``updated == 1``
+            # et notifie. Cibler ce seul statut évite de ressusciter une commande
+            # annulée/remboursée qu'un webhook tardif viendrait repasser à « payé ».
+            updated = Commande.objects.filter(
+                pk=commande_id, statut=Commande.STATUT_EN_ATTENTE_PAIEMENT
+            ).update(statut=Commande.STATUT_PAYE)
             if updated:
                 commande = Commande.objects.filter(pk=commande_id).first()
                 if commande:

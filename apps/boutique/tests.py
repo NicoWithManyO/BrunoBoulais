@@ -234,6 +234,18 @@ class StripePaiementTests(TestCase):
         mock.assert_not_called()
         self.assertRedirects(response, reverse("boutique:chapeau"), fetch_redirect_response=False)
 
+    def test_paiement_cb_refuse_commande_non_cb(self):
+        # Réf liée mais commande en mode chèque : pas d'ouverture Stripe (pas de
+        # mélange de canaux via une réf commande_ref résiduelle).
+        self.commande.mode_paiement = Commande.PAIEMENT_CHEQUE
+        self.commande.statut = Commande.STATUT_EN_ATTENTE_REGLEMENT
+        self.commande.save()
+        self._bind_session()
+        with patch("apps.boutique.views.creer_session_checkout") as mock:
+            response = self.client.get(reverse("boutique:paiement_cb", args=[self.commande.pk]))
+        mock.assert_not_called()
+        self.assertRedirects(response, reverse("boutique:chapeau"), fetch_redirect_response=False)
+
     def test_paiement_cb_echec_stripe_conserve_ref_pour_reessai(self):
         self._bind_session()
         with patch("apps.boutique.views.creer_session_checkout", side_effect=Exception("boom")):
@@ -263,6 +275,7 @@ class StripePaiementTests(TestCase):
         self.assertEqual(self.client.session.get("chapeau"), {str(produit.pk): 1})
 
     def test_paiement_success_paye_vide_et_affiche(self):
+        self._bind_session()
         produit = Produit.objects.create(nom="Livre", slug="l", prix_cents=2000)
         session = self.client.session
         session["chapeau"] = {str(produit.pk): 1}
@@ -272,6 +285,20 @@ class StripePaiementTests(TestCase):
             response = self.client.get(reverse("boutique:paiement_success") + "?session_id=cs_test_1")
         self.assertEqual(response.context["commande"], self.commande)
         self.assertEqual(self.client.session.get("chapeau"), {})
+
+    def test_paiement_success_session_autrui_ne_revele_rien(self):
+        # session_id payé d'une commande qui n'est PAS celle liée à la session
+        # navigateur : rien n'est révélé, le chapeau du visiteur n'est pas vidé.
+        produit = Produit.objects.create(nom="Livre", slug="l", prix_cents=2000)
+        session = self.client.session
+        session["chapeau"] = {str(produit.pk): 1}
+        session["commande_ref"] = self.commande.pk + 999  # autre commande
+        session.save()
+        stripe_session = {"payment_status": "paid", "metadata": {"commande_id": str(self.commande.pk)}}
+        with patch("apps.boutique.views.stripe.checkout.Session.retrieve", return_value=stripe_session):
+            response = self.client.get(reverse("boutique:paiement_success") + "?session_id=cs_test_1")
+        self.assertIsNone(response.context["commande"])
+        self.assertEqual(self.client.session.get("chapeau"), {str(produit.pk): 1})
 
     def test_paiement_success_non_paye_ne_vide_pas(self):
         produit = Produit.objects.create(nom="Livre", slug="l", prix_cents=2000)
@@ -325,6 +352,17 @@ class StripePaiementTests(TestCase):
         self.commande.refresh_from_db()
         self.assertEqual(self.commande.statut, Commande.STATUT_PAYE)
         self.assertFalse(self.commande.notified)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_webhook_n_exhume_pas_commande_annulee(self):
+        # Un webhook payé tardif/rejoué ne doit pas repasser une commande annulée
+        # à « payé » : seule une CB en attente bascule.
+        self.commande.statut = Commande.STATUT_ANNULE
+        self.commande.save()
+        response = self._post_webhook(self._event())
+        self.assertEqual(response.status_code, 200)
+        self.commande.refresh_from_db()
+        self.assertEqual(self.commande.statut, Commande.STATUT_ANNULE)
         self.assertEqual(len(mail.outbox), 0)
 
     def test_webhook_commande_introuvable_loggue(self):
