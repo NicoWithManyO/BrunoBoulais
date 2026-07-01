@@ -3,7 +3,7 @@ import math
 
 import stripe
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -204,11 +204,24 @@ def commande(request):
     return response
 
 
+def _commande_depuis_ref(request, *, consume):
+    """Charge la commande liée à la session (clé ``commande_ref``).
+
+    ``consume=True`` retire la réf (page terminale : un rechargement retombe sur
+    le simple remerciement) ; ``consume=False`` la laisse (l'annulation permet un
+    réessai sur la même commande).
+    """
+    if consume:
+        ref = request.session.pop("commande_ref", None)
+    else:
+        ref = request.session.get("commande_ref")
+    return Commande.objects.filter(pk=ref).first() if ref else None
+
+
 def merci(request):
     # Référence lue une seule fois : un rechargement retombe sur le simple
     # remerciement, sans le récap de paiement.
-    ref = request.session.pop("commande_ref", None)
-    obj = Commande.objects.filter(pk=ref).first() if ref else None
+    obj = _commande_depuis_ref(request, consume=True)
     return render(
         request,
         "boutique/merci.html",
@@ -246,9 +259,7 @@ def paiement_cb(request, pk):
     commande.save(update_fields=["stripe_session_id"])
     # 303 : la commande a été soumise en POST, la redirection GET vers Stripe
     # est bien une autre ressource (recommandation Stripe pour Checkout).
-    response = redirect(session.url)
-    response.status_code = 303
-    return response
+    return HttpResponseRedirect(session.url, status=303)
 
 
 def paiement_success(request):
@@ -282,8 +293,11 @@ def paiement_success(request):
 def paiement_annule(request):
     # Retour Stripe sans paiement (annulation ou échec technique). Chapeau
     # conservé ; on propose de réessayer la CB sur la même commande.
-    ref = request.session.get("commande_ref")
-    commande = Commande.objects.filter(pk=ref).first() if ref else None
+    commande = _commande_depuis_ref(request, consume=False)
+    # Une réf résiduelle déjà réglée (autre flux, rejeu) ne doit rien afficher :
+    # le réessai ne concerne qu'une commande encore à payer.
+    if commande and commande.paye:
+        commande = None
     return render(
         request,
         "boutique/paiement_annule.html",

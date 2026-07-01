@@ -242,6 +242,15 @@ class StripePaiementTests(TestCase):
         # La réf reste en session : l'écran d'annulation peut proposer un réessai.
         self.assertEqual(self.client.session.get("commande_ref"), self.commande.pk)
 
+    def test_paiement_annule_ignore_ref_deja_payee(self):
+        # Réf résiduelle d'une commande déjà réglée : l'écran d'annulation ne
+        # doit rien afficher (pas de réessai trompeur).
+        self.commande.statut = Commande.STATUT_PAYE
+        self.commande.save()
+        self._bind_session()
+        response = self.client.get(reverse("boutique:paiement_annule"))
+        self.assertIsNone(response.context["commande"])
+
     def test_paiement_success_sans_session_id_ne_vide_pas(self):
         produit = Produit.objects.create(nom="Livre", slug="l", prix_cents=2000)
         session = self.client.session
