@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load richtext %}
+
+{% block content %}
+
+<section class="container-prose py-16 lg:py-20">
+    <p class="eyebrow">{{ page.eyebrow|default:"Contact" }}</p>
+    <h1 class="title-display mt-4 text-4xl md:text-5xl">{{ page.titre|default:"Écrire à Bruno" }}</h1>
+    {% if page.intro %}
+    <div class="mt-6 text-ink/80 leading-relaxed">{{ page.intro|richtext }}</div>
+    {% endif %}
+
+    <form method="post" action="{% url 'contact:form' %}" class="pform mt-12 space-y-6">
+        {% csrf_token %}
+        <div class="hp-field" aria-hidden="true">
+            <label for="{{ form.website.id_for_label }}">Champ anti-spam (ne pas remplir)</label>
+            {{ form.website }}
+        </div>
+
+        <div>
+            <label class="field-label" for="{{ form.nom.id_for_label }}">Nom &amp; Prénom</label>
+            {{ form.nom }}
+        </div>
+
+        <div>
+            <label class="field-label" for="{{ form.sujet.id_for_label }}">Sujet</label>
+            {{ form.sujet }}
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-6">
+            <div>
+                <label class="field-label" for="{{ form.email.id_for_label }}">
+                    Email
+                    <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire)</span>
+                </label>
+                {{ form.email }}
+            </div>
+            <div>
+                <label class="field-label" for="{{ form.telephone.id_for_label }}">Téléphone</label>
+                {{ form.telephone }}
+            </div>
+        </div>
+
+        <div>
+            <label class="field-label" for="{{ form.contenu.id_for_label }}">Message</label>
+            {{ form.contenu }}
+        </div>
+
+        {% if ip_unresolved %}
+        <p class="text-terracotta-deep text-sm">
+            Une erreur empêche le traitement de votre message.{% if CONTACT_EMAIL %} Merci de contacter directement
+            <a href="mailto:{{ CONTACT_EMAIL }}" class="underline">{{ CONTACT_EMAIL }}</a>.{% endif %}
+        </p>
+        {% elif rate_limited %}
+        <p class="text-terracotta-deep text-sm">
+            Vous avez envoyé plusieurs messages récemment. Merci de patienter une heure avant de réessayer.
+        </p>
+        {% endif %}
+
+        {% if form.errors %}
+        <ul class="text-terracotta-deep text-sm">
+            {% for f in form %}{% if f.name != "website" %}{% for e in f.errors %}<li>{{ f.label }} : {{ e }}</li>{% endfor %}{% endif %}{% endfor %}
+            {% if form.non_field_errors %}{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}{% endif %}
+        </ul>
+        {% endif %}
+
+        <div class="flex justify-end">
+            <button type="submit" class="btn btn-primary">Envoyer</button>
+        </div>
+    </form>
+</section>
+{% endblock %}
