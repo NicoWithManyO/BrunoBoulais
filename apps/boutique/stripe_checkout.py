@@ -44,7 +44,12 @@ def creer_session_checkout(commande, request):
     return stripe.checkout.Session.create(
         mode="payment",
         line_items=line_items,
-        success_url=request.build_absolute_uri(reverse("boutique:paiement_success")),
+        success_url=(
+            request.build_absolute_uri(reverse("boutique:paiement_success"))
+            # Stripe substitue {CHECKOUT_SESSION_ID} : la page success revérifie
+            # le paiement de cette session avant de vider le chapeau.
+            + "?session_id={CHECKOUT_SESSION_ID}"
+        ),
         cancel_url=request.build_absolute_uri(reverse("boutique:paiement_annule")),
         customer_email=commande.email or None,
         client_reference_id=commande.reference_commande,

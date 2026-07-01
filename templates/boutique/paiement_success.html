@@ -7,18 +7,20 @@
 {% block content %}
 
 <section class="container-prose py-20 text-center">
+    {% if commande %}
     <p class="eyebrow">Merci !</p>
     <h1 class="title-display mt-4 text-4xl md:text-5xl">Paiement reçu</h1>
-
-    {% if commande %}
     <p class="mt-6 text-ink/80 leading-relaxed">
         Votre commande <strong>{{ commande.reference_commande }}</strong>,
         d'un montant de <strong>{{ commande.montant_total_cents|euros }}</strong>,
         est en cours de confirmation. Vous recevrez un mot de moi très vite.
     </p>
     {% else %}
+    <p class="eyebrow">Un instant</p>
+    <h1 class="title-display mt-4 text-4xl md:text-5xl">Vérification du paiement</h1>
     <p class="mt-6 text-ink/80 leading-relaxed">
-        Votre paiement est en cours de confirmation. Je vous recontacte rapidement.
+        Votre paiement est en cours de vérification. Je vous recontacte
+        rapidement dès qu'il est confirmé.
     </p>
     {% endif %}
 

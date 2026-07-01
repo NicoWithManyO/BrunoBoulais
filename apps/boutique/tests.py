@@ -202,7 +202,14 @@ class StripePaiementTests(TestCase):
             commande=self.commande, libelle="Livre", prix_unitaire_cents=2000, quantite=1
         )
 
+    def _bind_session(self, pk=None):
+        """Lie une réf de commande à la session navigateur (posée au checkout)."""
+        session = self.client.session
+        session["commande_ref"] = pk if pk is not None else self.commande.pk
+        session.save()
+
     def test_paiement_cb_cree_session_et_redirige_303(self):
+        self._bind_session()
         session = type("S", (), {"id": "cs_test_123", "url": "https://checkout.stripe.com/pay/cs_test_123"})()
         with patch("apps.boutique.views.creer_session_checkout", return_value=session) as mock:
             response = self.client.get(reverse("boutique:paiement_cb", args=[self.commande.pk]))
@@ -213,10 +220,60 @@ class StripePaiementTests(TestCase):
         self.assertEqual(self.commande.stripe_session_id, "cs_test_123")
 
     def test_paiement_cb_deja_paye_redirige_merci(self):
+        self._bind_session()
         self.commande.statut = Commande.STATUT_PAYE
         self.commande.save()
         response = self.client.get(reverse("boutique:paiement_cb", args=[self.commande.pk]))
         self.assertRedirects(response, reverse("boutique:merci"), fetch_redirect_response=False)
+
+    def test_paiement_cb_refuse_commande_non_liee(self):
+        # Session liée à une autre commande : on refuse (anti-énumération IDOR).
+        self._bind_session(pk=self.commande.pk + 999)
+        with patch("apps.boutique.views.creer_session_checkout") as mock:
+            response = self.client.get(reverse("boutique:paiement_cb", args=[self.commande.pk]))
+        mock.assert_not_called()
+        self.assertRedirects(response, reverse("boutique:chapeau"), fetch_redirect_response=False)
+
+    def test_paiement_cb_echec_stripe_conserve_ref_pour_reessai(self):
+        self._bind_session()
+        with patch("apps.boutique.views.creer_session_checkout", side_effect=Exception("boom")):
+            response = self.client.get(reverse("boutique:paiement_cb", args=[self.commande.pk]))
+        self.assertRedirects(response, reverse("boutique:paiement_annule"), fetch_redirect_response=False)
+        # La réf reste en session : l'écran d'annulation peut proposer un réessai.
+        self.assertEqual(self.client.session.get("commande_ref"), self.commande.pk)
+
+    def test_paiement_success_sans_session_id_ne_vide_pas(self):
+        produit = Produit.objects.create(nom="Livre", slug="l", prix_cents=2000)
+        session = self.client.session
+        session["chapeau"] = {str(produit.pk): 1}
+        session.save()
+        response = self.client.get(reverse("boutique:paiement_success"))
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context["commande"])
+        # GET nu (prefetch, favori) : chapeau intact, rien validé.
+        self.assertEqual(self.client.session.get("chapeau"), {str(produit.pk): 1})
+
+    def test_paiement_success_paye_vide_et_affiche(self):
+        produit = Produit.objects.create(nom="Livre", slug="l", prix_cents=2000)
+        session = self.client.session
+        session["chapeau"] = {str(produit.pk): 1}
+        session.save()
+        stripe_session = {"payment_status": "paid", "metadata": {"commande_id": str(self.commande.pk)}}
+        with patch("apps.boutique.views.stripe.checkout.Session.retrieve", return_value=stripe_session):
+            response = self.client.get(reverse("boutique:paiement_success") + "?session_id=cs_test_1")
+        self.assertEqual(response.context["commande"], self.commande)
+        self.assertEqual(self.client.session.get("chapeau"), {})
+
+    def test_paiement_success_non_paye_ne_vide_pas(self):
+        produit = Produit.objects.create(nom="Livre", slug="l", prix_cents=2000)
+        session = self.client.session
+        session["chapeau"] = {str(produit.pk): 1}
+        session.save()
+        stripe_session = {"payment_status": "unpaid", "metadata": {"commande_id": str(self.commande.pk)}}
+        with patch("apps.boutique.views.stripe.checkout.Session.retrieve", return_value=stripe_session):
+            response = self.client.get(reverse("boutique:paiement_success") + "?session_id=cs_test_1")
+        self.assertIsNone(response.context["commande"])
+        self.assertEqual(self.client.session.get("chapeau"), {str(produit.pk): 1})
 
     def _event(self, **session_overrides):
         session = {"payment_status": "paid", "metadata": {"commande_id": str(self.commande.pk)}}
@@ -247,6 +304,29 @@ class StripePaiementTests(TestCase):
         self.commande.refresh_from_db()
         self.assertEqual(self.commande.statut, Commande.STATUT_PAYE)
         self.assertEqual(len(mail.outbox), 1)
+
+    def test_webhook_notify_defaillant_ne_500_pas(self):
+        # Un plantage dans notify() (ici construction du récap) ne doit pas
+        # remonter en 500 : sinon Stripe rejouerait, trouverait la commande déjà
+        # « payée » et n'aurait plus rien à notifier. On absorbe et on marque
+        # notified=False pour que la commande remonte « à traiter » en gestion.
+        with patch("apps.boutique.pricing.montant_euros", side_effect=Exception("boom")):
+            response = self._post_webhook(self._event())
+        self.assertEqual(response.status_code, 200)
+        self.commande.refresh_from_db()
+        self.assertEqual(self.commande.statut, Commande.STATUT_PAYE)
+        self.assertFalse(self.commande.notified)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_webhook_commande_introuvable_loggue(self):
+        # Paiement confirmé mais commande absente : on log une alerte (CB débitée
+        # sans commande à honorer), on ne notifie pas, on renvoie 200.
+        event = self._event(metadata={"commande_id": "999999"})
+        with self.assertLogs("apps.boutique.views", level="ERROR") as logs:
+            response = self._post_webhook(event)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(any("introuvable" in m for m in logs.output))
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_webhook_non_paye_ignore(self):
         response = self._post_webhook(self._event(payment_status="unpaid"))

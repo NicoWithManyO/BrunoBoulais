@@ -12,6 +12,9 @@ SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# Derrière le reverse-proxy : reconstruire les URLs absolues (dont les
+# success_url/cancel_url Stripe) depuis l'hôte d'origine, pas le Host interne.
+USE_X_FORWARDED_HOST = True
 
 # Brevo
 ANYMAIL = {"BREVO_API_KEY": env("BREVO_API_KEY", default="")}  # noqa: F405

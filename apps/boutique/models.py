@@ -179,55 +179,58 @@ class Commande(TimestampedModel):
     def notify(self):
         """Envoie le récapitulatif de la commande à Bruno (lui seul).
 
-        Sur échec d'envoi, on persiste ``notified=False`` pour que la commande
-        remonte « à traiter » en gestion : la commande est déjà enregistrée
-        (source de vérité), on n'échoue pas la requête pour un mail.
+        Sur tout échec (construction du récap ou envoi), on persiste
+        ``notified=False`` pour que la commande remonte « à traiter » en gestion :
+        la commande est déjà enregistrée (source de vérité), on n'échoue jamais
+        la requête pour un mail. C'est vital côté webhook Stripe : lever ici
+        remonterait en 500, le rejeu verrait la commande déjà « payée » et
+        n'aurait plus rien à notifier — Bruno resterait sans nouvelle.
         """
         # Import différé : pricing importe Commande (montant_euros vit là-bas).
         from .pricing import montant_euros
 
-        lines = [
-            f"Réf. commande : {self.reference_commande}",
-            f"De : {self.nom} <{self.email}>",
-            f"Téléphone : {self.telephone or '—'}",
-            f"Adresse : {self.adresse_postale or '—'}",
-            "",
-            "Articles :",
-        ]
-        for ligne in self.lignes.all():
-            lines.append(
-                f"  {ligne.quantite} × {ligne.libelle} — {montant_euros(ligne.sous_total_cents)}"
-            )
-        lines += [
-            "",
-            f"Sous-total articles : {montant_euros(self.montant_articles_cents)}",
-            f"Frais de port ({self.get_mode_livraison_display() or '—'}) : "
-            f"{montant_euros(self.frais_port_cents)}",
-            f"Montant total : {montant_euros(self.montant_total_cents)}",
-            f"Paiement : {self.get_mode_paiement_display()}",
-            f"État : {self.get_statut_display()}",
-        ]
-        if self.mode_livraison == self.LIVRAISON_DOMICILE:
-            lines.append(f"Livraison : Domicile — {self.adresse_postale or '—'}")
-        elif self.mode_livraison:
-            point = self.point_relais_libelle or "(non précisé)"
-            lines.append(
-                f"Livraison : {self.get_mode_livraison_display()} — "
-                f"{point} (ID {self.point_relais_id or '—'})"
-            )
-        if self.dedicace:
-            prenom = f" (prénom : {self.prenom_dedicace})" if self.prenom_dedicace else ""
-            lines.append(f"Dédicace : oui{prenom}")
-        else:
-            lines.append("Dédicace : non")
-        email = EmailMessage(
-            subject=f"[jacques-bertin.manyo.dev] Commande {self.reference_commande} — {self.nom}",
-            body="\n".join(lines) + "\n",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to=[settings.CONTACT_EMAIL],
-            reply_to=[self.email],
-        )
         try:
+            lines = [
+                f"Réf. commande : {self.reference_commande}",
+                f"De : {self.nom} <{self.email}>",
+                f"Téléphone : {self.telephone or '—'}",
+                f"Adresse : {self.adresse_postale or '—'}",
+                "",
+                "Articles :",
+            ]
+            for ligne in self.lignes.all():
+                lines.append(
+                    f"  {ligne.quantite} × {ligne.libelle} — {montant_euros(ligne.sous_total_cents)}"
+                )
+            lines += [
+                "",
+                f"Sous-total articles : {montant_euros(self.montant_articles_cents)}",
+                f"Frais de port ({self.get_mode_livraison_display() or '—'}) : "
+                f"{montant_euros(self.frais_port_cents)}",
+                f"Montant total : {montant_euros(self.montant_total_cents)}",
+                f"Paiement : {self.get_mode_paiement_display()}",
+                f"État : {self.get_statut_display()}",
+            ]
+            if self.mode_livraison == self.LIVRAISON_DOMICILE:
+                lines.append(f"Livraison : Domicile — {self.adresse_postale or '—'}")
+            elif self.mode_livraison:
+                point = self.point_relais_libelle or "(non précisé)"
+                lines.append(
+                    f"Livraison : {self.get_mode_livraison_display()} — "
+                    f"{point} (ID {self.point_relais_id or '—'})"
+                )
+            if self.dedicace:
+                prenom = f" (prénom : {self.prenom_dedicace})" if self.prenom_dedicace else ""
+                lines.append(f"Dédicace : oui{prenom}")
+            else:
+                lines.append("Dédicace : non")
+            email = EmailMessage(
+                subject=f"[jacques-bertin.manyo.dev] Commande {self.reference_commande} — {self.nom}",
+                body="\n".join(lines) + "\n",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[settings.CONTACT_EMAIL],
+                reply_to=[self.email],
+            )
             email.send(fail_silently=False)
         except Exception:
             self.notified = False
