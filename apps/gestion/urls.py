@@ -58,6 +58,9 @@ urlpatterns = [
     # Messages
     path("messages/", views.messages_liste, name="messages_liste"),
     path("messages/<int:pk>/", views.message_detail, name="message_detail"),
+    # Commandes (boutique)
+    path("commandes/", views.commandes_liste, name="commandes_liste"),
+    path("commandes/<int:pk>/", views.commande_detail, name="commande_detail"),
     # Page /contact/ (singleton — en-tête éditable)
     path("contact/", views.contact_page_form, name="contact_page"),
     # Page d'accueil (singleton)

@@ -32,7 +32,7 @@ from apps.actualites.models import (
     ActualiteImage,
     ActualitesPage,
 )
-from apps.boutique.models import BoutiquePage, Produit
+from apps.boutique.models import BoutiquePage, Commande, Produit
 from apps.carnet.models import Billet, BilletImageContenu
 from apps.contact.models import (
     ContactPage,
@@ -686,6 +686,72 @@ def message_detail(request, pk):
         "commande_montant": commande_montant,
         "commande_value": Message.SUJET_COMMANDE,
         "livraison_domicile": Message.LIVRAISON_DOMICILE,
+    })
+
+
+# ---- Commandes (boutique) ----------------------------------------------------
+
+COMMANDES_FILTRES = {"a-traiter", "payees", "archives"}
+
+
+@gestion_required
+def commandes_liste(request):
+    show = request.GET.get("filtre", "a-traiter")
+    if show not in COMMANDES_FILTRES:
+        show = "a-traiter"
+    qs = Commande.objects.all()
+    if show == "a-traiter":
+        qs = qs.filter(archive=False).exclude(statut=Commande.STATUT_PAYE)
+    elif show == "payees":
+        qs = qs.filter(archive=False, statut=Commande.STATUT_PAYE)
+    elif show == "archives":
+        qs = qs.filter(archive=True)
+    return render(request, "gestion/commandes/list.html", {
+        "commandes_list": qs,
+        "filtre": show,
+    })
+
+
+@gestion_required
+def commande_detail(request, pk):
+    commande = get_object_or_404(Commande, pk=pk)
+    action = request.POST.get("action") if request.method == "POST" else None
+    if action == "marquer_paye":
+        commande.statut = Commande.STATUT_PAYE
+        commande.lu = True
+        commande.save(update_fields=["statut", "lu"])
+        messages.success(request, "Commande marquée comme payée.")
+        return redirect("gestion:commande_detail", pk=commande.pk)
+    if action == "marquer_non_lu":
+        commande.lu = False
+        commande.save(update_fields=["lu"])
+        messages.success(request, "Commande marquée comme non lue.")
+        # Retour à la liste, sinon l'auto-mark-read ci-dessous annule le changement.
+        return redirect("gestion:commandes_liste")
+    if action == "archiver":
+        commande.archive = True
+        commande.lu = True
+        commande.save(update_fields=["archive", "lu"])
+        messages.success(request, "Commande archivée.")
+        return redirect("gestion:commandes_liste")
+    if action == "desarchiver":
+        commande.archive = False
+        commande.save(update_fields=["archive"])
+        return redirect("gestion:commande_detail", pk=commande.pk)
+    if action == "supprimer":
+        commande.delete()
+        messages.success(request, "Commande supprimée.")
+        return redirect("gestion:commandes_liste")
+
+    # Lecture d'une commande : marquage auto comme lue (mute-on-GET assumé, même
+    # dérogation idempotente que message_detail).
+    if not commande.lu:
+        commande.lu = True
+        commande.save(update_fields=["lu"])
+
+    return render(request, "gestion/commandes/detail.html", {
+        "commande": commande,
+        "livraison_domicile": Commande.LIVRAISON_DOMICILE,
     })
 
 

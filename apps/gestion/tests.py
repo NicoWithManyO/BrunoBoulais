@@ -6,7 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from apps.boutique.models import Produit
+from apps.boutique.models import Commande, LigneCommande, Produit
 from apps.carnet.models import Billet, BilletImageContenu
 from apps.contact.models import PRODUIT_LIVRE, Message
 
@@ -201,3 +201,94 @@ class ProduitCrudTests(TestCase):
         self.assertEqual(resp.status_code, 302)
         self.assertFalse(Produit.objects.filter(pk=produit.pk).exists())
         self.assertFalse(storage.exists(name))
+
+
+@override_settings(STORAGES={
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+})
+class CommandeGestionTests(TestCase):
+    """Gestion des commandes : filtres de liste, marquage payé/archive, badge non-lues."""
+
+    def setUp(self):
+        user = get_user_model().objects.create_user("staff", is_staff=True)
+        self.client.force_login(user)
+
+    def _commande(self, **overrides):
+        defaults = {
+            "nom": "Alice", "email": "a@b.fr",
+            "mode_livraison": Commande.LIVRAISON_DOMICILE,
+            "adresse_postale": "1 rue X, 40000 Ville",
+            "mode_paiement": Commande.PAIEMENT_CHEQUE,
+            "montant_articles_cents": 4000, "frais_port_cents": 749,
+            "montant_total_cents": 4749,
+            "statut": Commande.STATUT_EN_ATTENTE_REGLEMENT,
+        }
+        defaults.update(overrides)
+        commande = Commande.objects.create(**defaults)
+        LigneCommande.objects.create(
+            commande=commande, libelle="Livre", prix_unitaire_cents=2000, quantite=2,
+        )
+        return commande
+
+    def test_liste_a_traiter_exclut_payees_et_archives(self):
+        a_traiter = self._commande()
+        payee = self._commande(statut=Commande.STATUT_PAYE)
+        archivee = self._commande(archive=True)
+        body = self.client.get(reverse("gestion:commandes_liste")).content.decode()
+        self.assertIn(a_traiter.reference_commande, body)
+        self.assertNotIn(payee.reference_commande, body)
+        self.assertNotIn(archivee.reference_commande, body)
+
+    def test_liste_payees(self):
+        a_traiter = self._commande()
+        payee = self._commande(statut=Commande.STATUT_PAYE)
+        body = self.client.get(
+            reverse("gestion:commandes_liste"), {"filtre": "payees"}
+        ).content.decode()
+        self.assertIn(payee.reference_commande, body)
+        self.assertNotIn(a_traiter.reference_commande, body)
+
+    def test_liste_archives(self):
+        vivante = self._commande()
+        archivee = self._commande(archive=True)
+        body = self.client.get(
+            reverse("gestion:commandes_liste"), {"filtre": "archives"}
+        ).content.decode()
+        self.assertIn(archivee.reference_commande, body)
+        self.assertNotIn(vivante.reference_commande, body)
+
+    def test_detail_marque_lu_au_get(self):
+        commande = self._commande()
+        self.assertFalse(commande.lu)
+        self.client.get(reverse("gestion:commande_detail", args=[commande.pk]))
+        commande.refresh_from_db()
+        self.assertTrue(commande.lu)
+
+    def test_marquer_paye(self):
+        commande = self._commande()
+        resp = self.client.post(
+            reverse("gestion:commande_detail", args=[commande.pk]),
+            {"action": "marquer_paye"},
+        )
+        self.assertEqual(resp.status_code, 302)
+        commande.refresh_from_db()
+        self.assertEqual(commande.statut, Commande.STATUT_PAYE)
+        self.assertTrue(commande.paye)
+
+    def test_archiver(self):
+        commande = self._commande()
+        resp = self.client.post(
+            reverse("gestion:commande_detail", args=[commande.pk]),
+            {"action": "archiver"},
+        )
+        self.assertEqual(resp.status_code, 302)
+        commande.refresh_from_db()
+        self.assertTrue(commande.archive)
+
+    def test_unread_commandes_count_dans_le_contexte(self):
+        self._commande()  # non lue, non archivée
+        self._commande(lu=True)
+        self._commande(archive=True)
+        resp = self.client.get(reverse("gestion:commandes_liste"))
+        self.assertEqual(resp.context["unread_commandes_count"], 1)

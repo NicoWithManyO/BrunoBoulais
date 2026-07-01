@@ -1,0 +1,113 @@
+{% extends "gestion/_layout.html" %}
+{% load boutique_extras %}
+
+{% block title %}Commande {{ commande.reference_commande }} · Gestion{% endblock %}
+{% block crumb %}Commandes{% endblock %}
+{% block heading %}Commande {{ commande.reference_commande }}{% endblock %}
+
+{% block header_actions %}
+    <a href="{% url 'gestion:commandes_liste' %}" class="btn-sm btn-ghost">← Commandes</a>
+{% endblock %}
+
+{% block content %}
+<div class="panel max-w-3xl">
+    <div class="flex items-start justify-between gap-6 pb-4 border-b border-mist-light">
+        <div>
+            <div class="font-medium text-brown text-lg">{{ commande.nom }}</div>
+            <a href="mailto:{{ commande.email }}" class="text-sm text-terracotta-deep">{{ commande.email }}</a>
+            {% if commande.telephone %}<div class="text-sm text-slate-soft">{{ commande.telephone }}</div>{% endif %}
+            {% if commande.adresse_postale %}
+            <div class="text-xs text-slate uppercase tracking-widest mt-3">Adresse postale de destination</div>
+            <div class="text-sm text-slate-soft whitespace-pre-line">{{ commande.adresse_postale }}</div>
+            {% endif %}
+        </div>
+        <time class="text-xs text-slate-soft">{{ commande.created_at|date:"l j F Y · H:i" }}</time>
+    </div>
+
+    <div class="mt-6 rounded-md border border-mist-light bg-cream/40 p-4">
+        <div class="flex items-center justify-between gap-4 pb-3 mb-3 border-b border-mist-light">
+            <span class="text-xs uppercase tracking-widest text-slate">Détail</span>
+            {% if commande.paye %}
+            <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-800">🟢 Payé</span>
+            {% else %}
+            <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">🟠 {{ commande.get_statut_display }}</span>
+            {% endif %}
+        </div>
+
+        <table class="w-full text-sm mb-4">
+            <thead>
+                <tr class="text-slate-soft text-left">
+                    <th class="font-normal pb-1">Article</th>
+                    <th class="font-normal pb-1 text-right">Qté</th>
+                    <th class="font-normal pb-1 text-right">Prix unitaire</th>
+                    <th class="font-normal pb-1 text-right">Sous-total</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for ligne in commande.lignes.all %}
+                <tr>
+                    <td class="py-1 text-ink">{{ ligne.libelle }}</td>
+                    <td class="py-1 text-right">{{ ligne.quantite }}</td>
+                    <td class="py-1 text-right">{{ ligne.prix_unitaire_cents|euros }}</td>
+                    <td class="py-1 text-right">{{ ligne.sous_total_cents|euros }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <dl class="grid grid-cols-[auto,1fr] gap-x-6 gap-y-1.5 text-sm">
+            <dt class="text-slate-soft">Articles</dt>
+            <dd class="text-ink">{{ commande.montant_articles_cents|euros }}</dd>
+
+            <dt class="text-slate-soft">Frais de port</dt>
+            <dd class="text-ink">{{ commande.frais_port_cents|euros }}</dd>
+
+            <dt class="text-slate-soft font-medium">Total</dt>
+            <dd class="text-ink font-medium">{{ commande.montant_total_cents|euros }}</dd>
+
+            {% if commande.mode_livraison %}
+            <dt class="text-slate-soft">Livraison</dt>
+            <dd class="text-ink">
+                {{ commande.get_mode_livraison_display }}
+                {% if commande.mode_livraison == livraison_domicile %}
+                — <span class="whitespace-pre-line">{{ commande.adresse_postale|default:"(adresse manquante)" }}</span>
+                {% elif commande.point_relais_libelle %}
+                — {{ commande.point_relais_libelle }} (ID {{ commande.point_relais_id|default:"—" }})
+                {% endif %}
+            </dd>
+            {% endif %}
+
+            <dt class="text-slate-soft">Dédicace</dt>
+            <dd class="text-ink">{% if commande.dedicace %}Oui{% if commande.prenom_dedicace %} — prénom : {{ commande.prenom_dedicace }}{% endif %}{% else %}Non{% endif %}</dd>
+
+            <dt class="text-slate-soft">Paiement</dt>
+            <dd class="text-ink">{{ commande.get_mode_paiement_display }}</dd>
+
+            {% if not commande.notified %}
+            <dt class="text-terracotta-deep">Notification</dt>
+            <dd class="text-terracotta-deep">Email non envoyé — à traiter manuellement</dd>
+            {% endif %}
+        </dl>
+    </div>
+
+    <form method="post" class="flex flex-wrap items-center gap-2 pt-4 mt-6 border-t border-mist-light">
+        {% csrf_token %}
+        <a href="mailto:{{ commande.email }}?subject=Re:%20Commande%20{{ commande.reference_commande }}" class="btn-sm btn-primary">↳ Répondre par mail</a>
+
+        {% if not commande.paye %}
+        <button name="action" value="marquer_paye" class="btn-sm btn-ghost">Marquer payé</button>
+        {% endif %}
+
+        <button name="action" value="marquer_non_lu" class="btn-sm btn-ghost">Marquer non lu</button>
+
+        {% if commande.archive %}
+        <button name="action" value="desarchiver" class="btn-sm btn-ghost">Désarchiver</button>
+        {% else %}
+        <button name="action" value="archiver" class="btn-sm btn-ghost">Archiver</button>
+        {% endif %}
+
+        <button name="action" value="supprimer" class="btn-sm btn-danger ml-auto"
+                onclick="return confirm('Supprimer définitivement cette commande ?');">Supprimer</button>
+    </form>
+</div>
+{% endblock %}

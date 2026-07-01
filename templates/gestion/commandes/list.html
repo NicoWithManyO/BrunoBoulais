@@ -1,0 +1,64 @@
+{% extends "gestion/_layout.html" %}
+{% load boutique_extras %}
+
+{% block title %}Commandes · Gestion{% endblock %}
+{% block crumb %}Boîte de réception{% endblock %}
+{% block heading %}Commandes{% endblock %}
+
+{% block content %}
+
+<nav class="flex items-center gap-1 mb-6 text-sm">
+    {% url 'gestion:commandes_liste' as base %}
+    <a href="{{ base }}?filtre=a-traiter"
+       class="px-3 py-1.5 {% if filtre == 'a-traiter' %}bg-sand text-brown{% else %}text-slate hover:text-brown{% endif %} rounded-sm">À traiter</a>
+    <a href="{{ base }}?filtre=payees"
+       class="px-3 py-1.5 {% if filtre == 'payees' %}bg-sand text-brown{% else %}text-slate hover:text-brown{% endif %} rounded-sm">Payées</a>
+    <a href="{{ base }}?filtre=archives"
+       class="px-3 py-1.5 {% if filtre == 'archives' %}bg-sand text-brown{% else %}text-slate hover:text-brown{% endif %} rounded-sm">Archives</a>
+</nav>
+
+<div class="panel-flat">
+<table class="table-admin">
+    <thead>
+        <tr>
+            <th>Référence</th>
+            <th>Client</th>
+            <th>Total</th>
+            <th>Statut</th>
+            <th>Reçue</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for c in commandes_list %}
+        <tr class="{% if not c.lu %}is-unread{% endif %}">
+            <td class="text-xs whitespace-nowrap">
+                <div class="flex items-center gap-2">
+                    {% if not c.lu %}<span class="w-1.5 h-1.5 rounded-full bg-terracotta inline-block"></span>{% endif %}
+                    <a href="{% url 'gestion:commande_detail' c.pk %}" class="font-medium text-brown no-underline hover:text-terracotta">{{ c.reference_commande }}</a>
+                </div>
+            </td>
+            <td>
+                <div class="font-medium text-brown">{{ c.nom }}</div>
+                <p class="text-xs text-slate-soft">{{ c.email }}</p>
+            </td>
+            <td class="text-xs whitespace-nowrap">{{ c.montant_total_cents|euros }}</td>
+            <td class="text-xs whitespace-nowrap">
+                {% if c.paye %}
+                <span class="inline-block px-1.5 py-0.5 rounded-full bg-green-100 text-green-800">🟢 Payé</span>
+                {% else %}
+                <span class="inline-block px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800">🟠 En attente</span>
+                {% endif %}
+            </td>
+            <td class="text-xs whitespace-nowrap">{{ c.created_at|date:"d M Y H:i" }}</td>
+            <td class="text-right">
+                <a href="{% url 'gestion:commande_detail' c.pk %}" class="btn-sm btn-ghost">Voir</a>
+            </td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="6" class="text-center text-slate-soft italic py-12">Aucune commande.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

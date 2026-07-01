@@ -1,4 +1,5 @@
 """Context processors for the unread-message count (gestion badge + navbar hat)."""
+from apps.boutique.models import Commande
 from apps.contact.models import Message
 
 
@@ -13,4 +14,5 @@ def gestion_context(request):
         return {}
     return {
         "unread_messages_count": Message.objects.filter(lu=False, archive=False).count(),
+        "unread_commandes_count": Commande.objects.filter(lu=False, archive=False).count(),
     }
