@@ -1,3 +1,6 @@
+from unittest.mock import patch
+
+import stripe
 from django.contrib.sessions.backends.cache import SessionStore
 from django.core import mail
 from django.core.cache import cache
@@ -164,11 +167,105 @@ class CommandeCheckoutTests(TestCase):
         self.assertEqual(Commande.objects.count(), 0)
         self.assertEqual(len(mail.outbox), 0)
 
-    def test_cb_non_propose_dans_le_formulaire(self):
+    def test_commande_cb_cree_commande_et_redirige_vers_paiement(self):
         self._remplir_chapeau()
         response = self.client.post(
             reverse("boutique:commande"),
             data=self._data(mode_paiement=Commande.PAIEMENT_CB),
         )
+        commande = Commande.objects.get()
+        # Commande en attente de paiement, chapeau conservé, aucun mail avant Stripe.
+        self.assertEqual(commande.statut, Commande.STATUT_EN_ATTENTE_PAIEMENT)
+        self.assertRedirects(
+            response,
+            reverse("boutique:paiement_cb", args=[commande.pk]),
+            fetch_redirect_response=False,
+        )
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertNotEqual(self.client.session.get("chapeau"), {})
+
+
+class StripePaiementTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.client = Client()
+        self.commande = Commande.objects.create(
+            nom="Alice",
+            email="alice@example.com",
+            mode_paiement=Commande.PAIEMENT_CB,
+            montant_articles_cents=2000,
+            frais_port_cents=749,
+            montant_total_cents=2749,
+            statut=Commande.STATUT_EN_ATTENTE_PAIEMENT,
+        )
+        LigneCommande.objects.create(
+            commande=self.commande, libelle="Livre", prix_unitaire_cents=2000, quantite=1
+        )
+
+    def test_paiement_cb_cree_session_et_redirige_303(self):
+        session = type("S", (), {"id": "cs_test_123", "url": "https://checkout.stripe.com/pay/cs_test_123"})()
+        with patch("apps.boutique.views.creer_session_checkout", return_value=session) as mock:
+            response = self.client.get(reverse("boutique:paiement_cb", args=[self.commande.pk]))
+        mock.assert_called_once()
+        self.assertEqual(response.status_code, 303)
+        self.assertEqual(response["Location"], session.url)
+        self.commande.refresh_from_db()
+        self.assertEqual(self.commande.stripe_session_id, "cs_test_123")
+
+    def test_paiement_cb_deja_paye_redirige_merci(self):
+        self.commande.statut = Commande.STATUT_PAYE
+        self.commande.save()
+        response = self.client.get(reverse("boutique:paiement_cb", args=[self.commande.pk]))
+        self.assertRedirects(response, reverse("boutique:merci"), fetch_redirect_response=False)
+
+    def _event(self, **session_overrides):
+        session = {"payment_status": "paid", "metadata": {"commande_id": str(self.commande.pk)}}
+        session.update(session_overrides)
+        return {"type": "checkout.session.completed", "data": {"object": session}}
+
+    def _post_webhook(self, event):
+        with patch("apps.boutique.views.stripe.Webhook.construct_event", return_value=event):
+            return self.client.post(
+                reverse("boutique:webhook_stripe"),
+                data=b"{}",
+                content_type="application/json",
+                HTTP_STRIPE_SIGNATURE="sig",
+            )
+
+    def test_webhook_completed_passe_paye_et_notifie(self):
+        response = self._post_webhook(self._event())
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(Commande.objects.count(), 0)
+        self.commande.refresh_from_db()
+        self.assertEqual(self.commande.statut, Commande.STATUT_PAYE)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["boulaisbruno@free.fr"])
+        self.assertIn(self.commande.reference_commande, mail.outbox[0].body)
+
+    def test_webhook_idempotent_ne_renotifie_pas(self):
+        self._post_webhook(self._event())
+        self._post_webhook(self._event())
+        self.commande.refresh_from_db()
+        self.assertEqual(self.commande.statut, Commande.STATUT_PAYE)
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_webhook_non_paye_ignore(self):
+        response = self._post_webhook(self._event(payment_status="unpaid"))
+        self.assertEqual(response.status_code, 200)
+        self.commande.refresh_from_db()
+        self.assertEqual(self.commande.statut, Commande.STATUT_EN_ATTENTE_PAIEMENT)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_webhook_signature_invalide_400(self):
+        with patch(
+            "apps.boutique.views.stripe.Webhook.construct_event",
+            side_effect=stripe.error.SignatureVerificationError("bad", "sig"),
+        ):
+            response = self.client.post(
+                reverse("boutique:webhook_stripe"),
+                data=b"{}",
+                content_type="application/json",
+                HTTP_STRIPE_SIGNATURE="bad",
+            )
+        self.assertEqual(response.status_code, 400)
+        self.commande.refresh_from_db()
+        self.assertEqual(self.commande.statut, Commande.STATUT_EN_ATTENTE_PAIEMENT)

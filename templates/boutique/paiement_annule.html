@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Paiement non abouti — {{ SITE_NAME }}{% endblock %}
+{% block description %}Votre paiement par carte n'a pas été finalisé.{% endblock %}
+
+{% block content %}
+
+<section class="container-prose py-20 text-center">
+    <p class="eyebrow">Paiement interrompu</p>
+    <h1 class="title-display mt-4 text-4xl md:text-5xl">Paiement non abouti</h1>
+
+    <p class="mt-6 text-ink/80 leading-relaxed">
+        Votre paiement par carte n'a pas été finalisé. Rien n'a été débité et les
+        articles sont toujours dans votre chapeau.
+    </p>
+
+    <div class="mt-10 flex flex-wrap gap-3 justify-center">
+        {% if commande and not commande.paye %}
+        <a href="{% url 'boutique:paiement_cb' commande.pk %}" class="btn btn-primary">Réessayer le paiement</a>
+        {% endif %}
+        <a href="{% url 'boutique:chapeau' %}" class="btn btn-ghost">Revenir à mon chapeau</a>
+    </div>
+</section>
+{% endblock %}

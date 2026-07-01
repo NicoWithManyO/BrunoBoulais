@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load boutique_extras %}
+
+{% block title %}Paiement reçu — {{ SITE_NAME }}{% endblock %}
+{% block description %}Votre paiement par carte bancaire a bien été reçu.{% endblock %}
+
+{% block content %}
+
+<section class="container-prose py-20 text-center">
+    <p class="eyebrow">Merci !</p>
+    <h1 class="title-display mt-4 text-4xl md:text-5xl">Paiement reçu</h1>
+
+    {% if commande %}
+    <p class="mt-6 text-ink/80 leading-relaxed">
+        Votre commande <strong>{{ commande.reference_commande }}</strong>,
+        d'un montant de <strong>{{ commande.montant_total_cents|euros }}</strong>,
+        est en cours de confirmation. Vous recevrez un mot de moi très vite.
+    </p>
+    {% else %}
+    <p class="mt-6 text-ink/80 leading-relaxed">
+        Votre paiement est en cours de confirmation. Je vous recontacte rapidement.
+    </p>
+    {% endif %}
+
+    <div class="mt-10">
+        <a href="{% url 'boutique:liste' %}" class="btn btn-primary">Retour à la boutique</a>
+    </div>
+</section>
+{% endblock %}

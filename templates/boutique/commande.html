@@ -108,6 +108,11 @@
             </label>
             {{ form.mode_paiement }}
 
+            {# Carte bancaire : redirection vers le paiement sécurisé Stripe #}
+            <div data-paiement-panel="{{ paiement_cb }}" class="mt-4 text-ink/80 leading-relaxed"{% if form.mode_paiement.value != paiement_cb %} hidden{% endif %}>
+                <p>Après validation, vous serez redirigé vers le paiement sécurisé par carte bancaire.</p>
+            </div>
+
             {# Chèque : envoi postal à l'auteur #}
             <div data-paiement-panel="{{ paiement_cheque }}" class="mt-4 text-ink/80 leading-relaxed"{% if form.mode_paiement.value != paiement_cheque %} hidden{% endif %}>
                 <p>Pour payer par chèque, merci de me l'envoyer à l'adresse suivante&nbsp;:<br>

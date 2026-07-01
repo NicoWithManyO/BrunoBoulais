@@ -13,4 +13,8 @@ urlpatterns = [
     path("chapeau/vider/", views.chapeau_vider, name="chapeau_vider"),
     path("commande/", views.commande, name="commande"),
     path("merci/", views.merci, name="merci"),
+    path("paiement/cb/<int:pk>/", views.paiement_cb, name="paiement_cb"),
+    path("paiement/success/", views.paiement_success, name="paiement_success"),
+    path("paiement/annule/", views.paiement_annule, name="paiement_annule"),
+    path("webhook/stripe/", views.webhook_stripe, name="webhook_stripe"),
 ]

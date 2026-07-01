@@ -2,14 +2,6 @@ from django import forms
 
 from .models import Commande
 
-# CB (Stripe) branchée à l'étape suivante : pour l'instant on n'expose que les
-# modes de paiement réglables à la main (chèque/virement).
-_PAIEMENT_CHOICES_HORS_CB = [
-    (valeur, libelle)
-    for valeur, libelle in Commande.PAIEMENT_CHOICES
-    if valeur != Commande.PAIEMENT_CB
-]
-
 
 class CommandeForm(forms.ModelForm):
     """Coordonnées + livraison + paiement de la commande passée depuis le chapeau.
@@ -56,7 +48,7 @@ class CommandeForm(forms.ModelForm):
         ]
         self.fields["mode_paiement"].choices = [
             ("", "Sélectionner un mode de paiement"),
-            *_PAIEMENT_CHOICES_HORS_CB,
+            *Commande.PAIEMENT_CHOICES,
         ]
 
     def clean_website(self):

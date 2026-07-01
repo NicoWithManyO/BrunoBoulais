@@ -1,7 +1,11 @@
+import logging
 import math
 
+import stripe
 from django.conf import settings
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from apps.core.ratelimit import bucket_usage, log_ip_unresolved_dedup, ratelimit_bucket
@@ -11,6 +15,9 @@ from .cart import Chapeau
 from .forms import CommandeForm
 from .models import BoutiquePage, Commande, LigneCommande, Produit
 from .pricing import frais_port_cents, montant_euros
+from .stripe_checkout import creer_session_checkout
+
+logger = logging.getLogger(__name__)
 
 # Rate-limit : 5 POST/heure par bucket IP (helpers partagés dans apps.core.ratelimit).
 _RL_GROUP = "boutique:commande"
@@ -88,8 +95,12 @@ def _creer_commande(form, chapeau):
     commande.montant_articles_cents = articles
     commande.frais_port_cents = port
     commande.montant_total_cents = articles + port
-    # Chèque/virement : Bruno encaisse à la main puis marque payé en gestion.
-    commande.statut = Commande.STATUT_EN_ATTENTE_REGLEMENT
+    if commande.mode_paiement == Commande.PAIEMENT_CB:
+        # CB : le webhook Stripe passera la commande à « payé » (source de vérité).
+        commande.statut = Commande.STATUT_EN_ATTENTE_PAIEMENT
+    else:
+        # Chèque/virement : Bruno encaisse à la main puis marque payé en gestion.
+        commande.statut = Commande.STATUT_EN_ATTENTE_REGLEMENT
     commande.save()
     LigneCommande.objects.bulk_create(
         [
@@ -141,6 +152,10 @@ def commande(request):
                 else:
                     obj = _creer_commande(form, chapeau)
                     bucket_usage(request, bucket, group=_RL_GROUP, rate=_RL_RATE, increment=True)
+                    if obj.mode_paiement == Commande.PAIEMENT_CB:
+                        # CB : on part vers Stripe. Ni notif ni vidage du chapeau
+                        # ici — le webhook confirmera, le retour success videra.
+                        return redirect("boutique:paiement_cb", pk=obj.pk)
                     obj.notify()
                     chapeau.clear()
                     request.session["commande_ref"] = obj.pk
@@ -162,6 +177,7 @@ def commande(request):
             },
             "livraison_point_relais": Commande.LIVRAISON_POINT_RELAIS,
             "livraison_domicile": Commande.LIVRAISON_DOMICILE,
+            "paiement_cb": Commande.PAIEMENT_CB,
             "paiement_cheque": Commande.PAIEMENT_CHEQUE,
             "paiement_virement": Commande.PAIEMENT_VIREMENT,
             "mondial_relay_brand": settings.MONDIAL_RELAY_BRAND,
@@ -199,3 +215,88 @@ def merci(request):
             **seo(request, title="Commande enregistrée · Bruno Boulais"),
         },
     )
+
+
+def paiement_cb(request, pk):
+    """Crée la Session Stripe et redirige (303) vers checkout.stripe.com.
+
+    Vue rejouable : après annulation, le lien « réessayer » y revient et crée
+    une nouvelle session pour la même commande, sans doublon en base.
+    """
+    commande = get_object_or_404(Commande, pk=pk)
+    if commande.paye:
+        return redirect("boutique:merci")
+    try:
+        session = creer_session_checkout(commande, request)
+    except Exception:
+        logger.exception(
+            "Boutique: échec de création de la session Stripe pour la commande %s.",
+            commande.reference_commande,
+        )
+        return redirect("boutique:paiement_annule")
+    commande.stripe_session_id = session.id
+    commande.save(update_fields=["stripe_session_id"])
+    request.session["commande_ref"] = commande.pk
+    # 303 : la commande a été soumise en POST, la redirection GET vers Stripe
+    # est bien une autre ressource (recommandation Stripe pour Checkout).
+    response = redirect(session.url)
+    response.status_code = 303
+    return response
+
+
+def paiement_success(request):
+    # Retour Stripe après paiement. La confirmation réelle vient du webhook ;
+    # ici on rassure l'utilisateur et on vide le chapeau.
+    ref = request.session.pop("commande_ref", None)
+    commande = Commande.objects.filter(pk=ref).first() if ref else None
+    Chapeau(request).clear()
+    return render(
+        request,
+        "boutique/paiement_success.html",
+        {
+            "commande": commande,
+            **seo(request, title="Paiement reçu · Bruno Boulais"),
+        },
+    )
+
+
+def paiement_annule(request):
+    # Retour Stripe sans paiement (annulation ou échec technique). Chapeau
+    # conservé ; on propose de réessayer la CB sur la même commande.
+    ref = request.session.get("commande_ref")
+    commande = Commande.objects.filter(pk=ref).first() if ref else None
+    return render(
+        request,
+        "boutique/paiement_annule.html",
+        {
+            "commande": commande,
+            **seo(request, title="Paiement non abouti · Bruno Boulais"),
+        },
+    )
+
+
+@csrf_exempt
+@require_POST
+def webhook_stripe(request):
+    """Source de vérité du paiement CB. Vérifie la signature puis, sur
+    ``checkout.session.completed`` payé, passe la commande à « payé » et notifie
+    Bruno. Idempotent : un rejeu ne re-notifie pas une commande déjà payée.
+    """
+    try:
+        event = stripe.Webhook.construct_event(
+            request.body,
+            request.META.get("HTTP_STRIPE_SIGNATURE", ""),
+            settings.STRIPE_WEBHOOK_SECRET,
+        )
+    except (ValueError, stripe.error.SignatureVerificationError):
+        return HttpResponse(status=400)
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        if session.get("payment_status") == "paid":
+            commande_id = (session.get("metadata") or {}).get("commande_id")
+            commande = Commande.objects.filter(pk=commande_id).first()
+            if commande and not commande.paye:
+                commande.statut = Commande.STATUT_PAYE
+                commande.save(update_fields=["statut"])
+                commande.notify()
+    return HttpResponse(status=200)
