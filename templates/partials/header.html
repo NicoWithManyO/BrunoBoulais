@@ -39,16 +39,6 @@
         </nav>
 
         <div class="flex items-center gap-3">
-            <a href="{% url 'boutique:chapeau' %}"
-               class="relative inline-flex items-center justify-center p-2 text-brown hover:text-terracotta transition-colors"
-               aria-label="Mon chapeau{% if chapeau_count %} ({{ chapeau_count }} article{{ chapeau_count|pluralize }}){% endif %}"
-               title="Mon chapeau">
-                {# Chapeau : un panier qui ne dit pas son nom (clin d'œil quête au chapeau). #}
-                <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h18M5 18c0-2 1-9 7-9s7 7 7 9"/><ellipse cx="12" cy="18" rx="9" ry="2"/></svg>
-                {% if chapeau_count %}
-                <span class="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[1.1rem] h-[1.1rem] px-1 text-[10px] font-sans bg-terracotta text-cream rounded-full">{{ chapeau_count }}</span>
-                {% endif %}
-            </a>
             <a href="{% url 'contact:form' %}" class="btn btn-primary hidden lg:inline-flex whitespace-nowrap">
                 Contact
                 <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
@@ -106,7 +96,6 @@
                 <a href="{% url 'galerie:liste' %}"    class="nav-link-mobile {% if 'galerie' in request.path %}is-active{% endif %}">Galerie</a>
                 <a href="{% url 'discotheque:liste' %}" class="nav-link-mobile {% if 'discotheque' in request.path %}is-active{% endif %}">Discothèque</a>
                 <a href="{% url 'boutique:liste' %}"    class="nav-link-mobile {% if 'boutique' in request.path %}is-active{% endif %}">Boutique</a>
-                <a href="{% url 'boutique:chapeau' %}"  class="nav-link-mobile {% if 'chapeau' in request.path %}is-active{% endif %}">Mon chapeau{% if chapeau_count %} ({{ chapeau_count }}){% endif %}</a>
             </nav>
 
             <div class="px-6 py-6 border-t border-mist/40">
