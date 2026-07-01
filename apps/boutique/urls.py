@@ -11,4 +11,6 @@ urlpatterns = [
     path("chapeau/modifier/<int:pk>/", views.chapeau_modifier, name="chapeau_modifier"),
     path("chapeau/retirer/<int:pk>/", views.chapeau_retirer, name="chapeau_retirer"),
     path("chapeau/vider/", views.chapeau_vider, name="chapeau_vider"),
+    path("commande/", views.commande, name="commande"),
+    path("merci/", views.merci, name="merci"),
 ]

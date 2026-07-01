@@ -1,0 +1,77 @@
+{% load static %}
+{# Widget point relais Mondial Relay. Attend `form.point_relais_id` /
+   `form.point_relais_libelle` (HiddenInput) et `mondial_relay_brand` au contexte.
+   Expose `window.initMrWidget()` : init paresseuse et idempotente, à appeler quand
+   le bloc devient visible (sinon la carte Leaflet se rend avec une taille nulle). #}
+<div data-livraison-relais aria-live="polite" hidden>
+    <span class="field-label">Choisissez votre point de retrait</span>
+    {{ form.point_relais_id }}
+    {{ form.point_relais_libelle }}
+    <div id="mr-widget" class="mt-2 rounded-md border border-mist-light" style="min-height:420px"></div>
+    <p data-mr-selected class="mt-2 text-sm text-ink/80" hidden></p>
+</div>
+
+<link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
+<script src="{% static 'vendor/jquery.min.js' %}"></script>
+<script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
+<script src="https://widget.mondialrelay.com/parcelshop-picker/jquery.plugin.mondialrelay.parcelshoppicker.min.js"></script>
+<script>
+window.initMrWidget = (function () {
+    const mrWidget = document.getElementById('mr-widget');
+    const pointId = document.getElementById('{{ form.point_relais_id.id_for_label }}');
+    const pointLibelle = document.getElementById('{{ form.point_relais_libelle.id_for_label }}');
+    const mrSelected = document.querySelector('[data-mr-selected]');
+    const MR_BRAND = '{{ mondial_relay_brand|escapejs }}';
+
+    // Le compte de démonstration Mondial Relay (BDTEST) injecte une bannière
+    // « compte de démonstration » dans le widget. Le widget ne fournit aucune
+    // classe stable pour la cibler : on la repère par son texte et on masque le
+    // bloc qui la porte, scopé à #mr-widget. (Compte démo assumé : Mondial Relay
+    // ne délivre pas de code marque aux particuliers.)
+    const MR_DEMO_RE = /compte de d[ée]monstration/i;
+    function hideMrDemoNotice() {
+        mrWidget.querySelectorAll('div, p, span, td').forEach((el) => {
+            if (el.dataset.demoHidden || !MR_DEMO_RE.test(el.textContent || '')) return;
+            // On masque le plus petit bloc porteur (aucun enfant ne reporte le texte).
+            if (![...el.children].some((c) => MR_DEMO_RE.test(c.textContent || ''))) {
+                el.dataset.demoHidden = '1';
+                el.style.display = 'none';
+            }
+        });
+    }
+    const mrDemoObserver = new MutationObserver(hideMrDemoNotice);
+
+    let mrReady = false;
+    return function initMrWidget() {
+        if (mrReady || !mrWidget || typeof window.jQuery === 'undefined'
+            || !jQuery.fn.MR_ParcelShopPicker) return;
+        jQuery('#mr-widget').MR_ParcelShopPicker({
+            Target: '#{{ form.point_relais_id.id_for_label }}',
+            Brand: MR_BRAND,
+            Country: 'FR',
+            NbResults: '7',
+            Responsive: true,
+            ShowResultsOnMap: true,
+            OnParcelShopSelected: function (data) {
+                const adresse = [data.Adresse1, ((data.CP || '') + ' ' + (data.Ville || '')).trim()]
+                    .filter(Boolean).join(', ');
+                const libelle = [data.Nom, adresse].filter(Boolean).join(', ');
+                pointId.value = data.ID || '';
+                pointLibelle.value = libelle;
+                // Nom sur une ligne, adresse en dessous (nœuds texte = échappés).
+                mrSelected.replaceChildren(
+                    'Point sélectionné : ' + (data.Nom || ''),
+                    document.createElement('br'),
+                    adresse,
+                );
+                mrSelected.hidden = false;
+            },
+        });
+        mrReady = true;
+        // Le widget peuple/rafraîchit son DOM en asynchrone : on surveille les
+        // insertions pour masquer la bannière démo dès qu'elle apparaît.
+        mrDemoObserver.observe(mrWidget, { childList: true, subtree: true });
+        hideMrDemoNotice();
+    };
+})();
+</script>

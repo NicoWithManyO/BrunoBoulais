@@ -1,9 +1,11 @@
 from django.contrib.sessions.backends.cache import SessionStore
+from django.core import mail
 from django.core.cache import cache
-from django.test import TestCase
+from django.test import Client, TestCase
+from django.urls import reverse
 
 from .cart import Chapeau
-from .models import BoutiquePage, Produit
+from .models import BoutiquePage, Commande, LigneCommande, Produit
 
 
 class _FakeRequest:
@@ -87,3 +89,86 @@ class BoutiquePageSingletonTests(TestCase):
         page2 = BoutiquePage.get_solo()
         self.assertEqual(page1.pk, page2.pk)
         self.assertEqual(BoutiquePage.objects.count(), 1)
+
+
+class CommandeCheckoutTests(TestCase):
+    def setUp(self):
+        cache.clear()  # rate-limit en cache LocMem : isole les tests
+        self.client = Client()
+        self.livre = Produit.objects.create(nom="Livre", slug="livre", prix_cents=2000)
+        self.cd = Produit.objects.create(nom="CD", slug="cd", prix_cents=1500)
+
+    def _remplir_chapeau(self):
+        self.client.post(reverse("boutique:chapeau_ajouter", args=[self.livre.pk]))
+        self.client.post(reverse("boutique:chapeau_ajouter", args=[self.livre.pk]))
+        self.client.post(reverse("boutique:chapeau_ajouter", args=[self.cd.pk]))
+
+    def _data(self, **overrides):
+        data = {
+            "nom": "Alice",
+            "email": "alice@example.com",
+            "telephone": "0600000000",
+            "adresse_postale": "1 rue des Lilas, 40000 Mont-de-Marsan",
+            "mode_livraison": Commande.LIVRAISON_DOMICILE,
+            "mode_paiement": Commande.PAIEMENT_CHEQUE,
+            "website": "",
+        }
+        data.update(overrides)
+        return data
+
+    def test_chapeau_vide_redirige(self):
+        response = self.client.get(reverse("boutique:commande"))
+        self.assertRedirects(response, reverse("boutique:chapeau"))
+
+    def test_commande_valide_cree_commande_lignes_et_notifie(self):
+        self._remplir_chapeau()
+        response = self.client.post(reverse("boutique:commande"), data=self._data())
+        self.assertRedirects(response, reverse("boutique:merci"))
+
+        self.assertEqual(Commande.objects.count(), 1)
+        commande = Commande.objects.get()
+        self.assertEqual(commande.statut, Commande.STATUT_EN_ATTENTE_REGLEMENT)
+        # Montants : 2×2000 + 1×1500 = 5500 articles ; port domicile = 749.
+        self.assertEqual(commande.montant_articles_cents, 5500)
+        self.assertEqual(commande.frais_port_cents, 749)
+        self.assertEqual(commande.montant_total_cents, 6249)
+
+        # Snapshots des lignes (libellé + prix figés).
+        lignes = {l.libelle: l for l in commande.lignes.all()}
+        self.assertEqual(set(lignes), {"Livre", "CD"})
+        self.assertEqual(lignes["Livre"].quantite, 2)
+        self.assertEqual(lignes["Livre"].prix_unitaire_cents, 2000)
+        self.assertEqual(lignes["CD"].quantite, 1)
+
+        # Mail à Bruno uniquement.
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["boulaisbruno@free.fr"])
+        self.assertIn(commande.reference_commande, mail.outbox[0].body)
+
+        # Chapeau vidé après commande.
+        self.assertEqual(self.client.session.get("chapeau"), {})
+
+    def test_telephone_requis(self):
+        self._remplir_chapeau()
+        response = self.client.post(reverse("boutique:commande"), data=self._data(telephone=""))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Commande.objects.count(), 0)
+
+    def test_honeypot_redirige_merci_sans_commande(self):
+        self._remplir_chapeau()
+        response = self.client.post(
+            reverse("boutique:commande"),
+            data=self._data(website="http://spam.example"),
+        )
+        self.assertRedirects(response, reverse("boutique:merci"))
+        self.assertEqual(Commande.objects.count(), 0)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_cb_non_propose_dans_le_formulaire(self):
+        self._remplir_chapeau()
+        response = self.client.post(
+            reverse("boutique:commande"),
+            data=self._data(mode_paiement=Commande.PAIEMENT_CB),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Commande.objects.count(), 0)

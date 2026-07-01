@@ -1,7 +1,10 @@
+import logging
 import uuid
 
+from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
+from django.core.mail import EmailMessage
 from django.db import models
 from django.db.models import Case, IntegerField, Value, When
 
@@ -9,6 +12,8 @@ from apps.core.fields import RichTextField
 from apps.core.models import TimestampedModel
 from apps.core.uploads import boutique_upload_to
 from apps.core.validators import IMAGE_VALIDATORS
+
+logger = logging.getLogger(__name__)
 
 CACHE_KEY_BOUTIQUE_PAGE = "boutique_page"
 
@@ -170,6 +175,71 @@ class Commande(TimestampedModel):
     @property
     def paye(self):
         return self.statut == self.STATUT_PAYE
+
+    def notify(self):
+        """Envoie le récapitulatif de la commande à Bruno (lui seul).
+
+        Sur échec d'envoi, on persiste ``notified=False`` pour que la commande
+        remonte « à traiter » en gestion : la commande est déjà enregistrée
+        (source de vérité), on n'échoue pas la requête pour un mail.
+        """
+        # Import différé : pricing importe Commande (montant_euros vit là-bas).
+        from .pricing import montant_euros
+
+        lines = [
+            f"Réf. commande : {self.reference_commande}",
+            f"De : {self.nom} <{self.email}>",
+            f"Téléphone : {self.telephone or '—'}",
+            f"Adresse : {self.adresse_postale or '—'}",
+            "",
+            "Articles :",
+        ]
+        for ligne in self.lignes.all():
+            lines.append(
+                f"  {ligne.quantite} × {ligne.libelle} — {montant_euros(ligne.sous_total_cents)}"
+            )
+        lines += [
+            "",
+            f"Sous-total articles : {montant_euros(self.montant_articles_cents)}",
+            f"Frais de port ({self.get_mode_livraison_display() or '—'}) : "
+            f"{montant_euros(self.frais_port_cents)}",
+            f"Montant total : {montant_euros(self.montant_total_cents)}",
+            f"Paiement : {self.get_mode_paiement_display()}",
+            f"État : {self.get_statut_display()}",
+        ]
+        if self.mode_livraison == self.LIVRAISON_DOMICILE:
+            lines.append(f"Livraison : Domicile — {self.adresse_postale or '—'}")
+        elif self.mode_livraison:
+            point = self.point_relais_libelle or "(non précisé)"
+            lines.append(
+                f"Livraison : {self.get_mode_livraison_display()} — "
+                f"{point} (ID {self.point_relais_id or '—'})"
+            )
+        if self.dedicace:
+            prenom = f" (prénom : {self.prenom_dedicace})" if self.prenom_dedicace else ""
+            lines.append(f"Dédicace : oui{prenom}")
+        else:
+            lines.append("Dédicace : non")
+        email = EmailMessage(
+            subject=f"[jacques-bertin.manyo.dev] Commande {self.reference_commande} — {self.nom}",
+            body="\n".join(lines) + "\n",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[settings.CONTACT_EMAIL],
+            reply_to=[self.email],
+        )
+        try:
+            email.send(fail_silently=False)
+        except Exception:
+            self.notified = False
+            self.save(update_fields=["notified"])
+            logger.error(
+                "Boutique: commande %s de %s <%s> enregistrée mais notification "
+                "non envoyée — à traiter manuellement.",
+                self.reference_commande,
+                self.nom,
+                self.email,
+                exc_info=True,
+            )
 
 
 class LigneCommande(TimestampedModel):

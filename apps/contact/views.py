@@ -1,14 +1,11 @@
-import ipaddress
 import logging
 import math
 
 from django.conf import settings
-from django.core.cache import cache
 from django.shortcuts import redirect, render
 from django.urls import reverse
-from django_ratelimit.core import get_usage
 
-from apps.core.middleware import _client_ip
+from apps.core.ratelimit import bucket_usage, log_ip_unresolved_dedup, ratelimit_bucket
 from apps.core.seo import seo
 
 from .forms import CommandeForm
@@ -29,73 +26,10 @@ from .models import (
 
 logger = logging.getLogger(__name__)
 
-# Rate-limit : 5 POST/heure par bucket IP.
-# Implémentation : cache LocMem par défaut (per-worker). Pour que la limite
-# soit respectée, gunicorn doit tourner avec UN seul worker. Sinon le cap
-# effectif devient 5/h × N workers. Switch vers Redis si on a besoin de scaler.
-
-
-def _ratelimit_bucket(request):
-    """Bucket de rate-limit : IP client masquée /32 (IPv4) ou /64 (IPv6).
-
-    IPv6 est masqué à /64 pour empêcher la rotation des bits bas
-    (un /64 résidentiel donne 2^64 adresses sinon). IPv4-mapped IPv6
-    a déjà été normalisé en IPv4 par ``_client_ip`` (sinon le mask /64
-    sur ``::ffff:x.x.x.x`` retombe sur ``::`` et tous les attaquants
-    partagent un bucket unique).
-
-    Retourne ``None`` si l'IP est absente — le caller doit fail closed
-    dans ce cas. La string retournée par ``_client_ip`` est garantie
-    canoniquement parseable (cf docstring), donc pas de try/except ici.
-    """
-    ip_str = _client_ip(request)
-    if not ip_str:
-        return None
-    ip = ipaddress.ip_address(ip_str)
-    mask = 32 if isinstance(ip, ipaddress.IPv4Address) else 64
-    return str(ipaddress.ip_network(f"{ip}/{mask}", strict=False).network_address)
-
-
-def _bucket_usage(request, bucket, *, increment):
-    """Wrapper get_usage avec config view-spécifique (5/h, group).
-
-    ``increment=False`` lit le compteur sans bump (gating pré-save).
-    ``increment=True`` bump (post-save success, ou honeypot trip).
-
-    Retourne le dict {count, limit, should_limit, time_left} ou ``None``
-    si le rate-limit est désactivé / non applicable. Le caller compare
-    ``count >= limit`` (NB : ``should_limit = count > limit`` côté
-    django-ratelimit, donc pas utilisable avec le pattern check-then-bump
-    sans off-by-one).
-    """
-    return get_usage(
-        request=request,
-        group="contact:contact",
-        key=lambda g, r: bucket,
-        rate="5/h",
-        method="POST",
-        increment=increment,
-    )
-
-
-def _log_ip_unresolved_dedup(request):
-    """Log warning IP indéterminée, dédupliqué 5 min via cache.
-
-    Sans dédup, chaque POST sur ce path part en Sentry/PagerDuty : un
-    attaquant qui force REMOTE_ADDR vide peut spam la pile d'alerting.
-    Clé courte (pas par path) car on a une seule vue concernée.
-    """
-    # Clé namespacée par module pour éviter une collision si un autre helper
-    # (tests, autre vue) réutilise le préfixe "contact:" dans le futur.
-    log_key = "apps.contact.views:ip-unresolved-logged"
-    if cache.add(log_key, True, 300):
-        # %r (repr) échappe CR/LF dans request.path — Django décode les
-        # %-encoded chars de l'URL, donc %0A devient un newline littéral
-        # qui injecterait une fausse ligne dans la sortie console/SIEM.
-        logger.warning(
-            "Contact: IP client indéterminée, POST bloqué (path=%r)",
-            request.path,
-        )
+# Rate-limit : 5 POST/heure par bucket IP (helpers partagés dans apps.core.ratelimit).
+_RL_GROUP = "contact:contact"
+_RL_RATE = "5/h"
+_RL_LOG_KEY = "apps.contact.views:ip-unresolved-logged"
 
 
 def commande(request):
@@ -107,28 +41,28 @@ def commande(request):
         # Honeypot trip = bot. On burn le bucket (pénaliser) puis on redirect
         # /merci/ pour ne pas révéler qu'on a détecté le piège (anti-fingerprint).
         if (request.POST.get("website") or "").strip():
-            bucket = _ratelimit_bucket(request)
+            bucket = ratelimit_bucket(request)
             if bucket is None:
-                _log_ip_unresolved_dedup(request)
+                log_ip_unresolved_dedup(request, log_key=_RL_LOG_KEY, label="Contact")
             else:
-                _bucket_usage(request, bucket, increment=True)
+                bucket_usage(request, bucket, group=_RL_GROUP, rate=_RL_RATE, increment=True)
             # Purge d'une éventuelle commande résiduelle : le piège ne doit pas
             # réafficher le récap d'une commande précédente sur /merci/.
             request.session.pop("order_ref", None)
             return redirect(reverse("contact:merci"))
         if form.is_valid():
-            bucket = _ratelimit_bucket(request)
+            bucket = ratelimit_bucket(request)
             if bucket is None:
-                _log_ip_unresolved_dedup(request)
+                log_ip_unresolved_dedup(request, log_key=_RL_LOG_KEY, label="Contact")
                 ip_unresolved = True
             else:
-                usage = _bucket_usage(request, bucket, increment=False)
+                usage = bucket_usage(request, bucket, group=_RL_GROUP, rate=_RL_RATE, increment=False)
                 if usage is not None and usage["count"] >= usage["limit"]:
                     rate_limited = True
                     retry_after = max(1, math.ceil(usage["time_left"]))
                 else:
                     msg = form.save_and_notify()
-                    _bucket_usage(request, bucket, increment=True)
+                    bucket_usage(request, bucket, group=_RL_GROUP, rate=_RL_RATE, increment=True)
                     # Référence conservée pour afficher le récap + la consigne de
                     # paiement sur /merci/ (mode/quantité relus depuis le Message).
                     if msg.sujet == Message.SUJET_COMMANDE and msg.mode_paiement:

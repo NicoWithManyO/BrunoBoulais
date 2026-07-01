@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load boutique_extras %}
+
+{% block title %}Commande enregistrée — {{ SITE_NAME }}{% endblock %}
+{% block description %}Votre commande a bien été enregistrée.{% endblock %}
+
+{% block content %}
+
+<section class="container-prose py-20 text-center">
+    <p class="eyebrow">Merci !</p>
+    <h1 class="title-display mt-4 text-4xl md:text-5xl">Commande enregistrée</h1>
+
+    {% if commande %}
+    <p class="mt-6 text-ink/80 leading-relaxed">
+        Votre commande <strong>{{ commande.reference_commande }}</strong> est bien enregistrée,
+        d'un montant total de <strong>{{ commande.montant_total_cents|euros }}</strong>.
+        Je vous recontacte rapidement.
+    </p>
+
+    {% if commande.mode_paiement == paiement_cheque %}
+    <div class="mt-8 panel-flat text-left">
+        <p>Pour régler par chèque, merci de me l'envoyer à&nbsp;:<br>
+        Bruno BOULAIS — 22 Chemin Orossen — 40290 MISSON.<br>
+        <span class="text-sm text-slate-soft">Montant&nbsp;: {{ commande.montant_total_cents|euros }} — pensez à indiquer la référence {{ commande.reference_commande }}.</span></p>
+    </div>
+    {% elif commande.mode_paiement == paiement_virement %}
+    <div class="mt-8 panel-flat text-left">
+        <p>Pour un règlement par virement, je vous transmets mon RIB par retour de message.<br>
+        <span class="text-sm text-slate-soft">Montant&nbsp;: {{ commande.montant_total_cents|euros }} — référence {{ commande.reference_commande }}.</span></p>
+    </div>
+    {% endif %}
+    {% else %}
+    <p class="mt-6 text-ink/80 leading-relaxed">Votre demande a bien été prise en compte. Je vous recontacte rapidement.</p>
+    {% endif %}
+
+    <div class="mt-10">
+        <a href="{% url 'boutique:liste' %}" class="btn btn-primary">Retour à la boutique</a>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% load boutique_extras %}
+
+{% block title %}Valider ma commande — {{ SITE_NAME }}{% endblock %}
+{% block description %}Finaliser la commande des articles déposés dans votre chapeau.{% endblock %}
+
+{% block content %}
+
+<section class="container-prose py-16 lg:py-20">
+    <p class="eyebrow">Le chapeau passe</p>
+    <h1 class="title-display mt-4 text-4xl md:text-5xl">Valider ma commande</h1>
+
+    {# Récapitulatif des articles du chapeau (lecture seule). #}
+    <div class="mt-10 panel-flat">
+        <table class="table-admin">
+            <thead>
+                <tr><th>Article</th><th>Qté</th><th class="text-right">Sous-total</th></tr>
+            </thead>
+            <tbody>
+            {% for ligne in lignes %}
+                <tr>
+                    <td class="font-medium text-brown">{{ ligne.produit.nom }}</td>
+                    <td>{{ ligne.quantite }}</td>
+                    <td class="text-right text-sm">{{ ligne.sous_total_cents|euros }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <p class="mt-4 text-right font-serif text-lg text-brown">
+            Sous-total : <span class="text-terracotta">{{ montant_articles }}</span>
+        </p>
+    </div>
+
+    <form method="post" action="{% url 'boutique:commande' %}" class="pform mt-12 space-y-6">
+        {% csrf_token %}
+        <div class="hp-field" aria-hidden="true">
+            <label for="{{ form.website.id_for_label }}">Champ anti-spam (ne pas remplir)</label>
+            {{ form.website }}
+        </div>
+
+        <div>
+            <label class="field-label" for="{{ form.nom.id_for_label }}">Nom &amp; Prénom</label>
+            {{ form.nom }}
+        </div>
+        <div class="grid sm:grid-cols-2 gap-6">
+            <div>
+                <label class="field-label" for="{{ form.email.id_for_label }}">
+                    Email
+                    <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire)</span>
+                </label>
+                {{ form.email }}
+                <p class="mt-1 text-xs text-slate-soft">Pour le suivi du colis.</p>
+            </div>
+            <div>
+                <label class="field-label" for="{{ form.telephone.id_for_label }}">
+                    Téléphone portable
+                    <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire)</span>
+                </label>
+                {{ form.telephone }}
+                <p class="mt-1 text-xs text-slate-soft">Pour le suivi du colis.</p>
+            </div>
+        </div>
+
+        <div>
+            <label class="field-label" for="{{ form.adresse_postale.id_for_label }}">
+                Adresse postale complète
+                <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire)</span>
+            </label>
+            {{ form.adresse_postale }}
+            <p class="mt-1 text-xs text-slate-soft">Nom, prénom et adresse complète du destinataire du colis (nécessaire à l'envoi, même en point relais ou locker).</p>
+        </div>
+
+        <div>
+            <label class="field-label" for="{{ form.mode_livraison.id_for_label }}">
+                Mode de livraison
+                <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire)</span>
+            </label>
+            {{ form.mode_livraison }}
+            <p data-livraison-hint-point class="mt-1 text-xs text-slate-soft" hidden>Point Relais ou Locker&nbsp;: choisissez sur la carte un commerce (selon ses horaires) ou un casier accessible 24&nbsp;h/24.</p>
+            <p data-livraison-hint-domicile class="mt-1 text-xs text-slate-soft" hidden>Domicile&nbsp;: livraison à l'adresse indiquée, selon son éligibilité.</p>
+        </div>
+
+        {% include "partials/_mondial_relay.html" %}
+
+        {# Récapitulatif du prix : port + total affichés dès qu'un mode est choisi. #}
+        <div data-recap-wrap aria-live="polite" hidden>
+            <span class="field-label">Récapitulatif</span>
+            <div class="recap">
+                <div class="recap__row">
+                    <span>Articles</span>
+                    <span>{{ montant_articles }}</span>
+                </div>
+                <div class="recap__row">
+                    <span data-recap-port-label>Frais de port</span>
+                    <span data-recap-port-montant></span>
+                </div>
+                <div class="recap__row recap__total">
+                    <span>Total</span>
+                    <span data-recap-total></span>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <label class="field-label" for="{{ form.mode_paiement.id_for_label }}">
+                Mode de paiement
+                <span class="ml-1 normal-case tracking-normal text-terracotta-deep">(obligatoire)</span>
+            </label>
+            {{ form.mode_paiement }}
+
+            {# Chèque : envoi postal à l'auteur #}
+            <div data-paiement-panel="{{ paiement_cheque }}" class="mt-4 text-ink/80 leading-relaxed"{% if form.mode_paiement.value != paiement_cheque %} hidden{% endif %}>
+                <p>Pour payer par chèque, merci de me l'envoyer à l'adresse suivante&nbsp;:<br>
+                Bruno BOULAIS — 22 Chemin Orossen — 40290 MISSON.</p>
+            </div>
+
+            {# Virement : RIB envoyé par retour #}
+            <div data-paiement-panel="{{ paiement_virement }}" class="mt-4 text-ink/80 leading-relaxed"{% if form.mode_paiement.value != paiement_virement %} hidden{% endif %}>
+                <p>Pour un règlement par virement, je vous transmettrai mon RIB par retour de message.</p>
+            </div>
+        </div>
+
+        {% if dedicacable %}
+        <div>
+            <label class="inline-flex items-center gap-2 cursor-pointer">
+                {{ form.dedicace }}
+                <span class="field-label !mb-0">Dédicacer le livre</span>
+            </label>
+            <div data-prenom-wrap class="mt-3"{% if not form.dedicace.value %} hidden{% endif %}>
+                <label class="field-label" for="{{ form.prenom_dedicace.id_for_label }}">Prénom pour la dédicace</label>
+                {{ form.prenom_dedicace }}
+                <p class="mt-1 text-xs text-slate-soft">Laissez vide pour une dédicace simple, sans prénom.</p>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if ip_unresolved %}
+        <p class="text-terracotta-deep text-sm">
+            Une erreur empêche le traitement de votre commande.{% if CONTACT_EMAIL %} Merci de contacter directement
+            <a href="mailto:{{ CONTACT_EMAIL }}" class="underline">{{ CONTACT_EMAIL }}</a>.{% endif %}
+        </p>
+        {% elif rate_limited %}
+        <p class="text-terracotta-deep text-sm">
+            Vous avez envoyé plusieurs demandes récemment. Merci de patienter une heure avant de réessayer.
+        </p>
+        {% endif %}
+
+        {% if form.errors %}
+        <ul class="text-terracotta-deep text-sm">
+            {% for f in form %}{% if f.name != "website" %}{% for e in f.errors %}<li>{{ f.label }} : {{ e }}</li>{% endfor %}{% endif %}{% endfor %}
+            {% if form.non_field_errors %}{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}{% endif %}
+        </ul>
+        {% endif %}
+
+        <div class="flex flex-wrap gap-3 items-center">
+            <a href="{% url 'boutique:chapeau' %}" class="btn btn-ghost">← Retour au chapeau</a>
+            <button type="submit" class="btn btn-primary ml-auto">Valider ma commande</button>
+        </div>
+
+        {{ frais_port|json_script:"frais-port-data" }}
+        <script>
+        (function () {
+            const livraisonSelect = document.getElementById('{{ form.mode_livraison.id_for_label }}');
+            const relaisWrap = document.querySelector('[data-livraison-relais]');
+            const hintPoint = document.querySelector('[data-livraison-hint-point]');
+            const hintDomicile = document.querySelector('[data-livraison-hint-domicile]');
+            const paiementSelect = document.getElementById('{{ form.mode_paiement.id_for_label }}');
+            const paiementPanels = document.querySelectorAll('[data-paiement-panel]');
+            const dedicaceCheck = document.getElementById('{{ form.dedicace.id_for_label }}');
+            const prenomWrap = document.querySelector('[data-prenom-wrap]');
+            const recapWrap = document.querySelector('[data-recap-wrap]');
+            const recapPortMontant = document.querySelector('[data-recap-port-montant]');
+            const recapTotal = document.querySelector('[data-recap-total]');
+            if (!livraisonSelect || !relaisWrap || !paiementSelect) return;
+
+            const LIV_POINT = '{{ livraison_point_relais|escapejs }}';
+            const ARTICLES_CENTS = {{ montant_articles_cents }};
+            const FRAIS_PORT = JSON.parse(document.getElementById('frais-port-data').textContent);
+
+            function formatEuros(cents) {
+                return (cents / 100).toFixed(2).replace('.', ',') + ' €';
+            }
+            function syncRecap() {
+                const mode = livraisonSelect.value;
+                const port = FRAIS_PORT[mode];
+                if (port === undefined || port === null) {
+                    recapWrap.hidden = true;
+                    return;
+                }
+                recapPortMontant.textContent = formatEuros(port);
+                recapTotal.textContent = formatEuros(ARTICLES_CENTS + port);
+                recapWrap.hidden = false;
+            }
+            function syncLivraison() {
+                const isPoint = livraisonSelect.value === LIV_POINT;
+                relaisWrap.hidden = !isPoint;
+                hintPoint.hidden = !isPoint;
+                hintDomicile.hidden = !(livraisonSelect.value && !isPoint);
+                if (isPoint && window.initMrWidget) window.initMrWidget();
+            }
+            function syncPaiement() {
+                paiementPanels.forEach((panel) => {
+                    panel.hidden = panel.dataset.paiementPanel !== paiementSelect.value;
+                });
+            }
+            livraisonSelect.addEventListener('change', function () { syncLivraison(); syncRecap(); });
+            paiementSelect.addEventListener('change', syncPaiement);
+            if (dedicaceCheck && prenomWrap) {
+                dedicaceCheck.addEventListener('change', function () {
+                    prenomWrap.hidden = !dedicaceCheck.checked;
+                });
+            }
+            syncLivraison();
+            syncPaiement();
+            syncRecap();
+        })();
+        </script>
+    </form>
+</section>
+{% endblock %}
