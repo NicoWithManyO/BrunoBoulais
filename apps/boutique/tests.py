@@ -54,6 +54,28 @@ class ChapeauTests(TestCase):
         self.assertEqual(self.chapeau.montant_articles_cents, 2000)
 
 
+class ProduitContenuTests(TestCase):
+    """Property contenu_volumes : quels volumes une fiche affiche selon le champ contenu."""
+
+    def _produit(self, contenu):
+        return Produit.objects.create(
+            nom="P", slug=f"p-{contenu or 'none'}", prix_cents=6000, contenu=contenu
+        )
+
+    def test_integrale_developpe_les_trois_volumes(self):
+        volumes = self._produit("integrale").contenu_volumes
+        self.assertEqual([num for num, _ in volumes], [1, 2, 3])
+        # Chaque volume porte bien ses CD (donnée VOLUMES_CONTENU).
+        self.assertTrue(all(data["cds"] for _, data in volumes))
+
+    def test_volume_unique(self):
+        volumes = self._produit("2").contenu_volumes
+        self.assertEqual([num for num, _ in volumes], [2])
+
+    def test_aucun_contenu_vide(self):
+        self.assertEqual(self._produit("").contenu_volumes, [])
+
+
 class ProduitOrderingTests(TestCase):
     """Ordering : position > 0 d'abord (ascendant), position = 0 relégué (récent d'abord)."""
 

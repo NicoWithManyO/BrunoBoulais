@@ -17,9 +17,16 @@ logger = logging.getLogger(__name__)
 
 CACHE_KEY_BOUTIQUE_PAGE = "boutique_page"
 
-# Volumes de l'intégrale rattachables à un produit : si renseigné, la fiche
-# affiche la modale « voir le contenu » depuis VOLUMES_CONTENU (integrale.py).
-VOLUME_CHOICES = [(1, "Volume 1"), (2, "Volume 2"), (3, "Volume 3")]
+# Contenu (CD/titres) rattachable à un produit : si renseigné, une modale
+# « voir le contenu » liste les volumes depuis VOLUMES_CONTENU (integrale.py).
+# « intégrale » = les 3 volumes, sinon un seul volume.
+CONTENU_INTEGRALE = "integrale"
+CONTENU_CHOICES = [
+    ("1", "Volume 1"),
+    ("2", "Volume 2"),
+    ("3", "Volume 3"),
+    (CONTENU_INTEGRALE, "Intégrale (les 3 volumes)"),
+]
 
 
 class Produit(TimestampedModel):
@@ -36,9 +43,13 @@ class Produit(TimestampedModel):
         validators=IMAGE_VALIDATORS,
         blank=True,
     )
-    volume_integrale = models.PositiveSmallIntegerField(
-        "Volume de l'intégrale", choices=VOLUME_CHOICES, null=True, blank=True,
-        help_text="Si renseigné, la fiche affiche le contenu du volume.",
+    contenu = models.CharField(
+        "Contenu à afficher",
+        max_length=10,
+        choices=CONTENU_CHOICES,
+        blank=True,
+        help_text="Si renseigné, une modale « voir le contenu » liste les CD/titres. "
+        "« Intégrale » affiche les 3 volumes.",
     )
     dedicacable = models.BooleanField("Dédicaçable", default=False)
     position = models.PositiveIntegerField("Position", default=0)
@@ -66,6 +77,24 @@ class Produit(TimestampedModel):
     def prix_euros(self):
         """Prix formaté FR pour l'affichage : 2000 → "20,00 €"."""
         return f"{self.prix_cents / 100:.2f}".replace(".", ",") + " €"
+
+    @property
+    def contenu_volumes(self):
+        """Volumes à afficher dans la modale « voir le contenu ».
+
+        Renvoie une liste ``[(num, data), …]`` (vide si aucun contenu) ;
+        « intégrale » développe les 3 volumes, sinon le seul volume choisi.
+        """
+        # Import différé : integrale.py est de la donnée figée, pas un modèle.
+        from .integrale import VOLUMES_CONTENU
+
+        if self.contenu == CONTENU_INTEGRALE:
+            nums = [1, 2, 3]
+        elif self.contenu in {"1", "2", "3"}:
+            nums = [int(self.contenu)]
+        else:
+            return []
+        return [(n, VOLUMES_CONTENU[n]) for n in nums if n in VOLUMES_CONTENU]
 
 
 class BoutiquePage(TimestampedModel):

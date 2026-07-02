@@ -261,7 +261,7 @@ class ProduitForm(StripExifMixin, forms.ModelForm):
         model = Produit
         fields = [
             "nom", "slug", "reference", "prix_cents", "description",
-            "illustration", "volume_integrale", "dedicacable",
+            "illustration", "contenu", "dedicacable",
             "position", "publie",
         ]
         widgets = {
