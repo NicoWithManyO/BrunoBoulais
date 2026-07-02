@@ -76,6 +76,26 @@ class ProduitContenuTests(TestCase):
         self.assertEqual(self._produit("").contenu_volumes, [])
 
 
+class BoutiqueListeContenuTests(TestCase):
+    """La grille /boutique/ montre bouton + modale seulement pour un produit ayant du contenu."""
+
+    def setUp(self):
+        cache.clear()
+        self.client = Client()
+
+    def test_bouton_et_modale_selon_contenu(self):
+        integrale = Produit.objects.create(
+            nom="L'Intégrale", slug="integrale", prix_cents=6000, contenu="integrale"
+        )
+        livre = Produit.objects.create(nom="Le livre", slug="livre", prix_cents=2500)
+        html = self.client.get(reverse("boutique:liste")).content.decode()
+        self.assertIn(f'data-voir-contenu="{integrale.pk}"', html)
+        self.assertIn(f'data-contenu-modal="{integrale.pk}"', html)
+        # Le livre (sans contenu) n'a ni bouton ni modale.
+        self.assertNotIn(f'data-voir-contenu="{livre.pk}"', html)
+        self.assertNotIn(f'data-contenu-modal="{livre.pk}"', html)
+
+
 class ProduitOrderingTests(TestCase):
     """Ordering : position > 0 d'abord (ascendant), position = 0 relégué (récent d'abord)."""
 

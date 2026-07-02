@@ -38,6 +38,9 @@
                     {% csrf_token %}
                     <button type="submit" class="btn btn-primary w-full justify-center">Mettre au chapeau</button>
                 </form>
+                {% if produit.contenu_volumes %}
+                <button type="button" class="btn-link mt-3" data-voir-contenu="{{ produit.pk }}">voir le contenu</button>
+                {% endif %}
             </div>
         </article>
         {% endfor %}
@@ -46,5 +49,52 @@
     <p class="text-center text-slate-soft italic py-16">La boutique sera bientôt garnie.</p>
     {% endif %}
 </section>
+
+{# Modales « voir le contenu » : une par produit ayant du contenu (overlay masqué, ouvert en JS). #}
+{% for produit in produits %}
+{% if produit.contenu_volumes %}
+<div class="contenu-modal" data-contenu-modal="{{ produit.pk }}" hidden role="dialog" aria-modal="true" aria-label="Contenu — {{ produit.nom }}">
+    <div class="contenu-modal__box">
+        <button type="button" class="contenu-modal__close" data-contenu-close aria-label="Fermer">×</button>
+        {% for num, vol in produit.contenu_volumes %}
+        <h2 class="contenu-modal__title">Volume {{ num }}</h2>
+        <p class="contenu-modal__subtitle">{{ vol.sous_titre }}</p>
+        {% for cd_titre, titres in vol.cds %}
+        <h3 class="contenu-modal__cd">{{ cd_titre }}</h3>
+        <ol class="contenu-modal__tracks">
+            {% for t in titres %}<li>{{ t }}</li>{% endfor %}
+        </ol>
+        {% endfor %}
+        {% if vol.note %}<p class="contenu-modal__note">{{ vol.note }}</p>{% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+
+<script>
+// Modales de contenu des volumes : IIFE autonome, générique sur les data-attributs.
+(function () {
+    const modals = document.querySelectorAll('[data-contenu-modal]');
+    if (!modals.length) return;
+    function close() {
+        modals.forEach((m) => { m.hidden = true; });
+        document.body.style.overflow = '';
+    }
+    function open(key) {
+        modals.forEach((m) => { m.hidden = m.dataset.contenuModal !== key; });
+        document.body.style.overflow = 'hidden';
+    }
+    document.querySelectorAll('[data-voir-contenu]').forEach((b) => {
+        b.addEventListener('click', () => open(b.dataset.voirContenu));
+    });
+    modals.forEach((m) => {
+        // Clic sur le fond (hors boîte) ou sur la croix : fermeture.
+        m.addEventListener('click', (e) => { if (e.target === m) close(); });
+        m.querySelector('[data-contenu-close]').addEventListener('click', close);
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+})();
+</script>
 
 {% endblock %}
