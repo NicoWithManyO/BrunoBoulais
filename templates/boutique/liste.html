@@ -23,7 +23,7 @@
         <article class="flex flex-col bg-cream-dark border border-mist/40 overflow-hidden transition-transform duration-300 hover:-translate-y-1">
             <div class="aspect-[4/3] bg-sand/30 overflow-hidden">
                 {% if produit.illustration %}
-                <img src="{{ produit.illustration.url }}" alt="{{ produit.nom }}" class="w-full h-full object-cover">
+                <img src="{{ produit.illustration.url }}" alt="{{ produit.nom }}" class="w-full h-full object-contain">
                 {% else %}
                 <div class="w-full h-full flex items-center justify-center text-mist text-5xl font-serif">⬚</div>
                 {% endif %}
@@ -36,7 +36,7 @@
                 <p class="mt-4 font-serif text-lg text-terracotta">{{ produit.prix_euros }}</p>
                 <form method="post" action="{% url 'boutique:chapeau_ajouter' produit.pk %}" class="mt-4">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-primary w-full justify-center">Mettre au chapeau</button>
+                    <button type="submit" class="btn btn-primary w-full justify-center">Mettre dans le chapeau</button>
                 </form>
                 {% if produit.contenu_volumes %}
                 <button type="button" class="btn-link mt-3" data-voir-contenu="{{ produit.pk }}">voir le contenu</button>

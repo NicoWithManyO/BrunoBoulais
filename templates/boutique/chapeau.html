@@ -27,7 +27,7 @@
                 <tr>
                     <td class="w-16">
                         {% if ligne.produit.illustration %}
-                        <img src="{{ ligne.produit.illustration.url }}" alt="" class="w-14 h-14 object-cover rounded">
+                        <img src="{{ ligne.produit.illustration.url }}" alt="" class="w-14 h-14 object-contain rounded">
                         {% else %}
                         <span class="inline-flex items-center justify-center w-14 h-14 bg-sand/30 rounded text-mist">⬚</span>
                         {% endif %}

@@ -1,8 +1,8 @@
 {% load static %}
-{# Widget point relais Mondial Relay. Attend `form.point_relais_id` /
-   `form.point_relais_libelle` (HiddenInput) et `mondial_relay_brand` au contexte.
-   Expose `window.initMrWidget()` : init paresseuse et idempotente, à appeler quand
-   le bloc devient visible (sinon la carte Leaflet se rend avec une taille nulle). #}
+{% comment %}Widget point relais Mondial Relay. Attend `form.point_relais_id` /
+`form.point_relais_libelle` (HiddenInput) et `mondial_relay_brand` au contexte.
+Expose `window.initMrWidget()` : init paresseuse et idempotente, à appeler quand
+le bloc devient visible (sinon la carte Leaflet se rend avec une taille nulle).{% endcomment %}
 <div data-livraison-relais aria-live="polite" hidden>
     <span class="field-label">Choisissez votre point de retrait</span>
     {{ form.point_relais_id }}
