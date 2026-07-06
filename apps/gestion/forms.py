@@ -13,7 +13,7 @@ from apps.actualites.models import (
     ActualiteImage,
     ActualitesPage,
 )
-from apps.boutique.models import BoutiquePage, Produit
+from apps.boutique.models import BoutiquePage, Produit, TranchePort
 from apps.carnet.models import Billet, BilletImageContenu
 from apps.contact.models import ContactPage
 from apps.core.images import strip_exif
@@ -261,7 +261,7 @@ class ProduitForm(StripExifMixin, forms.ModelForm):
         model = Produit
         fields = [
             "nom", "slug", "reference", "prix_cents", "description",
-            "illustration", "contenu", "dedicacable",
+            "illustration", "contenu", "dedicacable", "poids_g",
             "position", "publie",
         ]
         widgets = {
@@ -288,6 +288,18 @@ class BoutiquePageForm(forms.ModelForm):
     class Meta:
         model = BoutiquePage
         fields = ["eyebrow", "titre", "intro"]
+
+
+class TranchePortForm(forms.ModelForm):
+    class Meta:
+        model = TranchePort
+        fields = ["poids_max_g", "prix_relais_cents", "prix_domicile_cents"]
+        help_texts = {
+            "poids_max_g": "En grammes : la tranche s'applique à tout chapeau dont le poids "
+            "total est inférieur ou égal à cette valeur.",
+            "prix_relais_cents": "En centimes : 415 = 4,15 €.",
+            "prix_domicile_cents": "En centimes : 749 = 7,49 €.",
+        }
 
 
 class ContactPageForm(forms.ModelForm):

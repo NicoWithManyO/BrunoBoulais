@@ -1,0 +1,49 @@
+{% extends "gestion/_layout.html" %}
+{% load boutique_extras %}
+
+{% block title %}Frais de port · Gestion{% endblock %}
+{% block crumb %}Frais de port{% endblock %}
+{% block heading %}Frais de port{% endblock %}
+
+{% block header_actions %}
+    <a href="{% url 'gestion:tranche_port_ajouter' %}" class="btn-sm btn-primary">+ Nouvelle tranche</a>
+{% endblock %}
+
+{% block content %}
+
+<p class="text-sm text-slate-soft mb-6 max-w-2xl">
+    Le port d'une commande est calculé au <strong>poids total du chapeau</strong> : on applique
+    la première tranche dont le poids maximum couvre ce total. Renseigne le poids de chaque
+    produit dans la <a href="{% url 'gestion:produits_liste' %}" class="text-terracotta">boutique</a>.
+</p>
+
+<div class="panel-flat">
+<table class="table-admin">
+    <thead>
+        <tr>
+            <th>Poids max</th>
+            <th>Point relais</th>
+            <th>Domicile</th>
+            <th class="text-right">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for t in tranches %}
+        <tr>
+            <td>
+                <a href="{% url 'gestion:tranche_port_modifier' t.pk %}" class="font-medium text-brown no-underline hover:text-terracotta">≤ {{ t.poids_max_g }} g</a>
+            </td>
+            <td class="text-xs">{{ t.prix_relais_cents|euros }}</td>
+            <td class="text-xs">{{ t.prix_domicile_cents|euros }}</td>
+            <td class="text-right whitespace-nowrap">
+                <a href="{% url 'gestion:tranche_port_modifier' t.pk %}" class="btn-sm btn-ghost">Éditer</a>
+                <a href="{% url 'gestion:tranche_port_supprimer' t.pk %}" class="btn-sm btn-danger">Supprimer</a>
+            </td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="4" class="text-center text-slate-soft italic py-12">Aucune tranche — le port ne pourra pas être calculé.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

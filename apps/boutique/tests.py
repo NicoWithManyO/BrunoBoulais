@@ -8,7 +8,19 @@ from django.test import Client, TestCase
 from django.urls import reverse
 
 from .cart import Chapeau
-from .models import BoutiquePage, Commande, LigneCommande, Produit
+from .models import BoutiquePage, Commande, LigneCommande, Produit, TranchePort
+
+# Grille de tranches connue, réutilisée par les tests de calcul et de checkout.
+GRILLE_TEST = [(500, 415, 749), (1000, 599, 949), (30000, 799, 1099)]
+
+
+def _seed_grille(grille=GRILLE_TEST):
+    """Remet une grille de tranches déterministe (indépendante du seed de migration)."""
+    TranchePort.objects.all().delete()
+    TranchePort.objects.bulk_create(
+        TranchePort(poids_max_g=p, prix_relais_cents=r, prix_domicile_cents=d)
+        for p, r, d in grille
+    )
 
 
 class _FakeRequest:
@@ -110,19 +122,44 @@ class ProduitOrderingTests(TestCase):
 
 
 class PricingTests(TestCase):
-    def test_frais_port_forfait_par_mode(self):
-        from .models import Commande
-        from .pricing import frais_port_cents
-        self.assertEqual(frais_port_cents(Commande.LIVRAISON_POINT_RELAIS), 415)
-        self.assertEqual(frais_port_cents(Commande.LIVRAISON_DOMICILE), 749)
-        self.assertIsNone(frais_port_cents(""))
+    """Port = tranche du poids total du chapeau, colonne selon le mode."""
 
-    def test_total_articles_plus_port(self):
-        from .models import Commande
-        from .pricing import total_cents
-        self.assertEqual(total_cents(2000, Commande.LIVRAISON_POINT_RELAIS), 2415)
-        self.assertEqual(total_cents(2000, Commande.LIVRAISON_DOMICILE), 2749)
-        self.assertIsNone(total_cents(2000, "inconnu"))
+    def setUp(self):
+        _seed_grille()
+        self.livre = Produit.objects.create(nom="Livre", slug="livre", prix_cents=2000, poids_g=500)
+        self.volume = Produit.objects.create(nom="Volume", slug="volume", prix_cents=2000, poids_g=200)
+
+    def _port(self, mode, *couples):
+        """Résout la tranche du panier puis lit le port du mode (comme la vue)."""
+        from .pricing import frais_port_cents, tranche_applicable
+        lignes = [{"produit": p, "quantite": q} for p, q in couples]
+        return frais_port_cents(tranche_applicable(lignes), mode)
+
+    def test_mode_inconnu_ou_vide_none(self):
+        self.assertIsNone(self._port("", (self.livre, 1)))
+        self.assertIsNone(self._port("inconnu", (self.livre, 1)))
+
+    def test_tranche_basse(self):
+        # 500 g → tranche ≤ 500.
+        self.assertEqual(self._port(Commande.LIVRAISON_POINT_RELAIS, (self.livre, 1)), 415)
+        self.assertEqual(self._port(Commande.LIVRAISON_DOMICILE, (self.livre, 1)), 749)
+
+    def test_franchit_un_palier(self):
+        # 1000 g → tranche ≤ 1000.
+        self.assertEqual(self._port(Commande.LIVRAISON_POINT_RELAIS, (self.livre, 2)), 599)
+        self.assertEqual(self._port(Commande.LIVRAISON_DOMICILE, (self.livre, 2)), 949)
+
+    def test_panier_mixte_somme_des_poids(self):
+        # 1 livre (500) + 2 volumes (400) = 900 g → tranche ≤ 1000.
+        self.assertEqual(self._port(Commande.LIVRAISON_DOMICILE, (self.livre, 1), (self.volume, 2)), 949)
+
+    def test_depassement_clampe_sur_la_plus_lourde(self):
+        self.livre.poids_g = 40000  # au-delà de la plus lourde tranche (30000)
+        self.assertEqual(self._port(Commande.LIVRAISON_DOMICILE, (self.livre, 1)), 1099)
+
+    def test_aucune_tranche_none(self):
+        TranchePort.objects.all().delete()
+        self.assertIsNone(self._port(Commande.LIVRAISON_DOMICILE, (self.livre, 1)))
 
 
 class BoutiquePageSingletonTests(TestCase):
@@ -140,8 +177,9 @@ class CommandeCheckoutTests(TestCase):
     def setUp(self):
         cache.clear()  # rate-limit en cache LocMem : isole les tests
         self.client = Client()
-        self.livre = Produit.objects.create(nom="Livre", slug="livre", prix_cents=2000)
-        self.cd = Produit.objects.create(nom="CD", slug="cd", prix_cents=1500)
+        _seed_grille()
+        self.livre = Produit.objects.create(nom="Livre", slug="livre", prix_cents=2000, poids_g=500)
+        self.cd = Produit.objects.create(nom="CD", slug="cd", prix_cents=1500, poids_g=200)
 
     def _remplir_chapeau(self):
         self.client.post(reverse("boutique:chapeau_ajouter", args=[self.livre.pk]))
@@ -165,6 +203,22 @@ class CommandeCheckoutTests(TestCase):
         response = self.client.get(reverse("boutique:commande"))
         self.assertRedirects(response, reverse("boutique:chapeau"))
 
+    def test_page_commande_expose_port_par_mode_selon_chapeau(self):
+        # Chapeau : livre ×2 (1000 g) + CD ×1 (200 g) = 1200 g → tranche ≤ 30000.
+        self._remplir_chapeau()
+        frais_port = self.client.get(reverse("boutique:commande")).context["frais_port"]
+        self.assertEqual(frais_port[Commande.LIVRAISON_POINT_RELAIS], 799)
+        self.assertEqual(frais_port[Commande.LIVRAISON_DOMICILE], 1099)
+
+    def test_grille_vide_refuse_la_commande(self):
+        # Sans tranche configurée, le port est indéterminé : on refuse au lieu de
+        # créer une commande à port nul (facturation CB de l'article seul).
+        TranchePort.objects.all().delete()
+        self._remplir_chapeau()
+        response = self.client.post(reverse("boutique:commande"), data=self._data())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Commande.objects.count(), 0)
+
     def test_commande_valide_cree_commande_lignes_et_notifie(self):
         self._remplir_chapeau()
         response = self.client.post(reverse("boutique:commande"), data=self._data())
@@ -173,10 +227,11 @@ class CommandeCheckoutTests(TestCase):
         self.assertEqual(Commande.objects.count(), 1)
         commande = Commande.objects.get()
         self.assertEqual(commande.statut, Commande.STATUT_EN_ATTENTE_REGLEMENT)
-        # Montants : 2×2000 + 1×1500 = 5500 articles ; port domicile = 749.
+        # Articles : 2×2000 + 1×1500 = 5500. Poids 1200 g → tranche ≤ 30000,
+        # port domicile = 1099.
         self.assertEqual(commande.montant_articles_cents, 5500)
-        self.assertEqual(commande.frais_port_cents, 749)
-        self.assertEqual(commande.montant_total_cents, 6249)
+        self.assertEqual(commande.frais_port_cents, 1099)
+        self.assertEqual(commande.montant_total_cents, 6599)
 
         # Snapshots des lignes (libellé + prix figés).
         lignes = {l.libelle: l for l in commande.lignes.all()}

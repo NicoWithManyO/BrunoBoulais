@@ -6,7 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from apps.boutique.models import Commande, LigneCommande, Produit
+from apps.boutique.models import Commande, LigneCommande, Produit, TranchePort
 from apps.carnet.models import Billet, BilletImageContenu
 from apps.contact.models import PRODUIT_LIVRE, Message
 
@@ -182,6 +182,7 @@ class ProduitCrudTests(TestCase):
             "description": "",
             "illustration": img,
             "dedicacable": "on",
+            "poids_g": "500",
             "position": "1",
             "publie": "on",
         })
@@ -201,6 +202,36 @@ class ProduitCrudTests(TestCase):
         self.assertEqual(resp.status_code, 302)
         self.assertFalse(Produit.objects.filter(pk=produit.pk).exists())
         self.assertFalse(storage.exists(name))
+
+
+class TranchePortCrudTests(TestCase):
+    """CRUD des tranches de frais de port en gestion (création, édition, suppression)."""
+
+    def setUp(self):
+        user = get_user_model().objects.create_user("staff", is_staff=True)
+        self.client.force_login(user)
+        TranchePort.objects.all().delete()  # écarte les tranches seedées par la migration
+
+    def test_creation(self):
+        resp = self.client.post(reverse("gestion:tranche_port_ajouter"), {
+            "poids_max_g": "500",
+            "prix_relais_cents": "415",
+            "prix_domicile_cents": "749",
+        })
+        self.assertEqual(resp.status_code, 302)
+        tranche = TranchePort.objects.get()
+        self.assertEqual(tranche.poids_max_g, 500)
+        self.assertEqual(tranche.prix_relais_cents, 415)
+
+    def test_liste_et_suppression(self):
+        tranche = TranchePort.objects.create(
+            poids_max_g=1000, prix_relais_cents=599, prix_domicile_cents=949
+        )
+        liste = self.client.get(reverse("gestion:tranches_port_liste"))
+        self.assertContains(liste, "≤ 1000 g")
+        resp = self.client.post(reverse("gestion:tranche_port_supprimer", args=[tranche.pk]))
+        self.assertEqual(resp.status_code, 302)
+        self.assertFalse(TranchePort.objects.filter(pk=tranche.pk).exists())
 
 
 @override_settings(STORAGES={

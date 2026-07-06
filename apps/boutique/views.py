@@ -14,7 +14,7 @@ from apps.core.seo import seo
 from .cart import Chapeau
 from .forms import CommandeForm
 from .models import BoutiquePage, Commande, LigneCommande, Produit
-from .pricing import frais_port_cents, montant_euros
+from .pricing import frais_port_cents, montant_euros, tranche_applicable
 from .stripe_checkout import creer_session_checkout
 
 logger = logging.getLogger(__name__)
@@ -87,11 +87,15 @@ def chapeau_voir(request):
     )
 
 
-def _creer_commande(form, chapeau):
-    """Persiste la Commande + ses lignes avec snapshots prix/libellé du chapeau."""
+def _creer_commande(form, chapeau, port):
+    """Persiste la Commande + ses lignes avec snapshots prix/libellé du chapeau.
+
+    ``port`` (centimes) est résolu et validé non-nul par l'appelant.
+    """
     commande = form.save(commit=False)
-    articles = chapeau.montant_articles_cents
-    port = frais_port_cents(commande.mode_livraison) or 0
+    # Une seule hydratation du chapeau, réutilisée pour le montant des articles et les lignes.
+    lignes = chapeau.lignes
+    articles = sum(ligne["sous_total_cents"] for ligne in lignes)
     commande.montant_articles_cents = articles
     commande.frais_port_cents = port
     commande.montant_total_cents = articles + port
@@ -111,7 +115,7 @@ def _creer_commande(form, chapeau):
                 prix_unitaire_cents=ligne["produit"].prix_cents,
                 quantite=ligne["quantite"],
             )
-            for ligne in chapeau.lignes
+            for ligne in lignes
         ]
     )
     return commande
@@ -123,6 +127,8 @@ def commande(request):
     # Pas de commande d'un chapeau vide.
     if not lignes:
         return redirect("boutique:chapeau")
+    # Tranche de port résolue une fois pour le panier, relue par mode au rendu et à la création.
+    tranche = tranche_applicable(lignes)
     dedicacable = any(ligne["produit"].dedicacable for ligne in lignes)
     rate_limited = False
     ip_unresolved = False
@@ -149,8 +155,13 @@ def commande(request):
                 if usage is not None and usage["count"] >= usage["limit"]:
                     rate_limited = True
                     retry_after = max(1, math.ceil(usage["time_left"]))
+                elif frais_port_cents(tranche, form.cleaned_data["mode_livraison"]) is None:
+                    # Grille de tranches non configurée : port indéterminé. On refuse
+                    # plutôt que de facturer un port nul (article seul en CB).
+                    form.add_error(None, "La livraison est momentanément indisponible. Merci de réessayer plus tard.")
                 else:
-                    obj = _creer_commande(form, chapeau)
+                    port = frais_port_cents(tranche, form.cleaned_data["mode_livraison"])
+                    obj = _creer_commande(form, chapeau, port)
                     bucket_usage(request, bucket, group=_RL_GROUP, rate=_RL_RATE, increment=True)
                     if obj.mode_paiement == Commande.PAIEMENT_CB:
                         # CB : on part vers Stripe. Ni notif ni vidage du chapeau
@@ -176,8 +187,8 @@ def commande(request):
             "montant_articles": montant_euros(chapeau.montant_articles_cents),
             "montant_articles_cents": chapeau.montant_articles_cents,
             "frais_port": {
-                Commande.LIVRAISON_POINT_RELAIS: frais_port_cents(Commande.LIVRAISON_POINT_RELAIS),
-                Commande.LIVRAISON_DOMICILE: frais_port_cents(Commande.LIVRAISON_DOMICILE),
+                Commande.LIVRAISON_POINT_RELAIS: frais_port_cents(tranche, Commande.LIVRAISON_POINT_RELAIS),
+                Commande.LIVRAISON_DOMICILE: frais_port_cents(tranche, Commande.LIVRAISON_DOMICILE),
             },
             "livraison_point_relais": Commande.LIVRAISON_POINT_RELAIS,
             "livraison_domicile": Commande.LIVRAISON_DOMICILE,

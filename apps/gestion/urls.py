@@ -45,6 +45,11 @@ urlpatterns = [
     path("boutique/ajouter/", views.produit_form, name="produit_ajouter"),
     path("boutique/<int:pk>/", views.produit_form, name="produit_modifier"),
     path("boutique/<int:pk>/supprimer/", views.produit_supprimer, name="produit_supprimer"),
+    # Frais de port (tranches de poids)
+    path("frais-port/", views.tranches_port_liste, name="tranches_port_liste"),
+    path("frais-port/ajouter/", views.tranche_port_form, name="tranche_port_ajouter"),
+    path("frais-port/<int:pk>/", views.tranche_port_form, name="tranche_port_modifier"),
+    path("frais-port/<int:pk>/supprimer/", views.tranche_port_supprimer, name="tranche_port_supprimer"),
     # Témoignages
     path("temoignages/", views.temoignages_liste, name="temoignages_liste"),
     path("temoignages/ajouter/", views.temoignage_form, name="temoignage_ajouter"),

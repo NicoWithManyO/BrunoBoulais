@@ -1,13 +1,11 @@
 """Calculs de prix de la boutique — fonctions pures (testables sans session)."""
 
-from .models import Commande
+from .models import Commande, TranchePort
 
-# Frais de port forfaitaires par mode de livraison (centimes). On reprend les
-# montants historiques de l'ancienne commande (livre 1 ex.) appliqués au panier,
-# sans calcul au poids. Faciles à ajuster ici si Bruno change de grille.
-FRAIS_PORT_CENTS = {
-    Commande.LIVRAISON_POINT_RELAIS: 415,
-    Commande.LIVRAISON_DOMICILE: 749,
+# Colonne de prix de la tranche selon le mode de livraison choisi.
+_CHAMP_PRIX = {
+    Commande.LIVRAISON_POINT_RELAIS: "prix_relais_cents",
+    Commande.LIVRAISON_DOMICILE: "prix_domicile_cents",
 }
 
 
@@ -16,14 +14,30 @@ def montant_euros(cents):
     return f"{cents / 100:.2f}".replace(".", ",") + " €"
 
 
-def frais_port_cents(mode_livraison):
-    """Forfait de port pour le mode choisi, ou None si le mode est inconnu/vide."""
-    return FRAIS_PORT_CENTS.get(mode_livraison)
+def poids_total_g(lignes):
+    """Poids total du chapeau (grammes) : somme des poids unitaires × quantités."""
+    return sum(ligne["produit"].poids_g * ligne["quantite"] for ligne in lignes)
 
 
-def total_cents(articles_cents, mode_livraison):
-    """Total commande = articles + port. None si le port est indéterminé."""
-    port = frais_port_cents(mode_livraison)
-    if port is None:
+def tranche_applicable(lignes):
+    """Tranche de port couvrant le poids total du chapeau.
+
+    Première tranche dont le poids max ≥ poids total ; un poids qui dépasse la plus
+    lourde tranche est clampé sur elle (jamais de port nul par dépassement). ``None``
+    si aucune tranche n'est configurée. Résolue une fois par panier, puis lue pour
+    chaque mode via ``frais_port_cents``.
+    """
+    poids = poids_total_g(lignes)
+    return TranchePort.objects.filter(poids_max_g__gte=poids).first() or TranchePort.objects.last()
+
+
+def frais_port_cents(tranche, mode_livraison):
+    """Prix de port (centimes) pour une tranche et un mode de livraison.
+
+    ``None`` si le port est indéterminé — tranche absente (grille non configurée) ou
+    mode inconnu/vide. Dans ce cas la commande ne doit pas être tarifée ni validée.
+    """
+    attr = _CHAMP_PRIX.get(mode_livraison)
+    if tranche is None or attr is None:
         return None
-    return articles_cents + port
+    return getattr(tranche, attr)

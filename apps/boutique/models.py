@@ -52,6 +52,11 @@ class Produit(TimestampedModel):
         "« Intégrale » affiche les 3 volumes.",
     )
     dedicacable = models.BooleanField("Dédicaçable", default=False)
+    poids_g = models.PositiveIntegerField(
+        "Poids (grammes)",
+        default=500,
+        help_text="Poids unitaire du produit. Sert au calcul des frais de port (au poids).",
+    )
     position = models.PositiveIntegerField("Position", default=0)
     publie = models.BooleanField("Publié", default=True)
 
@@ -95,6 +100,23 @@ class Produit(TimestampedModel):
         else:
             return []
         return [(n, VOLUMES_CONTENU[n]) for n in nums if n in VOLUMES_CONTENU]
+
+
+class TranchePort(TimestampedModel):
+    """Tranche de poids pour les frais de port : tout chapeau dont le poids total
+    est ≤ poids_max_g paie ce tarif (par mode). Éditable en gestion."""
+
+    poids_max_g = models.PositiveIntegerField("Poids maximum (grammes)")
+    prix_relais_cents = models.PositiveIntegerField("Prix point relais (centimes)")
+    prix_domicile_cents = models.PositiveIntegerField("Prix domicile (centimes)")
+
+    class Meta:
+        ordering = ["poids_max_g"]
+        verbose_name = "Tranche de frais de port"
+        verbose_name_plural = "Tranches de frais de port"
+
+    def __str__(self):
+        return f"≤ {self.poids_max_g} g"
 
 
 class BoutiquePage(TimestampedModel):

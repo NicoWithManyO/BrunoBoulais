@@ -32,7 +32,7 @@ from apps.actualites.models import (
     ActualiteImage,
     ActualitesPage,
 )
-from apps.boutique.models import BoutiquePage, Commande, Produit
+from apps.boutique.models import BoutiquePage, Commande, Produit, TranchePort
 from apps.carnet.models import Billet, BilletImageContenu
 from apps.contact.models import (
     ContactPage,
@@ -73,6 +73,7 @@ from .forms import (
     PersonneForm,
     PersonneImageFormSet,
     TemoignageForm,
+    TranchePortForm,
     TemoignagesPageForm,
 )
 
@@ -506,6 +507,42 @@ def produit_supprimer(request, pk):
         "objet": obj,
         "label": "produit",
         "retour_url": reverse("gestion:produits_liste"),
+    })
+
+
+@gestion_required
+def tranches_port_liste(request):
+    return render(request, "gestion/frais_port/list.html", {
+        "tranches": TranchePort.objects.all(),
+    })
+
+
+@gestion_required
+def tranche_port_form(request, pk=None):
+    instance = get_object_or_404(TranchePort, pk=pk) if pk is not None else None
+    form = TranchePortForm(request.POST or None, instance=instance)
+    if request.method == "POST" and form.is_valid():
+        obj = form.save()
+        messages.success(request, f"Tranche « {obj} » enregistrée.")
+        return redirect("gestion:tranche_port_modifier", pk=obj.pk)
+    return render(request, "gestion/frais_port/form.html", {
+        "form": form,
+        "instance": instance,
+    })
+
+
+@gestion_required
+def tranche_port_supprimer(request, pk):
+    obj = get_object_or_404(TranchePort, pk=pk)
+    if request.method == "POST":
+        label = str(obj)
+        obj.delete()
+        messages.success(request, f"Tranche « {label} » supprimée.")
+        return redirect("gestion:tranches_port_liste")
+    return render(request, "gestion/confirm_delete.html", {
+        "objet": obj,
+        "label": "tranche de frais de port",
+        "retour_url": reverse("gestion:tranches_port_liste"),
     })
 
 
