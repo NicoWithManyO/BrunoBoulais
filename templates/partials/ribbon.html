@@ -1,2 +1,20 @@
-{# Bandeau "Prochaine dédicace" — activé via les paramètres du site #}
-{% comment %} À brancher sur Parametres.get_solo() via context processor en V1.5 {% endcomment %}
+{% comment %}
+Bandeau défilant sous le menu. Priorité au rappel panier : si le chapeau contient
+des articles, on affiche le texte « chapeau » (configurable) qui renvoie au chapeau ;
+sinon l'annonce du site (dédicace, boutique, actualité…), si elle est active.
+{% endcomment %}
+{% if chapeau_count and parametres.bandeau_chapeau_texte %}
+<a href="{% url 'boutique:chapeau' %}" class="ribbon block text-base py-2.5">
+    <span class="ribbon__track">{{ parametres.bandeau_chapeau_texte }}</span>
+</a>
+{% elif parametres.bandeau_actif and parametres.bandeau_texte %}
+{% if parametres.bandeau_url %}
+<a href="{{ parametres.bandeau_url }}" class="ribbon block text-base py-2.5">
+    <span class="ribbon__track">{{ parametres.bandeau_texte }}</span>
+</a>
+{% else %}
+<div class="ribbon text-base py-2.5">
+    <span class="ribbon__track">{{ parametres.bandeau_texte }}</span>
+</div>
+{% endif %}
+{% endif %}

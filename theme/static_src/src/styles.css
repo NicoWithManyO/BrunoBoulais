@@ -605,21 +605,6 @@
       14px 18px 28px -6px rgba(90, 58, 34, 0.25);
   }
 
-  /* --- Bandeau (sticky) --- */
-  .ribbon {
-    background: var(--color-brown);
-    color: var(--color-cream);
-    font-family: var(--font-sans);
-    font-size: var(--text-sm);
-    letter-spacing: 0.02em;
-  }
-  .ribbon a {
-    color: var(--color-cream);
-    text-decoration: underline;
-    text-decoration-color: rgba(246, 239, 227, 0.4);
-  }
-  .ribbon a:hover { text-decoration-color: currentColor; }
-
   /* --- Tag / badge --- */
   .tag {
     @apply inline-flex items-center px-2.5 py-1 font-sans text-xs tracking-wide;
@@ -835,6 +820,40 @@
     margin-right: 0.6rem;
     vertical-align: -0.1em;
     background: url("/static/img/chapeau-bruno-nav.png") no-repeat center / contain;
+  }
+
+  /* --- Bandeau d'annonce défilant (sous le menu) --- */
+  /* Teinte marron profonde (sobre, moins « orange » que la terracotta). Le texte
+     défile en continu ; survol = pause. Reduced-motion : texte fixe et centré. */
+  .ribbon {
+    background: var(--color-brown);
+    color: var(--color-cream);
+    font-family: var(--font-sans);
+    overflow: hidden;
+    white-space: nowrap;
+    text-decoration: none;
+    letter-spacing: 0.01em;
+  }
+  a.ribbon:hover { color: var(--color-cream); }
+  /* Une seule copie : le texte entre par la droite, traverse, sort à gauche, recommence. */
+  .ribbon__track {
+    display: inline-block;
+    padding-left: 100%;
+    animation: ribbon-scroll 24s linear infinite;
+  }
+  .ribbon:hover .ribbon__track { animation-play-state: paused; }
+  @keyframes ribbon-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-100%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ribbon { white-space: normal; }
+    .ribbon__track {
+      display: block;
+      padding-left: 0;
+      text-align: center;
+      animation: none;
+    }
   }
 
   /* --- Carrousel d'images (autoplay fade) --- */

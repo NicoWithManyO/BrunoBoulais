@@ -5,6 +5,8 @@ import stripe
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
@@ -49,7 +51,12 @@ def liste(request):
 def chapeau_ajouter(request, pk):
     produit = get_object_or_404(Produit, pk=pk, publie=True)
     Chapeau(request).add(produit)
-    return redirect("boutique:chapeau")
+    # On reste sur la page d'origine (le bandeau reflète le chapeau) ; repli sur
+    # la boutique si le referer est absent ou pointe hors du site.
+    dest = request.META.get("HTTP_REFERER", "")
+    if not url_has_allowed_host_and_scheme(dest, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        dest = reverse("boutique:liste")
+    return redirect(dest)
 
 
 @require_POST

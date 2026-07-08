@@ -415,7 +415,7 @@ class ParametresForm(forms.ModelForm):
             "email_contact", "telephone", "ville",
             "texte_pied_de_page",
             "facebook_url", "instagram_url",
-            "bandeau_actif", "bandeau_texte", "bandeau_url",
+            "bandeau_actif", "bandeau_texte", "bandeau_url", "bandeau_chapeau_texte",
             "poids_emballage_g",
         ]
 

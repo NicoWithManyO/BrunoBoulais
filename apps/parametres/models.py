@@ -24,11 +24,16 @@ class Parametres(TimestampedModel):
     instagram_url = models.URLField("URL Instagram", blank=True)
 
     bandeau_actif = models.BooleanField(
-        "Afficher le bandeau dédicace", default=False,
-        help_text="Affiche un bandeau en haut du site annonçant la prochaine dédicace."
+        "Afficher le bandeau d'annonce", default=False,
+        help_text="Affiche un bandeau en haut du site (dédicace, boutique, actualité…)."
     )
     bandeau_texte = models.CharField("Texte du bandeau", max_length=200, blank=True)
     bandeau_url = models.URLField("Lien du bandeau", blank=True)
+    bandeau_chapeau_texte = models.CharField(
+        "Texte du bandeau « chapeau »", max_length=200, blank=True,
+        default="Vous avez des articles en attente de commande — cliquez ici pour finaliser.",
+        help_text="Affiché à la place de l'annonce quand le visiteur a des articles dans son chapeau."
+    )
 
     poids_emballage_g = models.PositiveIntegerField(
         "Poids d'emballage (grammes)", default=50,
