@@ -7,6 +7,8 @@ from django.core.cache import cache
 from django.test import Client, TestCase
 from django.urls import reverse
 
+from apps.parametres.models import Parametres
+
 from .cart import Chapeau
 from .models import BoutiquePage, Commande, LigneCommande, Produit, TranchePort
 
@@ -126,6 +128,11 @@ class PricingTests(TestCase):
 
     def setUp(self):
         _seed_grille()
+        # Emballage neutralisé : ces tests portent sur les bornes de tranches au
+        # poids brut. L'ajout de l'emballage a son propre test dédié.
+        p = Parametres.get_solo()
+        p.poids_emballage_g = 0
+        p.save()
         self.livre = Produit.objects.create(nom="Livre", slug="livre", prix_cents=2000, poids_g=500)
         self.volume = Produit.objects.create(nom="Volume", slug="volume", prix_cents=2000, poids_g=200)
 
@@ -160,6 +167,19 @@ class PricingTests(TestCase):
     def test_aucune_tranche_none(self):
         TranchePort.objects.all().delete()
         self.assertIsNone(self._port(Commande.LIVRAISON_DOMICILE, (self.livre, 1)))
+
+    def test_emballage_ajoute_une_fois_par_commande(self):
+        p = Parametres.get_solo()
+        p.poids_emballage_g = 50
+        p.save()
+        # L'emballage décale la tranche : livre 500 g seul → ≤ 500 (415) ;
+        # avec 50 g → 550 g → ≤ 1000 (599).
+        self.assertEqual(self._port(Commande.LIVRAISON_POINT_RELAIS, (self.livre, 1)), 599)
+        # Compté une seule fois, pas par article : 2 × 220 g = 440 g de
+        # marchandise → 490 g avec l'emballage → ≤ 500 (415). Par article
+        # (2 × 50) on aurait 540 g → ≤ 1000 (599). Le 415 prouve le « une fois ».
+        petit = Produit.objects.create(nom="Petit", slug="petit", prix_cents=1000, poids_g=220)
+        self.assertEqual(self._port(Commande.LIVRAISON_POINT_RELAIS, (petit, 2)), 415)
 
 
 class BoutiquePageSingletonTests(TestCase):

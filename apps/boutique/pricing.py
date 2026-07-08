@@ -1,5 +1,7 @@
 """Calculs de prix de la boutique — fonctions pures (testables sans session)."""
 
+from apps.parametres.models import Parametres
+
 from .models import Commande, TranchePort
 
 # Colonne de prix de la tranche selon le mode de livraison choisi.
@@ -26,8 +28,10 @@ def tranche_applicable(lignes):
     lourde tranche est clampé sur elle (jamais de port nul par dépassement). ``None``
     si aucune tranche n'est configurée. Résolue une fois par panier, puis lue pour
     chaque mode via ``frais_port_cents``.
+
+    Le poids d'emballage (paramétrable) est ajouté une seule fois au panier.
     """
-    poids = poids_total_g(lignes)
+    poids = poids_total_g(lignes) + Parametres.get_solo().poids_emballage_g
     return TranchePort.objects.filter(poids_max_g__gte=poids).first() or TranchePort.objects.last()
 
 

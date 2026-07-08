@@ -30,6 +30,11 @@ class Parametres(TimestampedModel):
     bandeau_texte = models.CharField("Texte du bandeau", max_length=200, blank=True)
     bandeau_url = models.URLField("Lien du bandeau", blank=True)
 
+    poids_emballage_g = models.PositiveIntegerField(
+        "Poids d'emballage (grammes)", default=50,
+        help_text="Ajouté une fois au poids total de la commande pour le calcul des frais de port."
+    )
+
     class Meta:
         verbose_name = "Paramètres du site"
         verbose_name_plural = "Paramètres du site"

@@ -416,6 +416,7 @@ class ParametresForm(forms.ModelForm):
             "texte_pied_de_page",
             "facebook_url", "instagram_url",
             "bandeau_actif", "bandeau_texte", "bandeau_url",
+            "poids_emballage_g",
         ]
 
 
