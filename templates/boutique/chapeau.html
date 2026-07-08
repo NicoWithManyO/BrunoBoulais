@@ -37,8 +37,11 @@
                     <td>
                         <form method="post" action="{% url 'boutique:chapeau_modifier' ligne.produit.pk %}" class="flex items-center gap-2">
                             {% csrf_token %}
-                            <input type="number" name="quantite" value="{{ ligne.quantite }}" min="1" class="w-16 px-2 py-1 border border-mist/50 rounded">
-                            <button type="submit" class="btn-sm btn-ghost">OK</button>
+                            {# La quantité s'enregistre en quittant le champ (pas de bouton). #}
+                            <input type="number" name="quantite" value="{{ ligne.quantite }}" min="1"
+                                   aria-label="Quantité pour {{ ligne.produit.nom }}"
+                                   onchange="this.form.submit()"
+                                   class="w-16 px-2 py-1 border border-mist/50 rounded">
                         </form>
                     </td>
                     <td class="text-right text-sm">{{ ligne.sous_total_cents|euros }}</td>
@@ -61,7 +64,16 @@
         </form>
         <div class="text-right">
             <p class="font-serif text-xl text-brown">Sous-total : <span class="text-terracotta">{{ montant_articles }}</span></p>
+            {% if frais_port.point_relais is not None %}
+            <p class="text-sm text-brown mt-2">
+                Frais de port estimés :
+                <span class="whitespace-nowrap">point relais {{ frais_port.point_relais|euros }}</span>
+                · <span class="whitespace-nowrap">domicile {{ frais_port.domicile|euros }}</span>
+            </p>
+            <p class="text-xs text-slate-soft mt-1">Montant définitif selon le mode de livraison choisi à l'étape suivante.</p>
+            {% else %}
             <p class="text-xs text-slate-soft mt-1">Frais de port calculés à l'étape suivante.</p>
+            {% endif %}
         </div>
     </div>
 

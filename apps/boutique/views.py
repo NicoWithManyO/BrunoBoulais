@@ -76,12 +76,19 @@ def chapeau_vider(request):
 def chapeau_voir(request):
     chapeau = Chapeau(request)
     lignes = chapeau.lignes
+    # Estimation du port : tranche du poids du chapeau, port pour chaque mode.
+    # ``None`` (grille non configurée) → l'affichage retombe sur « à l'étape suivante ».
+    tranche = tranche_applicable(lignes) if lignes else None
     return render(
         request,
         "boutique/chapeau.html",
         {
             "lignes": lignes,
             "montant_articles": montant_euros(chapeau.montant_articles_cents),
+            "frais_port": {
+                Commande.LIVRAISON_POINT_RELAIS: frais_port_cents(tranche, Commande.LIVRAISON_POINT_RELAIS),
+                Commande.LIVRAISON_DOMICILE: frais_port_cents(tranche, Commande.LIVRAISON_DOMICILE),
+            },
             **seo(request, title="Mon chapeau · Bruno Boulais"),
         },
     )
