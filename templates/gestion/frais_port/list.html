@@ -11,6 +11,14 @@
 
 {% block content %}
 
+<form method="post" class="gform panel max-w-2xl mb-8">
+    {% csrf_token %}
+    {% include "gestion/_form.html" with form=emballage_form %}
+    <div class="mt-4">
+        <button type="submit" class="btn-sm btn-primary">Enregistrer le poids d'emballage</button>
+    </div>
+</form>
+
 <p class="text-sm text-slate-soft mb-6 max-w-2xl">
     Le port d'une commande est calculé au <strong>poids total du chapeau</strong> : on applique
     la première tranche dont le poids maximum couvre ce total. Renseigne le poids de chaque

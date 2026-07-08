@@ -302,6 +302,14 @@ class TranchePortForm(forms.ModelForm):
         }
 
 
+class EmballageForm(forms.ModelForm):
+    """Poids d'emballage seul, édité depuis la page Frais de port (config du port)."""
+
+    class Meta:
+        model = Parametres
+        fields = ["poids_emballage_g"]
+
+
 class ContactPageForm(forms.ModelForm):
     class Meta:
         model = ContactPage
@@ -416,7 +424,6 @@ class ParametresForm(forms.ModelForm):
             "texte_pied_de_page",
             "facebook_url", "instagram_url",
             "bandeau_actif", "bandeau_texte", "bandeau_url", "bandeau_chapeau_texte",
-            "poids_emballage_g",
         ]
 
 

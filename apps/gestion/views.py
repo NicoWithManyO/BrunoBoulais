@@ -63,6 +63,7 @@ from .forms import (
     ChansonForm,
     ContactPageForm,
     DiscothequePageForm,
+    EmballageForm,
     ProduitForm,
     GaleriePageForm,
     LienAchatFormSet,
@@ -512,8 +513,15 @@ def produit_supprimer(request, pk):
 
 @gestion_required
 def tranches_port_liste(request):
+    # Poids d'emballage : configuré ici (page port) plutôt que dans les paramètres.
+    emballage_form = EmballageForm(request.POST or None, instance=Parametres.get_solo())
+    if request.method == "POST" and emballage_form.is_valid():
+        emballage_form.save()
+        messages.success(request, "Poids d'emballage enregistré.")
+        return redirect("gestion:tranches_port_liste")
     return render(request, "gestion/frais_port/list.html", {
         "tranches": TranchePort.objects.all(),
+        "emballage_form": emballage_form,
     })
 
 
