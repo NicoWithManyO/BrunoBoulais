@@ -3,9 +3,10 @@ Bandeau défilant sous le menu. Priorité au rappel panier : si le chapeau conti
 des articles, on affiche le texte « chapeau » (configurable) qui renvoie au chapeau ;
 sinon l'annonce du site (dédicace, boutique, actualité…), si elle est active.
 {% endcomment %}
+{% load static %}
 {% if chapeau_count and parametres.bandeau_chapeau_texte %}
 <a href="{% url 'boutique:chapeau' %}" class="ribbon block text-base py-2.5">
-    <span class="ribbon__track">{{ parametres.bandeau_chapeau_texte }}</span>
+    <span class="ribbon__track"><img src="{% static 'img/chapeau-plein.png' %}" alt="" class="inline-block h-6 w-auto align-middle mr-2" decoding="async">{{ parametres.bandeau_chapeau_texte }}</span>
 </a>
 {% elif parametres.bandeau_actif and parametres.bandeau_texte %}
 {% if parametres.bandeau_url %}
