@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load richtext %}
+{% load static %}
 
 {% block title %}Boutique — {{ SITE_NAME }}{% endblock %}
 {% block description %}Commander le livre, l'intégrale CD et les volumes de Jacques Bertin.{% endblock %}
@@ -12,9 +13,14 @@
             {% if page.eyebrow %}<p class="eyebrow">{{ page.eyebrow }}</p>{% endif %}
             <h1 class="title-display {% if page.eyebrow %}mt-6 {% endif %}text-5xl md:text-6xl">{{ page.titre|default:"La boutique" }}</h1>
         </div>
-        <a href="{% url 'boutique:chapeau' %}" class="btn btn-ghost whitespace-nowrap shrink-0">
-            {% if chapeau_count %}{{ chapeau_count }} article{{ chapeau_count|pluralize }} dans mon chapeau{% else %}Mon chapeau{% endif %}
-        </a>
+        <div class="flex items-center gap-3 shrink-0">
+            {% if chapeau_count %}
+            <img src="{% static 'img/chapeau-plein.png' %}" alt="" class="h-12 md:h-14 w-auto" decoding="async">
+            {% endif %}
+            <a href="{% url 'boutique:chapeau' %}" class="btn btn-ghost whitespace-nowrap">
+                {% if chapeau_count %}{{ chapeau_count }} article{{ chapeau_count|pluralize }} dans mon chapeau{% else %}Mon chapeau{% endif %}
+            </a>
+        </div>
     </div>
     {% if page.intro %}
     <div class="mt-6 font-serif text-lg text-ink/80 max-w-2xl leading-relaxed [&>p+p]:mt-4">
