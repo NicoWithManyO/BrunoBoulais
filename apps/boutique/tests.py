@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import stripe
+from django.contrib.messages import get_messages
 from django.contrib.sessions.backends.cache import SessionStore
 from django.core import mail
 from django.core.cache import cache
@@ -66,6 +67,25 @@ class ChapeauTests(TestCase):
         lignes = self.chapeau.lignes  # déclenche l'hydratation + nettoyage
         self.assertEqual([l["produit"] for l in lignes], [self.livre])
         self.assertEqual(self.chapeau.montant_articles_cents, 2000)
+
+
+class ChapeauAjouterViewTests(TestCase):
+    """La vue d'ajout au chapeau file un message de confirmation (rendu en toast)."""
+
+    def setUp(self):
+        self.produit = Produit.objects.create(
+            nom="Livre", slug="livre", prix_cents=2000, publie=True
+        )
+
+    def test_ajout_file_un_message_succes(self):
+        resp = self.client.post(
+            reverse("boutique:chapeau_ajouter", args=[self.produit.pk]),
+            HTTP_REFERER=reverse("boutique:liste"),
+        )
+        msgs = list(get_messages(resp.wsgi_request))
+        self.assertEqual(len(msgs), 1)
+        self.assertEqual(msgs[0].level_tag, "success")
+        self.assertIn(self.produit.nom, str(msgs[0]))
 
 
 class ProduitContenuTests(TestCase):

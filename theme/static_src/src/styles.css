@@ -1101,6 +1101,65 @@
   .flash-danger  { border-color: rgba(184, 84, 43, 0.5); background: rgba(184, 84, 43, 0.1); color: var(--color-terracotta-deep); }
   .flash-warning { border-color: rgba(214, 122, 62, 0.5); background: rgba(214, 122, 62, 0.1); color: var(--color-brown); }
 
+  /* --- Toasts (notifications éphémères, côté public) --- */
+  /* Conteneur fixe bas-droite (pleine largeur en bas sur mobile) ; empile les toasts.
+     Teintes reprises des .flash-* (source unique). Auto-dismiss + fermeture gérés en JS. */
+  .toast-container {
+    position: fixed;
+    z-index: 60;                 /* au-dessus du header (z-40) et du bandeau (flux normal) */
+    bottom: 1.25rem;
+    right: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: min(22rem, calc(100vw - 2rem));
+    pointer-events: none;        /* le conteneur ne bloque pas les clics… */
+  }
+  .toast {
+    pointer-events: auto;        /* …mais chaque toast reste cliquable */
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 0.9rem;
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    line-height: 1.4;
+    border: 1px solid var(--color-mist);
+    border-radius: 3px;
+    background: #fffdf7;
+    box-shadow: 0 6px 20px -6px rgba(90, 58, 34, 0.35);
+    animation: toast-in 0.4s var(--ease-soft) both;
+    transition: opacity 0.35s var(--ease-soft), transform 0.35s var(--ease-soft);
+  }
+  .toast__body { flex: 1 1 auto; }
+  .toast__close {
+    flex: 0 0 auto;
+    background: none;
+    border: 0;
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+    color: inherit;
+    opacity: 0.6;
+  }
+  .toast__close:hover { opacity: 1; }
+  .toast--success { border-color: rgba(62, 86, 112, 0.4); background: rgba(62, 86, 112, 0.10); color: var(--color-slate); }
+  .toast--error,
+  .toast--danger  { border-color: rgba(184, 84, 43, 0.5); background: rgba(184, 84, 43, 0.12); color: var(--color-terracotta-deep); }
+  .toast--warning { border-color: rgba(214, 122, 62, 0.5); background: rgba(214, 122, 62, 0.12); color: var(--color-brown); }
+  .toast--out { opacity: 0; transform: translateY(8px); }
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .toast { animation: none; transition: none; }
+    .toast--out { opacity: 0; }   /* pas de glissement ; le filet JS retire le nœud */
+  }
+  @media (max-width: 640px) {
+    .toast-container { left: 1rem; right: 1rem; bottom: 1rem; max-width: none; }
+  }
+
   /* --- Boutons compacts admin --- */
   .btn-sm {
     @apply inline-flex items-center gap-1.5 px-3 py-1.5 font-sans text-xs;

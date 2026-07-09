@@ -3,6 +3,7 @@ import math
 
 import stripe
 from django.conf import settings
+from django.contrib import messages
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -51,6 +52,7 @@ def liste(request):
 def chapeau_ajouter(request, pk):
     produit = get_object_or_404(Produit, pk=pk, publie=True)
     Chapeau(request).add(produit)
+    messages.success(request, f"« {produit.nom} » ajouté à votre chapeau.")
     # On reste sur la page d'origine (le bandeau reflète le chapeau) ; repli sur
     # la boutique si le referer est absent ou pointe hors du site.
     dest = request.META.get("HTTP_REFERER", "")

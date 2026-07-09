@@ -49,6 +49,8 @@
         {% block content %}{% endblock %}
     </main>
 
+    {% include "partials/toast.html" %}
+
     {% include "partials/footer.html" %}
 
     <script src="{% static 'js/carrousel.js' %}" defer></script>

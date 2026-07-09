@@ -1,0 +1,52 @@
+{% comment %}
+Toasts éphémères (côté public). Rendus depuis le framework messages de Django :
+la vue file un message avant son redirect, on l'affiche ici sur le GET suivant.
+Auto-dismiss après ~4 s (en pause au survol/focus), fermable au clic.
+L'annonce lecteur d'écran passe par une région live dédiée peuplée en JS : un
+texte déjà présent au premier rendu n'est pas vocalisé, il faut une mutation.
+{% endcomment %}
+{% if messages %}
+<div class="toast-container">
+    {% for message in messages %}
+    <div class="toast toast--{{ message.tags }}" data-toast>
+        <span class="toast__body">{{ message }}</span>
+        <button type="button" class="toast__close" data-toast-close aria-label="Fermer la notification">&times;</button>
+    </div>
+    {% endfor %}
+</div>
+<div class="sr-only" aria-live="polite" data-toast-live></div>
+<script>
+(function () {
+    var LIFETIME = 4000;   // délai avant disparition automatique
+    var FALLBACK = 600;    // filet : retire le nœud si transitionend ne se déclenche pas
+                           // (reduced-motion = pas de transition = pas d'événement)
+    function dismiss(el) {
+        if (el.dataset.leaving) return;
+        el.dataset.leaving = "1";
+        var done = function () { if (el.parentNode) el.parentNode.removeChild(el); };
+        el.addEventListener("transitionend", done, { once: true });
+        el.classList.add("toast--out");
+        setTimeout(done, FALLBACK);
+    }
+    document.querySelectorAll("[data-toast]").forEach(function (el) {
+        var timer = setTimeout(function () { dismiss(el); }, LIFETIME);
+        // Pause tant que l'utilisateur survole ou garde le focus (lecture / accès clavier).
+        el.addEventListener("mouseenter", function () { clearTimeout(timer); });
+        el.addEventListener("focusin", function () { clearTimeout(timer); });
+        var relance = function () { clearTimeout(timer); timer = setTimeout(function () { dismiss(el); }, LIFETIME); };
+        el.addEventListener("mouseleave", relance);
+        el.addEventListener("focusout", relance);
+        var btn = el.querySelector("[data-toast-close]");
+        if (btn) btn.addEventListener("click", function () { clearTimeout(timer); dismiss(el); });
+    });
+    // Recopie le texte dans la région live après un tick : la région existe déjà vide,
+    // la mutation déclenche l'annonce (sinon un contenu présent au chargement reste muet).
+    var live = document.querySelector("[data-toast-live]");
+    if (live) {
+        var textes = [];
+        document.querySelectorAll("[data-toast] .toast__body").forEach(function (b) { textes.push(b.textContent); });
+        setTimeout(function () { live.textContent = textes.join(". "); }, 150);
+    }
+})();
+</script>
+{% endif %}
