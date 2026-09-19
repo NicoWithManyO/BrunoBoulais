@@ -61,6 +61,7 @@ LOCAL_APPS = [
     "apps.boutique",
     "apps.parametres",
     "apps.gestion",
+    "apps.console",
 ]
 
 # theme app (tailwind) — ajoutée après `tailwind init`
@@ -249,6 +250,43 @@ MONDIAL_RELAY_BRAND = env("MONDIAL_RELAY_BRAND", default="BDTEST ")
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY", default="")
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
 STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
+
+# --- Console (shell web) -------------------------------------------------
+# Une page qui ouvre un vrai shell sur le serveur, en HTTPS pur (pas de
+# WebSocket, pas de port en plus) : c'est la seule voie quand le réseau
+# d'où l'on bosse ferme le port 22. Détails et garde-fous : apps/console.
+#
+# Désactivée par défaut, et refusée tant que CONSOLE_TOKEN est vide : ce
+# dépôt est public, une install qui ne pose pas ces variables n'expose
+# strictement rien (l'URL n'est même pas branchée, cf. brunoboulais/urls.py).
+CONSOLE_ENABLED = env.bool("CONSOLE_ENABLED", default=False)
+# Deuxième facteur, en plus du mot de passe du compte superuser.
+CONSOLE_TOKEN = env("CONSOLE_TOKEN", default="")
+# Préfixe d'URL — changeable pour ne pas laisser un /console/ devinable.
+CONSOLE_URL_PATH = env("CONSOLE_URL_PATH", default="console/")
+# Restriction supplémentaire par username (vide = tous les superusers).
+CONSOLE_USERS = env.list("CONSOLE_USERS", default=[])
+CONSOLE_SHELL = env("CONSOLE_SHELL", default="/bin/bash -l")
+CONSOLE_CWD = env("CONSOLE_CWD", default=str(BASE_DIR))
+# Locale posée au shell si le process web n'en a pas (sinon les accents
+# sortent en « ? »). "C.UTF-8" existe partout ; mettre "fr_FR.UTF-8" si la
+# locale est générée sur le serveur.
+CONSOLE_LOCALE = env("CONSOLE_LOCALE", default="C.UTF-8")
+# Sockets unix des démons PTY : un dossier 0700, jamais servi par le web.
+CONSOLE_RUNTIME_DIR = env("CONSOLE_RUNTIME_DIR", default=str(BASE_DIR / ".console"))
+# Le shell se ferme tout seul après ça (secondes) — un onglet oublié ne
+# laisse pas un bash ouvert indéfiniment.
+CONSOLE_IDLE_TIMEOUT = env.float("CONSOLE_IDLE_TIMEOUT", default=30 * 60)
+CONSOLE_MAX_LIFETIME = env.float("CONSOLE_MAX_LIFETIME", default=12 * 3600)
+# Durée du déverrouillage (fenêtre glissante, rafraîchie à chaque échange).
+CONSOLE_UNLOCK_TTL = env.float("CONSOLE_UNLOCK_TTL", default=30 * 60)
+# Temps qu'une requête de lecture peut passer à attendre de la sortie côté
+# serveur. À 0 (défaut) : le terminal fait du polling adaptatif et chaque
+# requête repart aussitôt. NE PAS monter tant que gunicorn tourne à un seul
+# worker (cf. apps/core/ratelimit.py) : un long-poll y bloquerait tout le
+# site pendant l'attente. Avec plusieurs workers/threads, 1 à 2 s réduisent
+# le nombre de requêtes et la latence d'affichage.
+CONSOLE_POLL_WAIT = env.float("CONSOLE_POLL_WAIT", default=0.0)
 
 # --- Logging -------------------------------------------------------------
 

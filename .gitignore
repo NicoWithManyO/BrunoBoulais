@@ -119,3 +119,6 @@ CLAUDE.local.md
 to-prod.md
 to-dev.md
 cr*.md
+
+# ─── Console shell (sockets unix des démons PTY) ─────────────────────
+/.console/

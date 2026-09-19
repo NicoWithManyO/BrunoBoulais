@@ -21,6 +21,12 @@ urlpatterns = [
     path("", include("apps.pages.urls")),
 ]
 
+# Console shell (HTTPS) — branchée seulement si explicitement activée ET
+# configurée : sur une install qui ne pose pas CONSOLE_ENABLED/CONSOLE_TOKEN,
+# l'URL n'existe pas du tout, même en 404 « authentifiée ».
+if settings.CONSOLE_ENABLED and settings.CONSOLE_TOKEN:
+    urlpatterns.insert(0, path(settings.CONSOLE_URL_PATH, include("apps.console.urls")))
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += [path("__reload__/", include("django_browser_reload.urls"))]

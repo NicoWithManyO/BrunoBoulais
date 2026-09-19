@@ -1,0 +1,62 @@
+{% load static %}<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Console · {{ host }}</title>
+    <meta name="robots" content="noindex,nofollow">
+    <link rel="icon" href="{% static 'favicon-32.png' %}" sizes="32x32" type="image/png">
+    <link rel="stylesheet" href="{% static 'vendor/xterm/xterm.css' %}">
+    <style>
+        :root { color-scheme: dark; }
+        html, body { height: 100%; }
+        body {
+            margin: 0; display: flex; flex-direction: column;
+            background: #0f1115; color: #d5d8de;
+            font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        header {
+            display: flex; align-items: center; gap: .75rem;
+            padding: .5rem .75rem; border-bottom: 1px solid #22262f; flex: 0 0 auto;
+        }
+        .who { color: #8a919e; font-size: .75rem; }
+        .who strong { color: #d5d8de; font-weight: 600; }
+        #console-status {
+            font-size: .7rem; text-transform: uppercase; letter-spacing: .08em;
+            padding: .15rem .45rem; border-radius: 999px; border: 1px solid #2a2f3a; color: #8a919e;
+        }
+        #console-status[data-kind="ok"] { color: #7fc98a; border-color: #2f5c37; }
+        #console-status[data-kind="warn"] { color: #e8b96a; border-color: #5c4a2f; }
+        #console-status[data-kind="dead"] { color: #f0b4b4; border-color: #5c2f2f; }
+        .spacer { flex: 1 1 auto; }
+        button {
+            background: #171a21; color: #d5d8de; border: 1px solid #2a2f3a; border-radius: 5px;
+            padding: .3rem .6rem; font: inherit; font-size: .75rem; cursor: pointer;
+        }
+        button:hover { border-color: #3d4453; }
+        #console-hint {
+            flex: 0 0 auto; padding: .4rem .75rem; font-size: .75rem;
+            color: #e8b96a; background: #1a1712; border-bottom: 1px solid #3a3020;
+        }
+        #console-term { flex: 1 1 auto; min-height: 0; padding: .35rem .5rem; }
+        #console-term .xterm { height: 100%; }
+    </style>
+</head>
+<body>
+    <header>
+        <span class="who"><strong>{{ shell_user }}</strong>@{{ host }}</span>
+        <span id="console-status" data-kind="warn">connexion…</span>
+        <span class="spacer"></span>
+        <button type="button" id="console-new">Nouvelle session</button>
+        <button type="button" id="console-lock" title="Il faudra re-saisir mot de passe et jeton (verrouillage auto après {{ idle_minutes }} min d’inactivité)">Verrouiller</button>
+    </header>
+
+    <div id="console-hint" hidden></div>
+    <div id="console-term"></div>
+
+    {{ config|json_script:"console-config" }}
+    <script src="{% static 'vendor/xterm/xterm.js' %}"></script>
+    <script src="{% static 'vendor/xterm/addon-fit.js' %}"></script>
+    <script src="{% static 'js/console.js' %}"></script>
+</body>
+</html>
