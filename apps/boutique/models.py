@@ -161,22 +161,18 @@ class Commande(TimestampedModel):
         (LIVRAISON_DOMICILE, "Domicile"),
     ]
 
-    PAIEMENT_CB = "cb"
     PAIEMENT_CHEQUE = "cheque"
     PAIEMENT_VIREMENT = "virement"
     PAIEMENT_CHOICES = [
-        (PAIEMENT_CB, "Carte bancaire"),
         (PAIEMENT_CHEQUE, "Chèque"),
         (PAIEMENT_VIREMENT, "Virement"),
     ]
 
-    STATUT_EN_ATTENTE_PAIEMENT = "en_attente_paiement"
     STATUT_EN_ATTENTE_REGLEMENT = "en_attente_reglement"
     STATUT_PAYE = "paye"
     STATUT_ANNULE = "annule"
     STATUT_CHOICES = [
-        (STATUT_EN_ATTENTE_PAIEMENT, "En attente de paiement (CB lancée)"),
-        (STATUT_EN_ATTENTE_REGLEMENT, "En attente de règlement (chèque/virement)"),
+        (STATUT_EN_ATTENTE_REGLEMENT, "En attente de règlement"),
         (STATUT_PAYE, "Payé"),
         (STATUT_ANNULE, "Annulé"),
     ]
@@ -204,7 +200,6 @@ class Commande(TimestampedModel):
     frais_port_cents = models.PositiveIntegerField("Frais de port (centimes)", default=0)
     montant_total_cents = models.PositiveIntegerField("Total (centimes)", default=0)
     statut = models.CharField("Statut", max_length=30, choices=STATUT_CHOICES)
-    stripe_session_id = models.CharField("Session Stripe", max_length=255, blank=True)
     # Suivi back-office (pattern repris de Message).
     notified = models.BooleanField("Notifié", default=True)
     lu = models.BooleanField("Lu", default=False)
@@ -233,9 +228,7 @@ class Commande(TimestampedModel):
         Sur tout échec (construction du récap ou envoi), on persiste
         ``notified=False`` pour que la commande remonte « à traiter » en gestion :
         la commande est déjà enregistrée (source de vérité), on n'échoue jamais
-        la requête pour un mail. C'est vital côté webhook Stripe : lever ici
-        remonterait en 500, le rejeu verrait la commande déjà « payée » et
-        n'aurait plus rien à notifier — Bruno resterait sans nouvelle.
+        la requête pour un mail.
         """
         # Import différé : pricing importe Commande (montant_euros vit là-bas).
         from .pricing import montant_euros
