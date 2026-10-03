@@ -16,6 +16,6 @@ ignore = ["E501"]
 "**/settings/*.py" = ["F403", "F405"]
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "brunoboulais.settings.dev"
+DJANGO_SETTINGS_MODULE = "brunoboulais.settings.test"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
 addopts = "-ra --tb=short"
